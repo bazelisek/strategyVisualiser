@@ -1,27 +1,37 @@
-"use server";
-import { fetchChartData, transformYahooData } from "@/util/fetch";
-import React from "react";
+"use client";
+import React, { useEffect, useState } from "react";
 import Chart from "./Chart";
+import { getChartData } from "@/util/serverFetch";
+import { useSearchParams } from "next/navigation";
 
 interface ChartFetcherProps {
-  searchParams: Promise<{ [key: string]: string | undefined }>;
+  //searchParams: Promise<{ [key: string]: string | undefined }>;
 }
 
-const ChartFetcher: React.FC<ChartFetcherProps> = async ({ searchParams }) => {
-  const params = await searchParams;
-  console.log('exec')
-  const symbol = params.symbol || '';
-  const interval = params.interval || '';
-  const duration = params.duration || '';
-  const strategy = params.strategy || '';
-
-  const { data, error } = await fetchChartData(symbol, interval, duration);
-
-  if (error) {
-    return <p>error</p>;
-  }
-
-  const tranformedData = transformYahooData(data);
+const ChartFetcher: React.FC<ChartFetcherProps> = (props) => {
+  const searchParams = useSearchParams();
+  const symbol = searchParams.get('symbol') || '';
+  const interval = searchParams.get('interval') || '';
+  const duration = searchParams.get('duration') || '';
+  const strategy = searchParams.get('strategy') || '';
+  
+  const [transformedData, setTransformedData] = useState<
+    { time: string; value: number }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    async function handleGetChartData() {
+      const data = await getChartData({symbol, interval, duration, strategy});
+      if (data.error) {
+        return <p>{data.error}</p>;
+      } else {
+        setTransformedData(data.data);
+      }
+      setLoading(false);
+    }
+    setLoading(true);
+    handleGetChartData();
+  }, [searchParams]);
 
   //setData(data);
   //console.log(data);
@@ -38,7 +48,12 @@ const ChartFetcher: React.FC<ChartFetcherProps> = async ({ searchParams }) => {
     { time: "2019-04-19", value: 81.89 },
     { time: "2019-04-20", value: 74.43 },
   ];*/
-  return <Chart width={800} height={600} data={tranformedData} />;
+  return (
+    <>
+      {loading && <p>Loading...</p>}
+      {!loading && <Chart width={800} height={600} data={transformedData} />}
+    </>
+  );
 };
 
 export default ChartFetcher;

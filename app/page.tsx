@@ -4,13 +4,14 @@ import classes from "./page.module.css";
 import Form from "@/components/Input/Form";
 
 export default function Home({ searchParams }: { searchParams: { [key: string]: string }}) {
-  const newSearchParams = Promise.resolve(searchParams);
+  //const newSearchParams = Promise.resolve(searchParams);
+
   return (
     <main className={classes.main}>
       <div className={classes.div}>
         <Form />
         <Suspense fallback={<p>Loading</p>}>
-          <ChartFetcher key={JSON.stringify(newSearchParams)} searchParams={newSearchParams}/>
+          <ChartFetcher/>
         </Suspense>
       </div>
     </main>
