@@ -1,0 +1,24 @@
+.formDiv {
+    margin: 20px 10px;
+}
+.formDiv input, .formDiv select {
+    border-radius: 5px;
+    border-style: solid;
+    background-color: var(--background-dark);
+    color: var(--foreground);
+    padding: 8px;
+    width: 100%;
+    border-color: var(--accent);
+    margin: 5px 0;
+    margin-bottom: 16px;
+}
+.formDiv input:focus {
+    outline: none;
+    box-shadow: 1px 1px 10px var(--accent);
+}
+.formDiv label {
+    margin-top: 10px;
+}
+.formDiv select {
+    border-radius: 10px;
+}
