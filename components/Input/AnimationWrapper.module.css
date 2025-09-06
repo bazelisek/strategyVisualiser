@@ -1,0 +1,87 @@
+.formDiv {
+  width: 100%;
+  max-width: 600px;
+  margin: 2rem auto;
+  display: grid;
+  grid-template-columns: 1fr; /* fallback for small screens */
+  gap: 1.2rem;
+
+  padding: 2rem;
+  border-radius: var(--border-radius);
+
+  background: linear-gradient(145deg, rgba(35, 35, 55, 0.85), rgba(25, 25, 40, 0.85));
+  backdrop-filter: blur(8px);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.formDiv label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+  color: var(--foreground);
+  display: block;
+}
+
+.formDiv input,
+.formDiv select {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+
+  background-color: var(--background-light);
+  color: var(--foreground);
+}
+
+.formDiv input:hover,
+.formDiv select:hover {
+  border-color: var(--accent);
+}
+
+.formDiv input:focus,
+.formDiv select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(var(--accent), 0.6);
+}
+
+.formDiv select {
+  cursor: pointer;
+  appearance: none; /* cleaner select */
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%),
+    linear-gradient(135deg, var(--accent) 50%, transparent 50%);
+  background-position: calc(100% - 1.1rem) calc(50% + 2px),
+    calc(100% - 0.6rem) calc(50% + 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.formDiv div h2 {
+  text-align: center;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.formDiv button {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.7rem 1.5rem;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--background-dark);
+  background: var(--accent);
+
+  border: none;
+  border-radius: var(--border-radius);
+
+  cursor: pointer;
+}

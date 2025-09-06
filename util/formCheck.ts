@@ -1,17 +1,15 @@
-const validIntervals: { [key: string]: string[] } = {
-  "1m": ["5d", '1d'],
-  "2m": ["5d", '1d'],
-  "5m": ["5d", '1d'],
-  "15m": ["5d", '1d'],
-  "30m": ["5d", '1d'],
-  "60m": ["5d", '1d'],
-  "90m": ["5d", '1d'],
-  "1h": ["5d", '1d'],
-  "1d": ["5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"],
-  "5d": ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"],
-  "1wk": ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"],
-  "1mo": ["3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"],
-  "3mo": ["6mo", "1y", "2y", "5y", "10y", "ytd", "max"],
+export const validRanges: { [key: string]: string[] } = {
+  "1d": ["1m", "2m", "5m", "15m", "30m", "60m", "90m"],
+  "5d": ["1m", "2m", "5m", "15m", "30m", "60m", "90m"],
+  "1mo": ["5m", "15m", "30m", "60m", "90m", "1d", "5d"],
+  "3mo": ["60m", "90m", "1d", "5d", "1wk"],
+  "6mo": ["1d", "5d", "1wk", "1mo"],
+  "1y": ["1d", "5d", "1wk", "1mo", "3mo"],
+  "2y": ["1d", "5d", "1wk", "1mo", "3mo"],
+  "5y": ["1d", "5d", "1wk", "1mo", "3mo"],
+  "10y": ["1d", "5d", "1wk", "1mo", "3mo"],
+  "ytd": ["1d", "5d", "1wk", "1mo", "3mo"],
+  "max": ["1d", "5d", "1wk", "1mo", "3mo"],
 };
 
 export function checkFormValidity(formData: {
@@ -24,9 +22,7 @@ export function checkFormValidity(formData: {
 
   if (!symbol.value) return "Symbol cannot be empty";
 
-  if (!validIntervals[interval.value]) return "Interval invalid";
-
-  if (!validIntervals[interval.value].includes(duration.value)) {
+  if (!validRanges[duration.value].includes(interval.value)) {
     return `The interval "${interval.value}" is not allowed for the selected time period "${duration.value}"`;
   }
 

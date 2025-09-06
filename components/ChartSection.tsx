@@ -6,7 +6,6 @@ import CandlestickChartFetcher from "@/components/Chart/CandlestickChartFetcher"
 export default function ChartSection() {
   return (
     <div className={classes.div}>
-      <Form />
       <Suspense fallback={<p>Loading chart...</p>}>
         <CandlestickChartFetcher />
       </Suspense>

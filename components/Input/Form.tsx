@@ -7,6 +7,8 @@ import Symbol from "./Symbol";
 import Interval from "./Interval";
 import TimePeriod from "./TimePeriod";
 import Strategy from "./Strategy";
+import { AnimatePresence, motion } from "framer-motion";
+import AnimationButton from "./AnimationButton";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -32,7 +34,6 @@ const Form: React.FC<FormProps> = () => {
       ...prev,
       [name]: { ...prev[name as keyof typeof prev], value },
     }));
-    
   };
 
   function handleContinue() {
@@ -46,7 +47,8 @@ const Form: React.FC<FormProps> = () => {
     }
     if (currentInput === 3) {
       console.log(JSON.stringify(formData));
-      const interval = formData.interval.value || validRanges[formData.duration.value][0];
+      const interval =
+        formData.interval.value || validRanges[formData.duration.value][0];
 
       const searchParams = new URLSearchParams({
         symbol: formData.symbol.value,
@@ -59,45 +61,67 @@ const Form: React.FC<FormProps> = () => {
   }
 
   return (
-    <form
-      className={classes.formDiv}
-      onSubmit={(e) => e.preventDefault()}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault(); // stop default submit
-          handleContinue();
-        }
-      }}
-    >
-      {currentInput === 0 && (
-        <Symbol value={formData.symbol.value} onChange={handleChange} />
-      )}
+    <>
+      <AnimatePresence mode="wait">
+        {currentInput === 0 && (
+          <Symbol
+            key="symbol-step"
+            value={formData.symbol.value}
+            onChange={handleChange}
+            handleContinue={handleContinue}
+          >
+            <AnimationButton onClick={handleContinue}>
+              Continue
+            </AnimationButton>
+            {error && <p>{error}</p>}
+          </Symbol>
+        )}
 
-      {currentInput === 1 && (
-        <TimePeriod value={formData.duration.value} onChange={handleChange} />
-      )}
+        {currentInput === 1 && (
+          <TimePeriod
+            key="time-period-step"
+            value={formData.duration.value}
+            onChange={handleChange}
+            handleContinue={handleContinue}
+          >
+            <AnimationButton onClick={handleContinue}>
+              Continue
+            </AnimationButton>
+            {error && <p>{error}</p>}
+          </TimePeriod>
+        )}
 
-      {currentInput === 2 && (
-        <Interval
-          value={formData.interval.value}
-          onChange={handleChange}
-          availableIntervals={validRanges[formData.duration.value]}
-        />
-      )}
+        {currentInput === 2 && (
+          <Interval
+            key="interval-step"
+            value={formData.interval.value}
+            onChange={handleChange}
+            availableIntervals={validRanges[formData.duration.value]}
+            handleContinue={handleContinue}
+          >
+            <AnimationButton onClick={handleContinue}>
+              Continue
+            </AnimationButton>
+            {error && <p>{error}</p>}
+          </Interval>
+        )}
 
-      {currentInput === 3 && (
-        <Strategy
-          value={formData.strategy.value}
-          onChange={handleChange}
-          availableStrategies={["Dummy strategy", "Another dummy strategy"]}
-        />
-      )}
-      <p>{JSON.stringify(formData)}</p>
-      <button type="button" onClick={handleContinue}>
-        Continue
-      </button>
-      {error && <p>{error}</p>}
-    </form>
+        {currentInput === 3 && (
+          <Strategy
+            key="strategy-step"
+            value={formData.strategy.value}
+            onChange={handleChange}
+            availableStrategies={["Dummy strategy", "Another dummy strategy"]}
+            handleContinue={handleContinue}
+          >
+            <AnimationButton onClick={handleContinue}>
+              Continue
+            </AnimationButton>
+            {error && <p>{error}</p>}
+          </Strategy>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
