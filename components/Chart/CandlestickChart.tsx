@@ -64,6 +64,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       priceLineVisible: true,
       priceLineColor: "rgba(0,0,0,0.5)",
     });
+    
 
     series.setData(candles);
 

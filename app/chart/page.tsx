@@ -1,9 +1,7 @@
 import classes from "./page.module.css";
 import ChartSection from "@/components/ChartSection";
 
-export default function Home({ searchParams }: { searchParams: { [key: string]: string }}) {
-  //const newSearchParams = Promise.resolve(searchParams);
-
+export default function Home() {
   return (
     <main className={classes.main}>
       <ChartSection/>

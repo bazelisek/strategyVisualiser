@@ -1,0 +1,77 @@
+.wrapper {
+  position: relative;
+  width: 100%;
+  font-family: inherit;
+  user-select: none;
+}
+
+.selectionButton {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: var(--background-light);
+  color: var(--foreground);
+
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.selectionButton:hover {
+  border-color: var(--accent);
+}
+
+.selectionButton:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(var(--accent), 0.6);
+}
+
+.wrapper ul {
+  position: absolute;
+  top: calc(100% + 0.2rem);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  background: linear-gradient(145deg, rgba(35, 35, 55, 0.85), rgba(25, 25, 40, 0.85));
+  backdrop-filter: blur(8px);
+
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+
+  overflow: hidden;
+  z-index: 10;
+}
+
+.wrapper li {
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  color: var(--foreground);
+  transition: background 0.2s ease;
+}
+
+.wrapper li:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Optional arrow for the button */
+.selectionButton::after {
+  content: '▼';
+  font-size: 0.7rem;
+  margin-left: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.wrapper.open .selectionButton::after {
+  transform: rotate(-180deg);
+}

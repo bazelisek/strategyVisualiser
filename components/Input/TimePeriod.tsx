@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import AnimationWrapper from "./AnimationWrapper";
+import CustomSelect from "./CustomSelect";
 
 interface TimePeriodProps {
   children?: ReactNode;
@@ -14,26 +15,33 @@ const TimePeriod: React.FC<TimePeriodProps> = ({
   value,
   onChange,
   handleContinue,
-  children
+  children,
 }) => {
   return (
     <AnimationWrapper handleContinue={handleContinue}>
       <div>
         <h2>Please select the time period you want to chart the graph for.</h2>
         <label>Time period</label>
-        <select name="duration" value={value} onChange={onChange}>
-          <option>1d</option>
-          <option>5d</option>
-          <option>1mo</option>
-          <option>3mo</option>
-          <option>6mo</option>
-          <option>1y</option>
-          <option>2y</option>
-          <option>5y</option>
-          <option>10y</option>
-          <option>ytd</option>
-          <option>max</option>
-        </select>
+        <CustomSelect
+          onChange={(val) =>
+            onChange({ target: { name: "duration", value: val } } as any)
+          }
+          options={[
+            "1d",
+            "5d",
+            "1mo",
+            "3mo",
+            "6mo",
+            "1y",
+            "2y",
+            "5y",
+            "10y",
+            "ytd",
+            "max",
+          ]}
+          value={value}
+          initialText="Plese select a time period"
+        />
         {children}
       </div>
     </AnimationWrapper>

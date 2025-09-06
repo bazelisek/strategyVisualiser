@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import AnimationWrapper from "./AnimationWrapper";
+import CustomSelect from "./CustomSelect";
 
 interface StrategyProps {
   children?: ReactNode;
@@ -21,15 +22,20 @@ const Strategy: React.FC<StrategyProps> = ({
   return (
     <AnimationWrapper handleContinue={handleContinue}>
       <div>
+        <h2>
+          Please enter the strategy you want to apply on the stock.
+        </h2>
         <label>Strategy</label>
-        <select name="strategy" value={value} onChange={onChange}>
-          {availableStrategies.map((strategy) => (
-            <option key={strategy}>{strategy}</option>
-          ))}
-        </select>
+        <CustomSelect
+          onChange={(val) =>
+            onChange({ target: { name: "strategy", value: val } } as any)
+          }
+          options={availableStrategies}
+          value={value}
+          initialText="Plese select a strategy"
+        />
         {children}
       </div>
-      
     </AnimationWrapper>
   );
 };

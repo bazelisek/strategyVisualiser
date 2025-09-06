@@ -1,13 +1,12 @@
 "use client";
 import React, { useState } from "react";
-import classes from "./Form.module.css";
 import { useRouter } from "next/navigation";
 import { validRanges } from "@/util/formCheck";
 import Symbol from "./Symbol";
 import Interval from "./Interval";
 import TimePeriod from "./TimePeriod";
 import Strategy from "./Strategy";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import AnimationButton from "./AnimationButton";
 
 interface FormProps {
@@ -19,7 +18,7 @@ const Form: React.FC<FormProps> = () => {
   const [formData, setFormData] = useState({
     symbol: { value: "" },
     interval: { value: "" },
-    duration: { value: "1d" },
+    duration: { value: "" },
     strategy: { value: "" },
   });
   const [error, setError] = useState("");
@@ -43,6 +42,10 @@ const Form: React.FC<FormProps> = () => {
       (value.length === 0 || value.toUpperCase() !== value)
     ) {
       setError("Incorrect symbol");
+      return;
+    }
+    if (Object.values(formData).filter(p => p.value).length <= currentInput) {
+      setError("Please select a value.");
       return;
     }
     if (currentInput === 3) {

@@ -5,14 +5,19 @@ import { useSearchParams } from "next/navigation";
 import CandlestickChart from "./CandlestickChart";
 import { SeriesMarker, Time } from "lightweight-charts";
 import { checkFormValidity } from "@/util/formCheck";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import classes from './CandlestickChartFetcher.module.css';
 
 interface CandlestickChartFetcherProps {
   //searchParams: Promise<{ [key: string]: string | undefined }>;
+  onLoad?: () => void;
 }
 
-const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = (
-  props
-) => {
+const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
+  onLoad,
+}) => {
+  const router = useRouter();
   const [error, setError] = useState("");
   const searchParams = useSearchParams();
   const symbol = searchParams.get("symbol") || "";
@@ -34,6 +39,9 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = (
   const loading = loadingCount > 0;
 
   useEffect(() => {
+    if (!interval || !duration || !symbol) {
+      router.push("/");
+    }
     const errorMsg = checkFormValidity({
       symbol: { value: symbol, timeout: true },
       interval: { value: interval, timeout: true },
@@ -74,7 +82,9 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = (
         setError("An error occurred while fetching chart data.");
         console.error(e);
       } finally {
-        setLoadingCount((old) => old - 1);
+        setLoadingCount((old) => {
+          return old - 1;
+        });
       }
     }
 
@@ -106,12 +116,19 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = (
       {loading && !error && <p>Loading...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
       {!loading && !error && (
+        <motion.div
+      initial={{ opacity: 0, y: -200 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring" }}
+      className={classes.div}
+    >    
         <CandlestickChart
           width={1060}
           height={580}
           candles={transformedData}
           tradeMarkers={tradeMarkers}
         />
+        </motion.div>
       )}
     </>
   );
