@@ -1,7 +1,7 @@
-import ChartFetcher from "@/components/Chart/ChartFetcher";
 import { Suspense } from "react";
 import classes from "./page.module.css";
 import Form from "@/components/Input/Form";
+import CandlestickChartFetcher from "@/components/Chart/CandlestickChartFetcher";
 
 export default function Home({ searchParams }: { searchParams: { [key: string]: string }}) {
   //const newSearchParams = Promise.resolve(searchParams);
@@ -11,7 +11,7 @@ export default function Home({ searchParams }: { searchParams: { [key: string]: 
       <div className={classes.div}>
         <Form />
         <Suspense fallback={<p>Loading</p>}>
-          <ChartFetcher/>
+          <CandlestickChartFetcher/>
         </Suspense>
       </div>
     </main>

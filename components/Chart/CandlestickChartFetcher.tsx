@@ -1,27 +1,39 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Chart from "./Chart";
-import { getLineChartData } from "@/util/serverFetch";
+import { getCandlestickChartData } from "@/util/serverFetch";
 import { useSearchParams } from "next/navigation";
+import CandlestickChart from "./CandlestickChart";
 
-interface ChartFetcherProps {
+interface CandlestickChartFetcherProps {
   //searchParams: Promise<{ [key: string]: string | undefined }>;
 }
 
-const ChartFetcher: React.FC<ChartFetcherProps> = (props) => {
+const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = (props) => {
   const searchParams = useSearchParams();
-  const symbol = searchParams.get('symbol') || '';
-  const interval = searchParams.get('interval') || '';
-  const duration = searchParams.get('duration') || '';
-  const strategy = searchParams.get('strategy') || '';
-  
+  const symbol = searchParams.get("symbol") || "";
+  const interval = searchParams.get("interval") || "";
+  const duration = searchParams.get("duration") || "";
+  const strategy = searchParams.get("strategy") || "";
+
   const [transformedData, setTransformedData] = useState<
-    { time: string; value: number }[]
+    {
+      time: string;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+    }[]
   >([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     async function handleGetChartData() {
-      const data = await getLineChartData({symbol, interval, duration, strategy});
+      const data = await getCandlestickChartData({
+        symbol,
+        interval,
+        duration,
+        strategy,
+      });
       if (data.error) {
         return <p>{data.error}</p>;
       } else {
@@ -51,9 +63,11 @@ const ChartFetcher: React.FC<ChartFetcherProps> = (props) => {
   return (
     <>
       {loading && <p>Loading...</p>}
-      {!loading && <Chart width={800} height={600} data={transformedData} />}
+      {!loading && (
+        <CandlestickChart width={800} height={600} candles={transformedData} />
+      )}
     </>
   );
 };
 
-export default ChartFetcher;
+export default CandlestickChartFetcher;

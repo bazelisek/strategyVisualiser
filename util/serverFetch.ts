@@ -1,9 +1,8 @@
 // serverFetch.ts
 "use server";
-import { fetchChartData, transformYahooData } from "@/util/fetch";
-import { ReadonlyURLSearchParams } from "next/navigation";
+import { fetchChartData, transformYahooDataToLine, transformYahooToCandles } from "@/util/fetch";
 
-export async function getChartData({
+export async function getLineChartData({
   symbol,
   interval,
   duration,
@@ -22,6 +21,29 @@ export async function getChartData({
     return { data: [], error };
   }
 
-  const transformedData = transformYahooData(data);
+  const transformedData = transformYahooDataToLine(data);
+  return { data: transformedData, error: null };
+}
+
+export async function getCandlestickChartData({
+  symbol,
+  interval,
+  duration,
+  strategy,
+}: {
+  symbol: any;
+  interval: any;
+  duration: any;
+  strategy: any;
+}) {
+  console.log("exec");
+
+  const { data, error } = await fetchChartData(symbol, interval, duration);
+
+  if (error) {
+    return { data: [], error };
+  }
+
+  const transformedData = transformYahooToCandles(data);
   return { data: transformedData, error: null };
 }

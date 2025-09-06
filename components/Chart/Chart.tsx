@@ -32,6 +32,9 @@ const Chart: React.FC<ChartProps> = ({ width, height, data }) => {
     });
     const lineSeries = chart.addSeries(LineSeries);
     lineSeries.setData(data);
+    return () => {
+      chart.remove();
+    }
   }, []);
 
   return <div ref={chartRef}></div>;
