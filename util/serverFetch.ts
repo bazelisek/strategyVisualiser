@@ -20,13 +20,14 @@ export async function getCandlestickChartData({
     `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&range=${duration}`
   );
   //const { data, error } = await fetchChartData(symbol, interval, duration);
-  console.log(JSON.stringify(data));
+  //console.log(JSON.stringify(data));
 
   if (error) {
-    return { data: [], error };
+    return { data: {symbol: '', longName: '', candles: []}, error };
   }
 
   const transformedData = transformYahooToCandles(data);
+  console.log(transformedData);
   return { data: transformedData, error: null };
 }
 

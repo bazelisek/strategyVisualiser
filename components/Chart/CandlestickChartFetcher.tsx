@@ -7,7 +7,7 @@ import { SeriesMarker, Time } from "lightweight-charts";
 import { checkFormValidity } from "@/util/formCheck";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import classes from './CandlestickChartFetcher.module.css';
+import classes from "./CandlestickChartFetcher.module.css";
 
 interface CandlestickChartFetcherProps {
   //searchParams: Promise<{ [key: string]: string | undefined }>;
@@ -25,15 +25,17 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
   const duration = searchParams.get("duration") || "";
   const strategy = searchParams.get("strategy") || "";
 
-  const [transformedData, setTransformedData] = useState<
-    {
+  const [transformedData, setTransformedData] = useState<{
+    longName: string;
+    symbol: string;
+    candles: {
       time: string;
       open: number;
       high: number;
       low: number;
       close: number;
-    }[]
-  >([]);
+    }[];
+  }>({ longName: "", symbol: "", candles: [] });
   const [tradeMarkers, setTradeMarkers] = useState<SeriesMarker<Time>[]>([]);
   const [loadingCount, setLoadingCount] = useState(2);
   const loading = loadingCount > 0;
@@ -52,7 +54,7 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
     setError(errorMsg);
 
     if (errorMsg) {
-      setTransformedData([]);
+      setTransformedData({ longName: "", symbol: "", candles: [] });
       setTradeMarkers([]);
       setLoadingCount(0);
       return; // Don't fetch invalid data
@@ -69,14 +71,40 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
         if (data.error) {
           setError(data.error);
         } else {
-          // Sort by time and remove duplicates to prevent chart errors
-          const sortedAndUniqueData = data.data
+          const newData = data.data as
+            | {
+                symbol: string;
+                longName: string;
+                candles: {
+                  time: string;
+                  open: number;
+                  high: number;
+                  low: number;
+                  close: number;
+                }[];
+              }
+            | undefined;
+
+          // Guard against missing candles
+          if (!newData || !newData.candles || newData.candles.length === 0) {
+            setError("No candlestick data found.");
+            setTransformedData({ longName: "", symbol: "", candles: [] });
+            return;
+          }
+
+          // Sort by time and remove duplicates
+          const sortedAndUniqueData = newData.candles
             .sort((a, b) => Number(a.time) - Number(b.time))
             .filter(
               (candle, index, self) =>
                 index === 0 || self[index - 1].time !== candle.time
             );
-          setTransformedData(sortedAndUniqueData);
+
+          setTransformedData({
+            longName: newData.longName,
+            symbol: newData.symbol,
+            candles: sortedAndUniqueData,
+          });
         }
       } catch (e) {
         setError("An error occurred while fetching chart data.");
@@ -117,17 +145,19 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
       {error && <p style={{ color: "red" }}>{error}</p>}
       {!loading && !error && (
         <motion.div
-      initial={{ opacity: 0, y: -200 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring" }}
-      className={classes.div}
-    >    
-        <CandlestickChart
-          width={1060}
-          height={580}
-          candles={transformedData}
-          tradeMarkers={tradeMarkers}
-        />
+          initial={{ opacity: 0, y: -200 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring" }}
+          className={classes.div}
+        >
+          <h2>{transformedData.longName}</h2>
+          <h3>{transformedData.symbol}</h3>
+          <CandlestickChart
+            width={1060}
+            height={580}
+            candles={transformedData.candles}
+            tradeMarkers={tradeMarkers}
+          />
         </motion.div>
       )}
     </>

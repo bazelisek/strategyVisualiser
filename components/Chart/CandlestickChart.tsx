@@ -8,6 +8,8 @@ import {
   SeriesMarker,
   Time,
   ColorType,
+  UTCTimestamp,
+  CandlestickData,
 } from "lightweight-charts";
 import React, { ReactNode, useEffect } from "react";
 
@@ -15,7 +17,13 @@ interface CandlestickChartProps {
   children?: ReactNode;
   width: number;
   height: number;
-  candles: { time: string; open: number; high: number; low: number; close: number }[];
+  candles: {
+    time: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+  }[];
   tradeMarkers: SeriesMarker<Time>[];
 }
 
@@ -34,7 +42,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       width,
       height,
       layout: {
-        background: { color: "#1e1e2a", type: ColorType.Solid},
+        background: { color: "#1e1e2a", type: ColorType.Solid },
         textColor: "#d1d4dc",
         fontSize: 12,
       },
@@ -51,7 +59,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       timeScale: {
         borderColor: "#2b2b43",
         timeVisible: true,
-        secondsVisible: false,
+        secondsVisible: true,
       },
     });
 
@@ -64,9 +72,26 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       priceLineVisible: true,
       priceLineColor: "rgba(0,0,0,0.5)",
     });
-    
 
-    series.setData(candles);
+    //console.log(candles);
+    const data: CandlestickData<UTCTimestamp>[] = candles
+      .map((c) => ({
+        time: Number(c.time) as UTCTimestamp,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      }))
+      .filter(
+        (c) =>
+          c.open !== null &&
+          c.high !== null &&
+          c.low !== null &&
+          c.close !== null
+      )
+      .sort((a, b) => a.time - b.time);
+
+    series.setData(data);
 
     // Přidej markery
     createSeriesMarkers(series, tradeMarkers);
