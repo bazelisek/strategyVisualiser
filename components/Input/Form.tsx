@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import classes from "./Form.module.css";
 import { useRouter } from "next/navigation";
+import { checkFormValidity } from "@/util/formCheck";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -15,6 +16,7 @@ const Form: React.FC<FormProps> = () => {
     duration: { value: "5y", timeout: false },
     strategy: { value: "DummyStrategy", timeout: false },
   });
+  const [error, setError] = useState('');
 
   const timers = useRef<{ [key: string]: NodeJS.Timeout | null }>({});
 
@@ -40,14 +42,8 @@ const Form: React.FC<FormProps> = () => {
   };
 
   useEffect(() => {
-    const symbolCorrect = formData.symbol.value.length > 0;
-    const intervalCorrect = formData.interval.value.length > 0;
-
     if (
-      formData.symbol.timeout &&
-      formData.interval.timeout &&
-      symbolCorrect &&
-      intervalCorrect
+      !checkFormValidity(formData)
     ) {
       const searchParams = new URLSearchParams({
         symbol: formData.symbol.value,
@@ -57,60 +53,84 @@ const Form: React.FC<FormProps> = () => {
       });
       router.replace(`/?${searchParams.toString()}`);
       console.log("✅ URL updated", searchParams.toString());
+      setError('');
+    }
+    else{
+      setError(checkFormValidity(formData));
     }
   }, [formData]);
 
   return (
-    <div className={classes.formDiv}>
-      <form>
-        <div>
-          <label>Symbol</label>
-          <input
-            type="text"
-            name="symbol"
-            value={formData.symbol.value}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label>Interval</label>
-          <input
-            type="text"
-            name="interval"
-            value={formData.interval.value}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label>Time period</label>
-          <select
-            name="duration"
-            value={formData.duration.value}
-            onChange={handleChange}
-          >
-            <option>5y</option>
-            <option>1y</option>
-            <option>3mo</option>
-            <option>1mo</option>
-            <option>1w</option>
-          </select>
-        </div>
-        <div>
-          <label>Strategy</label>
-          <select
-            name="strategy"
-            value={formData.strategy.value}
-            onChange={handleChange}
-          >
-            <option>DummyStrategy</option>
-            <option>AnotherDummyStrategy</option>
-          </select>
-        </div>
-      </form>
+    <form className={classes.formDiv}>
+      <div>
+        <label>Symbol</label>
+        <input
+          type="text"
+          name="symbol"
+          value={formData.symbol.value}
+          onChange={handleChange}
+        />
+      </div>
 
-      {/* Debug output to see two-way binding in action */}
-      <pre>{JSON.stringify(formData, null, 2)}</pre>
-    </div>
+      <div>
+        <label>Interval</label>
+        <select
+          name="interval"
+          value={formData.interval.value}
+          onChange={handleChange}
+        >
+          <option>1m</option>
+          <option>2m</option>
+          <option>5m</option>
+          <option>15m</option>
+          <option>30m</option>
+          <option>60m</option>
+          <option>90m</option>
+          <option>1h</option>
+          <option>4h</option>
+          <option>1d</option>
+          <option>5d</option>
+          <option>1wk</option>
+          <option>1mo</option>
+          <option>3mo</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Time period</label>
+        <select
+          name="duration"
+          value={formData.duration.value}
+          onChange={handleChange}
+        >
+          <option>1d</option>
+          <option>5d</option>
+          <option>1mo</option>
+          <option>3mo</option>
+          <option>6mo</option>
+          <option>1y</option>
+          <option>2y</option>
+          <option>5y</option>
+          <option>10y</option>
+          <option>ytd</option>
+          <option>max</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Strategy</label>
+        <select
+          name="strategy"
+          value={formData.strategy.value}
+          onChange={handleChange}
+        >
+          <option>DummyStrategy</option>
+          <option>AnotherDummyStrategy</option>
+        </select>
+      </div>
+
+      {error && <p>{error}</p>}
+    </form>
   );
 };
 

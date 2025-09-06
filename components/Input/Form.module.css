@@ -1,24 +1,40 @@
 .formDiv {
-    margin: 20px 10px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* two equal columns */
+  gap: 1rem;
+  background: rgba(30, 30, 50, 0.5);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--accent);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
-.formDiv input, .formDiv select {
-    border-radius: 5px;
-    border-style: solid;
-    background-color: var(--background-dark);
-    color: var(--foreground);
-    padding: 8px;
-    width: 100%;
-    border-color: var(--accent);
-    margin: 5px 0;
-    margin-bottom: 16px;
-}
-.formDiv input:focus {
-    outline: none;
-    box-shadow: 1px 1px 10px var(--accent);
-}
+
 .formDiv label {
-    margin-top: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+  color: var(--foreground);
+  display: block;
 }
+
+.formDiv input,
 .formDiv select {
-    border-radius: 10px;
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 0.9rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--accent);
+  background-color: var(--background-light);
+  color: var(--foreground);
+  transition: all 0.2s ease;
+}
+
+.formDiv input:focus,
+.formDiv select:focus {
+  outline: none;
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.formDiv select {
+  cursor: pointer;
 }

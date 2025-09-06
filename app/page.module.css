@@ -1,27 +1,20 @@
-.div {
-  margin: 20px;
-  align-self: center;
-  border-radius: 20px;
-  padding: 30px;
-  border-style: solid;
-  border: 2px;
-  box-shadow: 1px 1px 10px var(--accent);
-  border-color: var(--accent);
-  background-color: var(--background-dark);
-  background: linear-gradient(
-    to top,
-    var(--background-dark),
-    var(--background-light)
-  );
-
-  display: inline-flex;
-  width: fit-content;
-  height: fit-content;
-  justify-content: center;
-  /*align-items: center;*/
-}
 .main {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 1rem;
+  gap: 2rem;
+  background: var(--background);
+}
+
+.chart-section {
+  width: 100%;
+  max-width: 1200px;
+  background: var(--background-light);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
