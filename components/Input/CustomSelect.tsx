@@ -13,21 +13,23 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   value,
   onChange,
   options,
-  initialText
+  initialText,
 }) => {
   const [open, setOpen] = useState(false);
+  const itemStagger = 0.06;
+  const baseDuration = 0.1; // minimal time for the roll-down itself
 
   // Parent variants with staggerChildren
   const listVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
+    hidden: { opacity: 0, height: 0 },
     visible: {
       opacity: 1,
-      scale: 1,
-      transition: { staggerChildren: 0.05, when: "beforeChildren" },
+      height: "auto",
+      transition: { staggerChildren: itemStagger, duration: baseDuration + itemStagger * options.length },
     },
     exit: {
       opacity: 0,
-      scale: 0.95,
+      height: 0,
       transition: { staggerChildren: 0.05, staggerDirection: -1 },
     },
   };
@@ -41,7 +43,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         {value || initialText}
       </div>
 
-      <AnimatePresence>
+      <AnimatePresence mode="sync">
         {open && (
           <motion.ul
             className={classes.optionsList}
