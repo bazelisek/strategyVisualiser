@@ -1,8 +1,12 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import classes from "./Form.module.css";
 import { useRouter } from "next/navigation";
-import { checkFormValidity } from "@/util/formCheck";
+import { validRanges } from "@/util/formCheck";
+import Symbol from "./Symbol";
+import Interval from "./Interval";
+import TimePeriod from "./TimePeriod";
+import Strategy from "./Strategy";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -11,14 +15,13 @@ interface FormProps {
 const Form: React.FC<FormProps> = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    symbol: { value: "", timeout: false },
-    interval: { value: "", timeout: false },
-    duration: { value: "5y", timeout: false },
-    strategy: { value: "DummyStrategy", timeout: false },
+    symbol: { value: "" },
+    interval: { value: "" },
+    duration: { value: "1d" },
+    strategy: { value: "" },
   });
-  const [error, setError] = useState('');
-
-  const timers = useRef<{ [key: string]: NodeJS.Timeout | null }>({});
+  const [error, setError] = useState("");
+  const [currentInput, setCurrentInput] = useState(0);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -27,108 +30,72 @@ const Form: React.FC<FormProps> = () => {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: { ...prev[name as keyof typeof prev], value, timeout: false },
+      [name]: { ...prev[name as keyof typeof prev], value },
     }));
-
-    if (timers.current[name]) clearTimeout(timers.current[name]!);
-
-    timers.current[name] = setTimeout(() => {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: { ...prev[name as keyof typeof prev], timeout: true },
-      }));
-      timers.current[name] = null;
-    }, 500);
+    
   };
 
-  useEffect(() => {
+  function handleContinue() {
+    const value = formData.symbol.value;
     if (
-      !checkFormValidity(formData)
+      currentInput === 0 &&
+      (value.length === 0 || value.toUpperCase() !== value)
     ) {
+      setError("Incorrect symbol");
+      return;
+    }
+    if (currentInput === 3) {
+      console.log(JSON.stringify(formData));
+      const interval = formData.interval.value || validRanges[formData.duration.value][0];
+
       const searchParams = new URLSearchParams({
         symbol: formData.symbol.value,
-        interval: formData.interval.value,
+        interval: interval,
         duration: formData.duration.value,
-        strategy: formData.strategy.value,
       });
-      router.replace(`/?${searchParams.toString()}`);
-      console.log("✅ URL updated", searchParams.toString());
-      setError('');
+      router.replace(`/chart?${searchParams.toString()}`);
     }
-    else{
-      setError(checkFormValidity(formData));
-    }
-  }, [formData]);
+    setCurrentInput((old) => old + 1);
+  }
 
   return (
-    <form className={classes.formDiv}>
-      <div>
-        <label>Symbol</label>
-        <input
-          type="text"
-          name="symbol"
-          value={formData.symbol.value}
-          onChange={handleChange}
-        />
-      </div>
+    <form
+      className={classes.formDiv}
+      onSubmit={(e) => e.preventDefault()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault(); // stop default submit
+          handleContinue();
+        }
+      }}
+    >
+      {currentInput === 0 && (
+        <Symbol value={formData.symbol.value} onChange={handleChange} />
+      )}
 
-      <div>
-        <label>Interval</label>
-        <select
-          name="interval"
+      {currentInput === 1 && (
+        <TimePeriod value={formData.duration.value} onChange={handleChange} />
+      )}
+
+      {currentInput === 2 && (
+        <Interval
           value={formData.interval.value}
           onChange={handleChange}
-        >
-          <option>1m</option>
-          <option>2m</option>
-          <option>5m</option>
-          <option>15m</option>
-          <option>30m</option>
-          <option>60m</option>
-          <option>90m</option>
-          <option>1h</option>
-          <option>4h</option>
-          <option>1d</option>
-          <option>5d</option>
-          <option>1wk</option>
-          <option>1mo</option>
-          <option>3mo</option>
-        </select>
-      </div>
+          availableIntervals={validRanges[formData.duration.value]}
+        />
+      )}
 
-      <div>
-        <label>Time period</label>
-        <select
-          name="duration"
-          value={formData.duration.value}
-          onChange={handleChange}
-        >
-          <option>1d</option>
-          <option>5d</option>
-          <option>1mo</option>
-          <option>3mo</option>
-          <option>6mo</option>
-          <option>1y</option>
-          <option>2y</option>
-          <option>5y</option>
-          <option>10y</option>
-          <option>ytd</option>
-          <option>max</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Strategy</label>
-        <select
-          name="strategy"
+      {currentInput === 3 && (
+        <Strategy
           value={formData.strategy.value}
           onChange={handleChange}
-        >
-          <option>DummyStrategy</option>
-          <option>AnotherDummyStrategy</option>
-        </select>
-      </div>
-
+          availableStrategies={["Dummy strategy", "Another dummy strategy"]}
+        />
+      )}
+      <p>{JSON.stringify(formData)}</p>
+      <button type="button" onClick={handleContinue}>
+        Continue
+      </button>
       {error && <p>{error}</p>}
     </form>
   );
