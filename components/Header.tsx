@@ -11,7 +11,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     <header className={classes.header}>
       <Link href={'/'}>
         <h1>
-            React Strategy Visuliser
+            React Strategy Visualiser
         </h1>
         </Link>
     </header>
