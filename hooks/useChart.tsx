@@ -1,30 +1,39 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { getCandlestickChartData, getTradeMarkers } from "@/util/serverFetch";
-import { useSearchParams } from "next/navigation";
-import CandlestickChart from "./CandlestickChart";
-import { SeriesMarker, Time } from "lightweight-charts";
 import { checkFormValidity } from "@/util/formCheck";
+import {
+  getCandlestickChartData,
+  getTradeDataForStrategy,
+} from "@/util/serverFetch";
+import { getTradeMarkers } from "@/util/util";
+import { SeriesMarker, Time } from "lightweight-charts";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import classes from "./CandlestickChartFetcher.module.css";
+import { useEffect, useState } from "react";
 
-interface CandlestickChartFetcherProps {
-  //searchParams: Promise<{ [key: string]: string | undefined }>;
-  onLoad?: () => void;
-}
-
-const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
-  onLoad,
-}) => {
+export function useChartData(
+  {
+    symbol,
+    interval,
+    duration,
+    strategy,
+  }: { symbol: string; interval: string; duration: string; strategy: string },
+  redirectPathOnInvalid: string
+): {
+  error: string;
+  strategyData: {time: number, amount: number}[];
+  loading: boolean;
+  transformedData: {
+    longName: string;
+    symbol: string;
+    candles: {
+      time: string;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+    }[];
+  };
+} {
   const router = useRouter();
   const [error, setError] = useState("");
-  const searchParams = useSearchParams();
-  const symbol = searchParams.get("symbol") || "";
-  const interval = searchParams.get("interval") || "";
-  const duration = searchParams.get("duration") || "";
-  const strategy = searchParams.get("strategy") || "";
-
   const [transformedData, setTransformedData] = useState<{
     longName: string;
     symbol: string;
@@ -36,13 +45,14 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
       close: number;
     }[];
   }>({ longName: "", symbol: "", candles: [] });
-  const [tradeMarkers, setTradeMarkers] = useState<SeriesMarker<Time>[]>([]);
-  const [loadingCount, setLoadingCount] = useState(2);
-  const loading = loadingCount > 0;
+  const [loading, setLoading] = useState(true);
+  const [strategyData, setStrategyData] = useState<
+    { time: number; amount: number }[]
+  >([]);
 
   useEffect(() => {
     if (!interval || !duration || !symbol) {
-      router.push("/");
+      router.push(redirectPathOnInvalid);
     }
     const errorMsg = checkFormValidity({
       symbol: { value: symbol, timeout: true },
@@ -55,8 +65,8 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
 
     if (errorMsg) {
       setTransformedData({ longName: "", symbol: "", candles: [] });
-      setTradeMarkers([]);
-      setLoadingCount(0);
+      setStrategyData([]);
+      setLoading(false);
       return; // Don't fetch invalid data
     }
 
@@ -110,58 +120,31 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
         setError("An error occurred while fetching chart data.");
         console.error(e);
       } finally {
-        setLoadingCount((old) => {
-          return old - 1;
-        });
+        await handleGetTradeMarkers();
+        setLoading(false);
       }
     }
-
     async function handleGetTradeMarkers() {
       try {
-        const data = await getTradeMarkers({
+        const data = await getTradeDataForStrategy({
           symbol,
           interval,
           duration,
           strategy,
         });
         if (data.error) setError(data.error);
-        else setTradeMarkers(data.data);
+        else {
+          setStrategyData(data.data);
+        }
       } catch (e) {
         setError("An error occurred while fetching trade markers.");
         console.error(e);
-      } finally {
-        setLoadingCount((old) => old - 1);
       }
     }
 
-    setLoadingCount(2);
+    setLoading(true);
     handleGetChartData();
-    handleGetTradeMarkers();
   }, [symbol, interval, duration, strategy]);
 
-  return (
-    <>
-      {loading && !error && <p>Loading...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {!loading && !error && (
-        <motion.div
-          initial={{ opacity: 0, y: -200 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring" }}
-          className={classes.div}
-        >
-          <h2>{transformedData.longName}</h2>
-          <h3>{transformedData.symbol}</h3>
-          <CandlestickChart
-            width={1060}
-            height={580}
-            candles={transformedData.candles}
-            tradeMarkers={tradeMarkers}
-          />
-        </motion.div>
-      )}
-    </>
-  );
-};
-
-export default CandlestickChartFetcher;
+  return { error, loading, strategyData, transformedData };
+}

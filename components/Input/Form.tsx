@@ -44,7 +44,7 @@ const Form: React.FC<FormProps> = () => {
       setError("Incorrect symbol");
       return;
     }
-    if (Object.values(formData).filter(p => p.value).length <= currentInput) {
+    if (Object.values(formData).filter((p) => p.value).length <= currentInput) {
       setError("Please select a value.");
       return;
     }
@@ -57,6 +57,7 @@ const Form: React.FC<FormProps> = () => {
         symbol: formData.symbol.value,
         interval: interval,
         duration: formData.duration.value,
+        strategy: formData.strategy.value,
       });
       router.replace(`/chart?${searchParams.toString()}`);
     }
@@ -73,9 +74,7 @@ const Form: React.FC<FormProps> = () => {
             onChange={handleChange}
             handleContinue={handleContinue}
           >
-            <AnimationButton onClick={handleContinue}>
-              Continue
-            </AnimationButton>
+            <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
             {error && <p>{error}</p>}
           </Symbol>
         )}
@@ -87,9 +86,7 @@ const Form: React.FC<FormProps> = () => {
             onChange={handleChange}
             handleContinue={handleContinue}
           >
-            <AnimationButton onClick={handleContinue}>
-              Continue
-            </AnimationButton>
+            <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
             {error && <p>{error}</p>}
           </TimePeriod>
         )}
@@ -102,9 +99,7 @@ const Form: React.FC<FormProps> = () => {
             availableIntervals={validRanges[formData.duration.value]}
             handleContinue={handleContinue}
           >
-            <AnimationButton onClick={handleContinue}>
-              Continue
-            </AnimationButton>
+            <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
             {error && <p>{error}</p>}
           </Interval>
         )}
@@ -117,9 +112,7 @@ const Form: React.FC<FormProps> = () => {
             availableStrategies={["Dummy strategy", "Another dummy strategy"]}
             handleContinue={handleContinue}
           >
-            <AnimationButton onClick={handleContinue}>
-              Continue
-            </AnimationButton>
+            <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
             {error && <p>{error}</p>}
           </Strategy>
         )}

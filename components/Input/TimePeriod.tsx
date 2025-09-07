@@ -42,6 +42,7 @@ const TimePeriod: React.FC<TimePeriodProps> = ({
           value={value}
           initialText="Plese select a time period"
         />
+        
         {children}
       </div>
     </AnimationWrapper>
