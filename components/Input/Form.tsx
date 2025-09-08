@@ -18,6 +18,8 @@ const Form: React.FC<FormProps> = () => {
   const [formData, setFormData] = useState({
     symbol: { value: "" },
     interval: { value: "" },
+    period1: {value: ''},
+    period2: {value: ''},
     duration: { value: "" },
     strategy: { value: "" },
   });
