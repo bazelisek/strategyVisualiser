@@ -5,6 +5,8 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { format } from "date-fns";
+import { ThemeProvider } from "@emotion/react";
+import { createTheme } from "@mui/material/styles";
 
 interface TimeProps {
   children?: ReactNode;
@@ -15,7 +17,20 @@ interface TimeProps {
   ) => void;
   handleContinue: () => void;
 }
-
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark", // this is key
+  },
+  components: {
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          // optional: tweak padding, colors, etc.
+        },
+      },
+    },
+  },
+});
 const Time: React.FC<TimeProps> = ({
   valueFrom,
   valueTo,
@@ -40,58 +55,71 @@ const Time: React.FC<TimeProps> = ({
     <AnimationWrapper handleContinue={handleContinue}>
       <div>
         <h2>Please select the time period you want to chart the graph for.</h2>
-
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <DateTimePicker
-            label="From"
-            value={fromDate}
-            onChange={(newValue) => {
-              if (newValue) {
-                const fixed = normalizeToMidnight(newValue);
-                onChange({
-                  target: {
-                    name: "period1",
-                    value: format(fixed, "yyyy-MM-dd'T'HH:mm"),
+        <ThemeProvider theme={darkTheme}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DateTimePicker
+              label="From"
+              value={fromDate}
+              onChange={(newValue) => {
+                if (newValue) {
+                  const fixed = normalizeToMidnight(newValue);
+                  onChange({
+                    target: {
+                      name: "period1",
+                      value: format(fixed, "yyyy-MM-dd'T'HH:mm"),
+                    },
+                  } as React.ChangeEvent<HTMLInputElement>);
+                }
+              }}
+              format="dd.MM.yyyy HH:mm" // display format
+              maxDateTime={toDate || undefined} // ensures From < To
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  margin: "normal" as const,
+                  InputProps: {
+                    sx: {
+                      padding: "0.7rem 0.9rem",
+                    },
                   },
-                } as React.ChangeEvent<HTMLInputElement>);
-              }
-            }}
-            format="dd.MM.yyyy HH:mm" // display format
-            maxDateTime={toDate || undefined} // ensures From < To
-            slotProps={{
-              textField: {
-                fullWidth: true,
-                margin: "normal",
-              },
-            }}
-          />
+                },
+              }}
+            />
 
-          <DateTimePicker
-            label="To"
-            value={toDate}
-            onChange={(newValue) => {
-              if (newValue) {
-                const fixed = normalizeToMidnight(newValue);
-                const newDate = new Date(fixed.getTime() + (23 * 60 + 59) * 60 * 1000); // set to end of day
-                onChange({
-                  target: {
-                    name: "period2",
-                    value: format(newDate, "yyyy-MM-dd'T'HH:mm"),
+            <DateTimePicker
+              label="To"
+              value={toDate}
+              onChange={(newValue) => {
+                if (newValue) {
+                  const fixed = normalizeToMidnight(newValue);
+                  const newDate = new Date(
+                    fixed.getTime() + (23 * 60 + 59) * 60 * 1000
+                  ); // set to end of day
+                  onChange({
+                    target: {
+                      name: "period2",
+                      value: format(newDate, "yyyy-MM-dd'T'HH:mm"),
+                    },
+                  } as React.ChangeEvent<HTMLInputElement>);
+                }
+              }}
+              format="dd.MM.yyyy HH:mm"
+              minDateTime={fromDate || undefined} // ensures To > From
+              maxDateTime={new Date()}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  margin: "normal" as const,
+                  InputProps: {
+                    sx: {
+                      padding: "0.7rem 0.9rem",
+                    },
                   },
-                } as React.ChangeEvent<HTMLInputElement>);
-              }
-            }}
-            format="dd.MM.yyyy HH:mm"
-            minDateTime={fromDate || undefined} // ensures To > From
-            maxDateTime={new Date()}
-            slotProps={{
-              textField: {
-                fullWidth: true,
-                margin: "normal",
-              },
-            }}
-          />
-        </LocalizationProvider>
+                },
+              }}
+            />
+          </LocalizationProvider>
+        </ThemeProvider>
 
         {children}
       </div>
