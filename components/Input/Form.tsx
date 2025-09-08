@@ -14,6 +14,7 @@ interface FormProps {
   children?: React.ReactNode;
 }
 
+
 const Form: React.FC<FormProps> = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -60,8 +61,8 @@ const Form: React.FC<FormProps> = () => {
       const searchParams = new URLSearchParams({
         symbol: formData.symbol.value,
         interval: interval,
-        period1: Math.floor(new Date(formData.period1.value).getTime()/1000).toString(),
-        period2: Math.floor(new Date(formData.period2.value).getTime()/1000).toString(),
+        period1: (Math.floor(new Date(formData.period1.value).getTime()/1000)).toString(),
+        period2: (Math.floor(new Date(formData.period2.value).getTime()/1000)).toString(),
         //duration: formData.duration.value,
         strategy: formData.strategy.value,
       });

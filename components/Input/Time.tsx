@@ -27,11 +27,11 @@ const Time: React.FC<TimeProps> = ({
   const toDate = valueTo ? new Date(valueTo) : null;
 
   // helper: normalize to 13:30 if only date is picked
-  const normalizeTo1330 = (date: Date) => {
+  const normalizeToMidnight = (date: Date) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     if (hours === 0 && minutes === 0) {
-      date.setHours(13, 30, 0, 0);
+      date.setHours(0, 0, 0, 0);
     }
     return date;
   };
@@ -47,7 +47,7 @@ const Time: React.FC<TimeProps> = ({
             value={fromDate}
             onChange={(newValue) => {
               if (newValue) {
-                const fixed = normalizeTo1330(newValue);
+                const fixed = normalizeToMidnight(newValue);
                 onChange({
                   target: {
                     name: "period1",
@@ -71,11 +71,12 @@ const Time: React.FC<TimeProps> = ({
             value={toDate}
             onChange={(newValue) => {
               if (newValue) {
-                const fixed = normalizeTo1330(newValue);
+                const fixed = normalizeToMidnight(newValue);
+                const newDate = new Date(fixed.getTime() + (23 * 60 + 59) * 60 * 1000); // set to end of day
                 onChange({
                   target: {
                     name: "period2",
-                    value: format(fixed, "yyyy-MM-dd'T'HH:mm"),
+                    value: format(newDate, "yyyy-MM-dd'T'HH:mm"),
                   },
                 } as React.ChangeEvent<HTMLInputElement>);
               }
