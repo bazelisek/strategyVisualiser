@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Symbol from "./Symbol";
 import Interval from "./Interval";
-import TimePeriod from "./TimePeriod";
 import Strategy from "./Strategy";
 import { AnimatePresence } from "framer-motion";
 import AnimationButton from "./AnimationButton";
