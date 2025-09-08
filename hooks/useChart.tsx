@@ -12,13 +12,20 @@ export function useChartData(
   {
     symbol,
     interval,
-    duration,
+    period1,
+    period2,
     strategy,
-  }: { symbol: string; interval: string; duration: string; strategy: string },
+  }: {
+    symbol: string;
+    interval: string;
+    period2: string;
+    period1: string;
+    strategy: string;
+  },
   redirectPathOnInvalid: string
 ): {
   error: string;
-  strategyData: {time: number, amount: number}[];
+  strategyData: { time: number; amount: number }[];
   loading: boolean;
   transformedData: {
     longName: string;
@@ -51,14 +58,15 @@ export function useChartData(
   >([]);
 
   useEffect(() => {
-    if (!interval || !duration || !symbol) {
+    if (!interval || !period1 || !period2 || !symbol) {
       router.push(redirectPathOnInvalid);
     }
     const errorMsg = checkFormValidity({
-      symbol: { value: symbol, timeout: true },
-      interval: { value: interval, timeout: true },
-      duration: { value: duration, timeout: true },
-      strategy: { value: strategy, timeout: true },
+      symbol: { value: symbol },
+      interval: { value: interval },
+      period1: { value: period1 },
+      period2: { value: period2 },
+      strategy: { value: strategy },
     });
 
     setError(errorMsg);
@@ -75,7 +83,8 @@ export function useChartData(
         const data = await getCandlestickChartData({
           symbol,
           interval,
-          duration,
+          period1,
+          period2,
           strategy,
         });
         if (data.error) {
@@ -129,7 +138,8 @@ export function useChartData(
         const data = await getTradeDataForStrategy({
           symbol,
           interval,
-          duration,
+          period1,
+          period2,
           strategy,
         });
         if (data.error) setError(data.error);
@@ -144,7 +154,7 @@ export function useChartData(
 
     setLoading(true);
     handleGetChartData();
-  }, [symbol, interval, duration, strategy]);
+  }, [symbol, interval, period1, period2, strategy]);
 
   return { error, loading, strategyData, transformedData };
 }

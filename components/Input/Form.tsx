@@ -1,13 +1,13 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { validRanges } from "@/util/formCheck";
 import Symbol from "./Symbol";
 import Interval from "./Interval";
 import TimePeriod from "./TimePeriod";
 import Strategy from "./Strategy";
 import { AnimatePresence } from "framer-motion";
 import AnimationButton from "./AnimationButton";
+import Time from "./Time";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -18,9 +18,9 @@ const Form: React.FC<FormProps> = () => {
   const [formData, setFormData] = useState({
     symbol: { value: "" },
     interval: { value: "" },
-    period1: {value: ''},
-    period2: {value: ''},
-    duration: { value: "" },
+    period1: { value: "" },
+    period2: { value: "" },
+    //duration: { value: "" },
     strategy: { value: "" },
   });
   const [error, setError] = useState("");
@@ -53,12 +53,15 @@ const Form: React.FC<FormProps> = () => {
     if (currentInput === 3) {
       console.log(JSON.stringify(formData));
       const interval =
-        formData.interval.value || validRanges[formData.duration.value][0];
-
+        formData.interval.value ||
+        "1d"; /*validRanges[formData.duration.value][0]*/
+      
       const searchParams = new URLSearchParams({
         symbol: formData.symbol.value,
         interval: interval,
-        duration: formData.duration.value,
+        period1: Math.floor(new Date(formData.period1.value).getTime()/1000).toString(),
+        period2: Math.floor(new Date(formData.period2.value).getTime()/1000).toString(),
+        //duration: formData.duration.value,
         strategy: formData.strategy.value,
       });
       router.replace(`/chart?${searchParams.toString()}`);
@@ -82,7 +85,17 @@ const Form: React.FC<FormProps> = () => {
         )}
 
         {currentInput === 1 && (
-          <TimePeriod
+          <Time
+            valueFrom={formData.period1.value}
+            onChange={handleChange}
+            valueTo={formData.period2.value}
+            handleContinue={handleContinue}
+            key="time-step"
+          >
+            <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
+            {error && <p>{error}</p>}
+          </Time>
+          /*<TimePeriod
             key="time-period-step"
             value={formData.duration.value}
             onChange={handleChange}
@@ -90,7 +103,7 @@ const Form: React.FC<FormProps> = () => {
           >
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
             {error && <p>{error}</p>}
-          </TimePeriod>
+          </TimePeriod>*/
         )}
 
         {currentInput === 2 && (
@@ -98,7 +111,7 @@ const Form: React.FC<FormProps> = () => {
             key="interval-step"
             value={formData.interval.value}
             onChange={handleChange}
-            availableIntervals={validRanges[formData.duration.value]}
+            availableIntervals={["1d"] /*validRanges[formData.duration.value]*/}
             handleContinue={handleContinue}
           >
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>

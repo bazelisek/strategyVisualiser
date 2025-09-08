@@ -6,18 +6,20 @@ import { SeriesMarker, Time, UTCTimestamp } from "lightweight-charts";
 export async function getCandlestickChartData({
   symbol,
   interval,
-  duration,
+  period1,
+  period2,
   strategy,
 }: {
   symbol: any;
   interval: any;
-  duration: any;
+  period1: any;
+  period2: any;
   strategy: any;
 }) {
   //console.log("exec");
 
   const { data, error } = await fetchDataFromUrl(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&range=${duration}`
+    `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&period1=${period1}&period2=${period2}`
   );
   //const { data, error } = await fetchChartData(symbol, interval, duration);
   //console.log(JSON.stringify(data));
@@ -65,16 +67,18 @@ export async function getCandlestickChartData({
 export async function getTradeDataForStrategy({
   symbol,
   interval,
-  duration,
+  period1,
+  period2,
   strategy,
 }: {
   symbol: any;
   interval: any;
-  duration: any;
+  period1: any;
+  period2: any;
   strategy: any;
 }) {
   /*const { data, error } = await fetchDataFromUrl(
-    `https://DUMMYURL/api/getStrategy/${symbol}?interval=${interval}&range=${duration}&strategy=${strategy}`
+    `https://DUMMYURL/api/getStrategy/${symbol}?interval=${interval}&period1=${period1}&period2={period2}&strategy=${strategy}`
   );
   if (error) {
     return { data: [], error };

@@ -16,10 +16,11 @@ const ChartSection: React.FC<ChartSectionProps> = (props) => {
   const searchParams = useSearchParams();
   const symbol = searchParams.get("symbol") || "";
   const interval = searchParams.get("interval") || "";
-  const duration = searchParams.get("duration") || "";
+  const period1 = searchParams.get("period1") || "";
+  const period2 = searchParams.get("period2") || "";
   const strategy = searchParams.get("strategy") || "";
   const { strategyData, loading, transformedData, error } = useChartData(
-    { symbol, interval, duration, strategy },
+    { symbol, interval, period1, period2, strategy },
     "/"
   );
   const tradeMarkers = getTradeMarkers(strategyData);
