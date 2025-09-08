@@ -8,6 +8,8 @@ import Strategy from "./Strategy";
 import { AnimatePresence } from "framer-motion";
 import AnimationButton from "./AnimationButton";
 import Time from "./Time";
+import { getValidIntervals } from "@/util/formCheck";
+import { form } from "framer-motion/client";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -54,7 +56,7 @@ const Form: React.FC<FormProps> = () => {
       console.log(JSON.stringify(formData));
       const interval =
         formData.interval.value ||
-        "1d"; /*validRanges[formData.duration.value][0]*/
+        getValidIntervals(new Date(formData.period1.value), new Date(formData.period2.value))[0]; /*validRanges[formData.duration.value][0]*/
       
       const searchParams = new URLSearchParams({
         symbol: formData.symbol.value,
@@ -111,7 +113,7 @@ const Form: React.FC<FormProps> = () => {
             key="interval-step"
             value={formData.interval.value}
             onChange={handleChange}
-            availableIntervals={["1d"] /*validRanges[formData.duration.value]*/}
+            availableIntervals={getValidIntervals(new Date(formData.period1.value), new Date(formData.period2.value)) /*validRanges[formData.duration.value]*/}
             handleContinue={handleContinue}
           >
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
