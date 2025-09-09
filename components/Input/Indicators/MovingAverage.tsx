@@ -8,16 +8,23 @@ interface MovingAverageProps {
 }
 
 const MovingAverage: React.FC<MovingAverageProps> = (props) => {
-    const indicators = useSelector((state: any) => state.indicators);
+  const indicators = useSelector((state: any) => state.indicators);
   const dispatch = useDispatch();
   function handleMovingAverageToggle(value: boolean) {
-    dispatch(setIndicatorsVisibility({ indicator: 'movingAverage', value: value }));
+    dispatch(
+      setIndicatorsVisibility({ indicator: "movingAverage", value: value })
+    );
   }
 
-  return <div>
-        <p>MovingAverage</p>
-        <Switch isChecked={indicators.movingAverage.visible} clickHandler={handleMovingAverageToggle} />
-    </div>;
+  return (
+    <div>
+      <p>MovingAverage</p>
+      <Switch
+        isChecked={indicators.movingAverage.visible}
+        clickHandler={handleMovingAverageToggle}
+      />
+    </div>
+  );
 };
 
 export default MovingAverage;
