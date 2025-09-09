@@ -21,12 +21,25 @@ interface CandlestickChartFetcherProps {
       close: number;
     }[];
   };
+  maData: (
+    | {
+        time: string;
+      }
+    | {
+        time: string;
+        value: number;
+      }
+  )[];
   error: string;
 }
 
-const CandlestickChartFetcher: React.FC<
-  CandlestickChartFetcherProps
-> = ({tradeMarkers, loading, transformedData, error}) => {
+const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
+  tradeMarkers,
+  loading,
+  transformedData,
+  error,
+  maData,
+}) => {
   // místo useRef:
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const [chartWidth, setChartWidth] = useState<number>(1060); // fallback
@@ -78,6 +91,7 @@ const CandlestickChartFetcher: React.FC<
           <CandlestickChart
             width={chartWidth}
             height={580}
+            maData={maData}
             candles={transformedData.candles}
             tradeMarkers={tradeMarkers}
           />

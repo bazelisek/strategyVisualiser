@@ -10,6 +10,7 @@ import {
   ColorType,
   UTCTimestamp,
   CandlestickData,
+  LineSeries,
 } from "lightweight-charts";
 import React, { ReactNode, useEffect } from "react";
 
@@ -24,6 +25,15 @@ interface CandlestickChartProps {
     low: number;
     close: number;
   }[];
+  maData: (
+    | {
+        time: string;
+      }
+    | {
+        time: string;
+        value: number;
+      }
+  )[];
   tradeMarkers: SeriesMarker<Time>[];
 }
 
@@ -32,6 +42,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   height,
   candles,
   tradeMarkers,
+  maData,
 }) => {
   const chartRef = React.useRef<HTMLDivElement>(null);
 
@@ -62,6 +73,9 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         secondsVisible: true,
       },
     });
+
+    const maSeries = chart.addSeries(LineSeries, {color: '#2962FF', lineWidth: 1 });
+    maSeries.setData(maData);
 
     const series = chart.addSeries(CandlestickSeries, {
       upColor: "#26a69a",
