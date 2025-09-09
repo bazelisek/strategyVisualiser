@@ -3,7 +3,7 @@ import { useChartData } from "@/hooks/useChart";
 import { calculateMovingAverageSeriesData, getTradeMarkers } from "@/util/util";
 import { useSearchParams } from "next/navigation";
 import React, { ReactNode } from "react";
-import CandlestickChartFetcher from "./Chart/CandlestickChartWrapper";
+import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
 import { motion } from "framer-motion";
 import classes from "./ChartSection.module.css";
 import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
@@ -24,15 +24,13 @@ const ChartSection: React.FC<ChartSectionProps> = (props) => {
     "/"
   );
   const tradeMarkers = getTradeMarkers(strategyData);
-  const maData = calculateMovingAverageSeriesData(transformedData.candles, 20);
   return (
     <>
-      <CandlestickChartFetcher
+      <CandlestickChartWrapper
         error={error}
         loading={loading}
         transformedData={transformedData}
         tradeMarkers={tradeMarkers}
-        maData={maData}
       />
       {!loading && !error && (
         <motion.div

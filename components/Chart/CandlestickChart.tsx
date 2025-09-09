@@ -1,5 +1,6 @@
 "use client";
 
+import { calculateMovingAverageSeriesData } from "@/util/util";
 import {
   createChart,
   CandlestickSeries,
@@ -13,6 +14,7 @@ import {
   LineSeries,
 } from "lightweight-charts";
 import React, { ReactNode, useEffect } from "react";
+import { useSelector } from "react-redux";
 
 interface CandlestickChartProps {
   children?: ReactNode;
@@ -25,15 +27,6 @@ interface CandlestickChartProps {
     low: number;
     close: number;
   }[];
-  maData: (
-    | {
-        time: string;
-      }
-    | {
-        time: string;
-        value: number;
-      }
-  )[];
   tradeMarkers: SeriesMarker<Time>[];
 }
 
@@ -42,8 +35,8 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   height,
   candles,
   tradeMarkers,
-  maData,
 }) => {
+  const indicatorSlice = useSelector((state: any) => state.indicators);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,9 +67,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       },
     });
 
-    const maSeries = chart.addSeries(LineSeries, {color: '#2962FF', lineWidth: 1 });
-    maSeries.setData(maData);
-
+    if (indicatorSlice.movingAverage.visible) {
+      const maSeries = chart.addSeries(LineSeries, {color: '#2962FF', lineWidth: 1 });
+      const maData = calculateMovingAverageSeriesData(candles, indicatorSlice.movingAverage.value.maLength);
+      maSeries.setData(maData);
+    }
+    
     const series = chart.addSeries(CandlestickSeries, {
       upColor: "#26a69a",
       downColor: "#ef5350",
@@ -113,7 +109,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     return () => {
       chart.remove();
     };
-  }, [width, height, candles, tradeMarkers]);
+  }, [width, height, candles, tradeMarkers, indicatorSlice]);
 
   return <div ref={chartRef} />;
 };

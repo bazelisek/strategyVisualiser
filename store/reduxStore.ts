@@ -7,22 +7,40 @@ const initialState = {
     strategy: "DummyStrategy",
   };
 
-const configSlice = createSlice({
-  name: "posts",
+const indicatorSlice = createSlice({
+  name: "indicators",
 
-  initialState: initialState,
+  initialState: {
+    movingAverage: { visible: true, value: { maLength: 20 } },
+    onBalanceVolume: { visible: false, value: {} },
+  },
 
   reducers: {
-    setConfigState: (state, action: PayloadAction<typeof initialState>) => {
-      state = action.payload;
+    setIndicators: (
+      state,
+      action: PayloadAction<{ indicator: keyof typeof state; value: any }>
+    ) => {
+      const indicator = action.payload.indicator;
+      if (state[indicator]) {
+        state[indicator].value = action.payload.value;
+      }
+    },
+    setIndicatorsVisibility: (
+      state,
+      action: PayloadAction<{ indicator: keyof typeof state, value: boolean }>
+    ) => {
+      const indicator = action.payload.indicator;
+      if (state[indicator]) {
+        state[indicator].visible = action.payload.value;
+      }
     },
   },
 });
 
-export const { setConfigState } = configSlice.actions;
+export const { setIndicators, setIndicatorsVisibility } = indicatorSlice.actions;
 
 export const store = configureStore({
-  reducer: { config: configSlice.reducer },
+  reducer: { indicators: indicatorSlice.reducer },
 });
 
 export type RootState = ReturnType<typeof store.getState>;

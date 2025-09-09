@@ -1,0 +1,39 @@
+.switch {
+  display: flex;
+  cursor: pointer;
+  user-select: none;
+  align-items: center;
+}
+
+.checkbox {
+  display: none; /* hide native checkbox */
+}
+
+.slider {
+  position: relative;
+  display: block;
+  width: 56px;   /* 14 * 4px (tailwind w-14) */
+  height: 32px;  /* 8 * 4px (tailwind h-8) */
+  background-color: #e5e7eb;
+  border-radius: 9999px; /* full round */
+  transition: background-color 0.2s ease;
+}
+
+.dot {
+  position: absolute;
+  top: 4px;   /* 1 * 4px (tailwind top-1) */
+  left: 4px;  /* 1 * 4px (tailwind left-1) */
+  width: 24px; /* 6 * 4px */
+  height: 24px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.checked {
+  background-color: #4ade80; /* nice green for "on" */
+}
+
+.checked .dot {
+  transform: translateX(24px); /* move dot right */
+}

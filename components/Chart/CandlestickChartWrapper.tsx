@@ -4,8 +4,9 @@ import CandlestickChart from "./CandlestickChart";
 import { motion } from "framer-motion";
 import classes from "./CandlestickChartWrapper.module.css";
 import { SeriesMarker, Time } from "lightweight-charts";
+import ShowModalButton from "../Input/Indicators/ShowModalButton";
 
-interface CandlestickChartFetcherProps {
+interface CandlestickChartWrapperProps {
   //searchParams: Promise<{ [key: string]: string | undefined }>;
   //onLoad?: () => void;
   tradeMarkers: SeriesMarker<Time>[];
@@ -21,24 +22,14 @@ interface CandlestickChartFetcherProps {
       close: number;
     }[];
   };
-  maData: (
-    | {
-        time: string;
-      }
-    | {
-        time: string;
-        value: number;
-      }
-  )[];
   error: string;
 }
 
-const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
+const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
   tradeMarkers,
   loading,
   transformedData,
   error,
-  maData,
 }) => {
   // místo useRef:
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
@@ -85,13 +76,13 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring" }}
           className={classes.div}
-        >
+        > 
+          <ShowModalButton />
           <h2>{transformedData.longName}</h2>
           <h3>{transformedData.symbol}</h3>
           <CandlestickChart
             width={chartWidth}
             height={580}
-            maData={maData}
             candles={transformedData.candles}
             tradeMarkers={tradeMarkers}
           />
@@ -101,4 +92,4 @@ const CandlestickChartFetcher: React.FC<CandlestickChartFetcherProps> = ({
   );
 };
 
-export default CandlestickChartFetcher;
+export default CandlestickChartWrapper;
