@@ -1,5 +1,6 @@
 import React, { ReactNode, useImperativeHandle, useRef } from "react";
 import MovingAverage from "./MovingAverage";
+import classes from './IndicatorsModal.module.css';
 
 interface IndicatorsModalProps {
   children?: ReactNode;
@@ -19,8 +20,11 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({ ref }) => {
     };
   });
   return (
-    <dialog ref={dialogRef}>
-      <h2>Dialog</h2>
+    <dialog className={classes.modal} ref={dialogRef}>
+      <div className={classes.header}>
+        <h2>Indicators</h2>
+        <button onClick={() => dialogRef.current?.close()}>&#10005;</button>
+      </div>
       <MovingAverage />
     </dialog>
   );

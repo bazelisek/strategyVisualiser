@@ -24,20 +24,24 @@ export function calculateMovingAverageSeriesData(
   }[],
   maLength: number
 ) {
-  const maData = [];
+  // filter invalid candles (close must be > 0 and finite)
+  const validCandles = candleData.filter(
+    (c) => c && Number.isFinite(c.close) && c.close > 0
+  );
 
-  for (let i = 0; i < candleData.length; i++) {
-    if (i < maLength) {
-      // Provide whitespace data points until the MA can be calculated
-      maData.push({ time: candleData[i].time });
+  const maData: { time: string; value?: number }[] = [];
+
+  for (let i = 0; i < validCandles.length; i++) {
+    if (i < maLength - 1) {
+      // not enough candles yet → placeholder point
+      maData.push({ time: validCandles[i].time });
     } else {
-      // Calculate the moving average, slow but simple way
       let sum = 0;
       for (let j = 0; j < maLength; j++) {
-        sum += candleData[i - j].close;
+        sum += validCandles[i - j].close;
       }
       const maValue = sum / maLength;
-      maData.push({ time: candleData[i].time, value: maValue });
+      maData.push({ time: validCandles[i].time, value: maValue });
     }
   }
 

@@ -1,0 +1,39 @@
+.modal {
+  min-width: 500px;
+  border-radius: 35px;
+  border-color: var(--accent);
+  background-color: var(--background);
+  color: var(--foreground);
+  box-shadow: 1px 1px 10px var(--accent);
+  padding: 30px;
+}
+.modal h2 {
+  color: var(--accent);
+}
+.modal input {
+  background-color: var(--background-light);
+  border-color: var(--accent);
+  padding: 5px;
+  border-radius: 10px;
+  -moz-appearance: textfield;
+  color: var(--foreground);
+  width: 60px;
+  height: 100%;
+}
+.modal input::-webkit-outer-spin-button,
+.modal input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.modal input:focus {
+    outline: none;
+    box-shadow: 1px 1px 4px var(--accent);
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header button {
+  background-color: var(--accent);
+}

@@ -1,0 +1,45 @@
+.alignmentDiv {
+    display: flex;
+    gap: 5px;
+}
+.inputWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.inputWrapper input {
+  background-color: var(--background-light);
+  border: 1px solid var(--accent);
+  padding: 8px 5px 5px 5px;
+  border-radius: 10px;
+  color: var(--foreground);
+  width: 60px;
+}
+
+.inputWrapper input:focus {
+  outline: none;
+  box-shadow: 1px 1px 4px var(--accent);
+}
+
+/* Label hidden by default */
+.inputWrapper label {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  color: var(--accent);
+  pointer-events: none;
+  opacity: 0;
+  transition: 0.2s ease all;
+}
+
+/* Show + move label only when input is focused */
+.inputWrapper input:focus + label {
+  top: -8px;
+  left: 6px;
+  font-size: 0.7rem;
+  background-color: var(--background);
+  padding: 0 4px;
+  opacity: 1;
+}
