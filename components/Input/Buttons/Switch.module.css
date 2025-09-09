@@ -3,6 +3,7 @@
   cursor: pointer;
   user-select: none;
   align-items: center;
+  z-index: inherit;
 }
 
 .checkbox {

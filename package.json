@@ -22,7 +22,8 @@
     "react": "19.1.0",
     "react-datetime-picker": "^7.0.1",
     "react-dom": "19.1.0",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "technicalindicators": "^3.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -1,23 +1,23 @@
 "use client";
 
-import { calculateMovingAverageSeriesData } from "@/util/util";
+import React, { ReactNode, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
 import {
   createChart,
-  CandlestickSeries,
   CrosshairMode,
-  createSeriesMarkers,
-  SeriesMarker,
-  Time,
   ColorType,
   UTCTimestamp,
-  CandlestickData,
+  CandlestickSeries,
   LineSeries,
+  LineStyle,
 } from "lightweight-charts";
-import React, { ReactNode, useEffect } from "react";
-import { useSelector } from "react-redux";
+import {
+  calculateMovingAverageSeriesData,
+  calculateExponentialMovingAverageSeriesData,
+  calculateCCISeriesData,
+} from "@/util/util";
 
 interface CandlestickChartProps {
-  children?: ReactNode;
   width: number;
   height: number;
   candles: {
@@ -27,53 +27,77 @@ interface CandlestickChartProps {
     low: number;
     close: number;
   }[];
-  tradeMarkers: SeriesMarker<Time>[];
+  tradeMarkers: any[];
 }
 
 const CandlestickChart: React.FC<CandlestickChartProps> = ({
   width,
   height,
-  candles,
-  tradeMarkers,
+  candles
 }) => {
   const indicatorSlice = useSelector((state: any) => state.indicators);
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const cciRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const chart = createChart(chartRef.current, {
+    const topHeight = indicatorSlice.commodityChannelIndex.visible
+      ? height * 0.7
+      : height;
+    const bottomHeight = indicatorSlice.commodityChannelIndex.visible
+      ? height * 0.3
+      : 0;
+
+    const mainChart = createChart(chartRef.current, {
       width,
-      height,
+      height: topHeight,
       layout: {
         background: { color: "#1e1e2a", type: ColorType.Solid },
         textColor: "#d1d4dc",
         fontSize: 12,
       },
       grid: {
-        vertLines: { color: "#2b2b43", style: 1 },
-        horzLines: { color: "#2b2b43", style: 1 },
+        vertLines: { color: "#2b2b43", style: LineStyle.Solid },
+        horzLines: { color: "#2b2b43", style: LineStyle.Solid },
       },
-      crosshair: {
-        mode: CrosshairMode.MagnetOHLC,
-      },
-      rightPriceScale: {
-        borderVisible: false,
-      },
-      timeScale: {
-        borderColor: "#2b2b43",
-        timeVisible: true,
-        secondsVisible: true,
-      },
+      crosshair: { mode: CrosshairMode.MagnetOHLC },
+      rightPriceScale: { borderVisible: false },
+      timeScale: { borderColor: "#2b2b43", timeVisible: true },
     });
 
-    if (indicatorSlice.movingAverage.visible) {
-      const maSeries = chart.addSeries(LineSeries, {color: '#2962FF', lineWidth: 1 });
-      const maData = calculateMovingAverageSeriesData(candles, indicatorSlice.movingAverage.value.maLength);
-      maSeries.setData(maData);
+    let cciChart: ReturnType<typeof createChart> | null = null;
+    if (indicatorSlice.commodityChannelIndex.visible && cciRef.current) {
+      cciChart = createChart(cciRef.current, {
+        width,
+        height: bottomHeight,
+        layout: {
+          background: { color: "#1e1e2a", type: ColorType.Solid },
+          textColor: "#d1d4dc",
+          fontSize: 12,
+        },
+        grid: {
+          vertLines: { color: "#2b2b43", style: LineStyle.Solid },
+          horzLines: { color: "#2b2b43", style: LineStyle.Solid },
+        },
+        crosshair: { mode: CrosshairMode.MagnetOHLC },
+        rightPriceScale: { borderVisible: false },
+        timeScale: { borderColor: "#2b2b43", timeVisible: true },
+      });
     }
-    
-    const series = chart.addSeries(CandlestickSeries, {
+
+    // Sync time axis
+    mainChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+      if (range && cciChart) cciChart.timeScale().setVisibleLogicalRange(range);
+    });
+    if (cciChart) {
+      cciChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+        if (range) mainChart.timeScale().setVisibleLogicalRange(range);
+      });
+    }
+
+    // Candlesticks
+    const candleSeries = mainChart.addSeries(CandlestickSeries, {
       upColor: "#26a69a",
       downColor: "#ef5350",
       borderVisible: false,
@@ -83,8 +107,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       priceLineColor: "rgba(0,0,0,0.5)",
     });
 
-    //console.log(candles);
-    const data: CandlestickData<UTCTimestamp>[] = candles
+    const data = candles
       .map((c) => ({
         time: Number(c.time) as UTCTimestamp,
         open: c.open,
@@ -92,26 +115,66 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         low: c.low,
         close: c.close,
       }))
-      .filter(
-        (c) =>
-          c.open !== null &&
-          c.high !== null &&
-          c.low !== null &&
-          c.close !== null
-      )
+      .filter(({ open, high, low, close }) => [open, high, low, close].every(Number.isFinite))
       .sort((a, b) => a.time - b.time);
 
-    series.setData(data);
+    candleSeries.setData(data);
 
-    // Přidej markery
-    createSeriesMarkers(series, tradeMarkers);
+    // Moving Average
+    if (indicatorSlice.movingAverage.visible) {
+      const ma = mainChart.addSeries(LineSeries, {
+        color: "#2962FF",
+        lineWidth: 1,
+      });
+      ma.setData(
+        calculateMovingAverageSeriesData(
+          candles,
+          indicatorSlice.movingAverage.value.maLength
+        )
+      );
+    }
+
+    // Exponential Moving Average
+    if (indicatorSlice.exponentialMovingAverage.visible) {
+      const ema = mainChart.addSeries(LineSeries, {
+        color: "#29f8ff",
+        lineWidth: 1,
+      });
+      ema.setData(
+        calculateExponentialMovingAverageSeriesData(
+          candles,
+          indicatorSlice.exponentialMovingAverage.value.emaLength
+        )
+      );
+    }
+
+    // CCI
+    if (indicatorSlice.commodityChannelIndex.visible && cciChart) {
+      const cciSeries = cciChart.addSeries(LineSeries, {
+        color: "#adff29",
+        lineWidth: 1,
+      });
+
+      cciSeries.createPriceLine({ price: 100, color: "red", lineWidth: 1 });
+      cciSeries.createPriceLine({ price: -100, color: "green", lineWidth: 1 });
+
+      cciSeries.setData(
+        calculateCCISeriesData(candles, indicatorSlice.commodityChannelIndex.value.cciLength)
+      );
+    }
 
     return () => {
-      chart.remove();
+      mainChart.remove();
+      cciChart?.remove();
     };
-  }, [width, height, candles, tradeMarkers, indicatorSlice]);
+  }, [width, height, candles, indicatorSlice]);
 
-  return <div ref={chartRef} />;
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <div ref={chartRef} />
+      {indicatorSlice.commodityChannelIndex.visible && <div ref={cciRef} />}
+    </div>
+  );
 };
 
 export default CandlestickChart;

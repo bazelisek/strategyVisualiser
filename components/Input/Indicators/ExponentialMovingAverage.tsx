@@ -1,44 +1,45 @@
+import { setIndicatorsVisibility } from "@/store/reduxStore";
 import React, { ReactNode, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setIndicatorsVisibility } from "@/store/reduxStore";
-import Switch from "../Buttons/Switch";
-import classes from "./MovingAverage.module.css";
-import MovingAverageDropdown from "./MovingAverageDropdown";
+import classes from './ExponentialMovingAverage.module.css'
 import DropdownButton from "../Buttons/DropdownButton";
+import Switch from "../Buttons/Switch";
+import ExponentialMovingAverageDropdown from "./ExponentialMovingAverageDropdown";
 
-interface MovingAverageProps {
+interface ExponentialMovingAverageProps {
   children?: ReactNode;
 }
 
-const MovingAverage: React.FC<MovingAverageProps> = (props) => {
+const ExponentialMovingAverage: React.FC<ExponentialMovingAverageProps> = (
+  props
+) => {
   const indicators = useSelector((state: any) => state.indicators);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {
     dispatch(
-      setIndicatorsVisibility({ indicator: "movingAverage", value: value })
+      setIndicatorsVisibility({ indicator: "exponentialMovingAverage", value: value })
     );
   }
 
   function toggleDropdown() {
     setOpen((old) => !old);
   }
-
   return (
     <>
       <div className="indicator-selector-div">
-        <p>MovingAverage</p>
+        <p>Exponential Moving Average</p>
         <div className={classes.alignmentDiv}>
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators.movingAverage.visible}
+            isChecked={indicators.exponentialMovingAverage.visible}
             clickHandler={handleMovingAverageToggle}
           />
         </div>
       </div>
-      <MovingAverageDropdown open={open} />
+      <ExponentialMovingAverageDropdown open={open} />
     </>
   );
 };
 
-export default MovingAverage;
+export default ExponentialMovingAverage;

@@ -6,19 +6,25 @@
   color: var(--foreground);
   box-shadow: 1px 1px 10px var(--accent);
   padding: 30px;
+  position: fixed;
+  z-index: 100;
+}
+.modal ul {
+  list-style-type: none;
+  padding: 0;
 }
 .modal h2 {
   color: var(--accent);
 }
 .modal input {
+  appearance: textfield;
   background-color: var(--background-light);
-  border-color: var(--accent);
-  padding: 5px;
+  border: 1px solid var(--accent);
+  padding: 8px 5px 5px 5px;
   border-radius: 10px;
-  -moz-appearance: textfield;
   color: var(--foreground);
-  width: 60px;
-  height: 100%;
+  width: 100%;
+  padding: 15px;
 }
 .modal input::-webkit-outer-spin-button,
 .modal input::-webkit-inner-spin-button {
@@ -26,8 +32,12 @@
   margin: 0;
 }
 .modal input:focus {
-    outline: none;
-    box-shadow: 1px 1px 4px var(--accent);
+  outline: none;
+  box-shadow: 1px 1px 4px var(--accent);
+}
+.modal label {
+  font-size: 0.9rem;
+  color: var(--accent);
 }
 .header {
   display: flex;

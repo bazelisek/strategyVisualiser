@@ -1,4 +1,5 @@
 import { SeriesMarker, Time } from "lightweight-charts";
+import { CCI, SMA, EMA } from 'technicalindicators';
 
 export function getTradeMarkers(fetchData: { time: number; amount: number }[]) {
   const tradeMarkers: SeriesMarker<Time>[] = fetchData.map(
@@ -15,35 +16,51 @@ export function getTradeMarkers(fetchData: { time: number; amount: number }[]) {
 }
 
 export function calculateMovingAverageSeriesData(
-  candleData: {
-    time: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-  }[],
+  candleData: { time: string; open: number; high: number; low: number; close: number }[],
   maLength: number
-) {
-  // filter invalid candles (close must be > 0 and finite)
-  const validCandles = candleData.filter(
-    (c) => c && Number.isFinite(c.close) && c.close > 0
-  );
+): { time: string; value?: number }[] {
+  const validCandles = candleData.filter(c => c && Number.isFinite(c.close) && c.close > 0);
+  const closes = validCandles.map(c => c.close);
 
-  const maData: { time: string; value?: number }[] = [];
+  const smaValues = SMA.calculate({ period: maLength, values: closes });
 
-  for (let i = 0; i < validCandles.length; i++) {
-    if (i < maLength - 1) {
-      // not enough candles yet → placeholder point
-      maData.push({ time: validCandles[i].time });
-    } else {
-      let sum = 0;
-      for (let j = 0; j < maLength; j++) {
-        sum += validCandles[i - j].close;
-      }
-      const maValue = sum / maLength;
-      maData.push({ time: validCandles[i].time, value: maValue });
-    }
-  }
+  const maData: { time: string; value?: number }[] = validCandles.map((c, i) => ({
+    time: c.time,
+    value: i >= maLength - 1 ? smaValues[i - (maLength - 1)] : undefined
+  }));
 
   return maData;
+}
+
+export function calculateExponentialMovingAverageSeriesData(
+  candleData: { time: string; open: number; high: number; low: number; close: number }[],
+  emaLength: number
+): { time: string; value?: number }[] {
+  const validCandles = candleData.filter(c => c && Number.isFinite(c.close) && c.close > 0);
+  const closes = validCandles.map(c => c.close);
+
+  const emaValues = EMA.calculate({ period: emaLength, values: closes });
+
+  return validCandles.map((c, i) => ({
+    time: c.time,
+    value: i >= emaLength - 1 ? emaValues[i - (emaLength - 1)] : undefined
+  }));
+}
+
+export function calculateCCISeriesData(
+  candleData: { time: string; open: number; high: number; low: number; close: number }[],
+  cciLength: number
+): { time: string; value?: number }[] {
+  const validCandles = candleData.filter(c => c && Number.isFinite(c.close) && c.close > 0);
+  const closes = validCandles.map(c => c.close);
+  const lows = validCandles.map(c => c.low);
+  const highs = validCandles.map(c => c.high);
+
+
+  const cciValues = CCI.calculate({ period: cciLength, close: closes, high: highs, low: lows });
+
+  return validCandles.map((c, i) => ({
+    time: c.time,
+    value: i >= cciLength - 1 ? cciValues[i - (cciLength - 1)] : undefined
+  }));
 }

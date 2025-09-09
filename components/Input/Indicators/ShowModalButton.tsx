@@ -6,7 +6,7 @@ interface ShowModalButtonProps {
 }
 
 const ShowModalButton: React.FC<ShowModalButtonProps> = (props) => {
-  const dialogRef = useRef<any>(null)
+  const dialogRef = useRef<any>(null);
   function handleClick() {
     dialogRef.current.open()
   }

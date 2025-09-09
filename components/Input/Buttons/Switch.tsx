@@ -27,7 +27,6 @@ const Switch: React.FC<SwitchProps> = ({ isChecked, clickHandler }) => {
       </label>
     </>
   );
-  return <div>Switch</div>;
 };
 
 export default Switch;

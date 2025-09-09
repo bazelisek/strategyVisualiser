@@ -1,0 +1,6 @@
+.dropdown {
+    padding: 20px;
+    background-color: var(--background-light);
+    transform-origin: top;
+    border-radius: 20px;
+}

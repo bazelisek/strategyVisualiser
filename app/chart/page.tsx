@@ -3,7 +3,7 @@ import ChartSection from "@/components/ChartSection";
 
 export default function Home() {
   return (
-    <main className={classes.main}>
+    <main id="main" className={classes.main}>
       <ChartSection/>
     </main>
   );

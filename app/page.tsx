@@ -5,7 +5,7 @@ export default function Home({ searchParams }: { searchParams: { [key: string]: 
   //const newSearchParams = Promise.resolve(searchParams);
 
   return (
-    <main className={classes.main}>
+    <main id='main' className={classes.main}>
       <Form />
     </main>
   );
