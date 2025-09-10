@@ -1,0 +1,16 @@
+.quickActions {
+    margin-top: 10px;
+}
+.quickActions button {
+    padding: 15px 20px;
+    margin: 5px;
+    font-size: 16px;
+    border-color: var(--accent);
+    border-style: solid;
+    border-width: 1px;
+    background-color: var(--background-light);
+    color: var(--accent);
+}
+.quickActions span {
+    display: inline-block;
+}

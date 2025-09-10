@@ -1,21 +1,25 @@
 import React, { ReactNode, useRef } from 'react';
 import IndicatorsModal from './IndicatorsModal';
+import classes from './ShowModalButton.module.css';
+import AnimationButton from '../Buttons/AnimationButton';
+import { useDispatch } from 'react-redux';
+import { setModal } from '@/store/reduxStore';
 
 interface ShowModalButtonProps {
   children?: ReactNode;
 }
 
 const ShowModalButton: React.FC<ShowModalButtonProps> = (props) => {
-  const dialogRef = useRef<any>(null);
+  const dispatch = useDispatch();
   function handleClick() {
-    dialogRef.current.open()
+    dispatch(setModal({modal: 'indicators', value: true}))
   }
   return (
     <>
-    <button onClick={handleClick}>
+    <AnimationButton onClick={handleClick}>
       Indicators
-    </button>
-    <IndicatorsModal ref={dialogRef} />
+    </AnimationButton>
+    <IndicatorsModal/>
     </>
   );
 };

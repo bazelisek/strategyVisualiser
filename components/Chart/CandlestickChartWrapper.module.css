@@ -5,6 +5,7 @@
   border: 2px solid var(--accent);
   background: linear-gradient(to top, var(--background-dark), var(--background-light));
   box-shadow: 0 4px 20px rgba(76, 175, 239, 0.3);
+  position: relative;
 
   display: flex;
   flex-direction: column;

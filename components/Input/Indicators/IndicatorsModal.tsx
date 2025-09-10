@@ -1,32 +1,28 @@
-import React, { ReactNode, useImperativeHandle, useRef, useState } from "react";
+import React, { ReactNode } from "react";
 import MovingAverage from "./MovingAverage";
 import classes from "./IndicatorsModal.module.css";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import ExponentialMovingAverage from "./ExponentialMovingAverage";
 import CommodityChannelIndex from "./CommodityChannelIndex";
+import { useDispatch, useSelector } from "react-redux";
+import { setModal } from "@/store/reduxStore";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
-  ref: any;
 }
 
-const IndicatorsModal: React.FC<IndicatorsModalProps> = ({ ref }) => {
-  const [open, setOpen] = useState(false);
-  useImperativeHandle(ref, () => {
-    return {
-      open: () => {
-        setOpen(true);
-      },
-      close: () => {
-        setOpen(false);
-      },
-    };
-  });
+const IndicatorsModal: React.FC<IndicatorsModalProps> = () => {
+  const modalSlice = useSelector((state: any) => state.modals);
+  const open = modalSlice.indicators;
+  const dispatch = useDispatch();
+
   function handleClose(e: any) {
     e.preventDefault();
-    setOpen(false);
+    dispatch(setModal({modal: 'indicators', value: false}))
   }
+
+  console.log('pes')
   
   return createPortal(
     <>
@@ -43,7 +39,7 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({ ref }) => {
           >
             <div className={classes.header}>
               <h2>Indicators</h2>
-              <button onClick={() => setOpen(false)}>&#10005;</button>
+              <button onClick={handleClose}>&#10005;</button>
             </div>
             <motion.ul layout>
               <motion.li layout>

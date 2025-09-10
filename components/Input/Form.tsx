@@ -5,7 +5,7 @@ import Symbol from "./Symbol";
 import Interval from "./Interval";
 import Strategy from "./Strategy";
 import { AnimatePresence } from "framer-motion";
-import AnimationButton from "./AnimationButton";
+import AnimationButton from "./Buttons/AnimationButton";
 import Time from "./Time";
 import { getValidIntervals } from "@/util/formCheck";
 import { form } from "framer-motion/client";

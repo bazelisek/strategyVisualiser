@@ -1,24 +1,22 @@
 import { motion } from "framer-motion";
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode } from "react";
+import classes from "./AnimationButton.module.css";
 
 interface AnimationButtonProps {
   children?: ReactNode;
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 const AnimationButton: React.FC<AnimationButtonProps> = ({
   onClick,
   children,
 }) => {
-  const [hover, setHover] = useState(false);
-
   return (
     <motion.button
-      animate={{scale: hover ? 1.07 : 1}}
-      type="button"
+      animate={{ scale: 1, boxShadow: "none" }}
+      whileHover={{ scale: 1.05, boxShadow: "1px 1px 15px var(--accent)" }}
       onClick={onClick}
-      onHoverStart={() => setHover(true)}
-      onHoverEnd={() => setHover(false)}
+      className={classes.button}
     >
       {children}
     </motion.button>
