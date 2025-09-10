@@ -11,7 +11,7 @@ interface QuickActionsModalProps {
   open: boolean;
 }
 
-const QuickActionsModal: React.FC<QuickActionsModalProps> = ({ open, heading }) => {
+const QuickActionsModal: React.FC<QuickActionsModalProps> = ({ children, open, heading }) => {
   const modals = useSelector((state: any) => state.modals);
   const dispatch = useDispatch();
   function handleClose(e: any) {
@@ -24,10 +24,9 @@ const QuickActionsModal: React.FC<QuickActionsModalProps> = ({ open, heading }) 
       <AnimatePresence>
         {open && (
           <motion.dialog
-            layout
-            initial={{ opacity: 0, y: -200 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -200 }}
+            initial={{ opacity: 0, y: -400 }}
+            animate={{ opacity: 1, y: 0, transition: {type: 'spring', ease: 'easeIn', duration: 0.5}}}
+            exit={{ opacity: 0, y: -400, transition: {type: 'tween', ease: 'easeIn', duration: 0.25} }}
             open
             className={classes.modal}
             onClose={handleClose}
@@ -36,7 +35,7 @@ const QuickActionsModal: React.FC<QuickActionsModalProps> = ({ open, heading }) 
               <h2>{heading}</h2>
               <button onClick={handleClose}>&#10005;</button>
             </div>
-            <ul></ul>
+            {children}
           </motion.dialog>
         )}
       </AnimatePresence>

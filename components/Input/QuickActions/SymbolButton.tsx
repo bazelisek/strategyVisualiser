@@ -18,7 +18,7 @@ const SymbolButton: React.FC<SymbolButtonProps> = ({ children }) => {
   return (
     <AnimationButton onClick={handleClick}>
       {children}{" "}
-      <motion.span animate={{ rotate: open ? 0 : 180 }}>&#x25BC;</motion.span>
+      <motion.span animate={{ rotate: open ? 180 : 0 }}>&#x25BC;</motion.span>
     </AnimationButton>
   );
 };

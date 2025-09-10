@@ -72,7 +72,7 @@ const Time: React.FC<TimeProps> = ({
                 }
               }}
               format="dd.MM.yyyy HH:mm" // display format
-              maxDateTime={toDate || undefined} // ensures From < To
+              maxDateTime={toDate || new Date()} // ensures From < To
               slotProps={{
                 textField: {
                   fullWidth: true,

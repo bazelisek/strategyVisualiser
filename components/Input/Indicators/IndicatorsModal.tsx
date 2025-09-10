@@ -21,8 +21,6 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = () => {
     e.preventDefault();
     dispatch(setModal({modal: 'indicators', value: false}))
   }
-
-  console.log('pes')
   
   return createPortal(
     <>
@@ -30,9 +28,9 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = () => {
         {open && (
           <motion.dialog
             layout
-            initial={{ opacity: 0, y: -200 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -200 }}
+            initial={{ opacity: 0, y: -400 }}
+            animate={{ opacity: 1, y: 0, transition: {type: 'spring', ease: 'easeIn', duration: 0.5} }}
+            exit={{ opacity: 0, y: -400, transition: {type: 'tween', ease: 'easeIn', duration: 0.25} }}
             open
             className={classes.modal}
             onClose={handleClose}

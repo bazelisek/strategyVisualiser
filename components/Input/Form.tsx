@@ -69,6 +69,7 @@ const Form: React.FC<FormProps> = () => {
       router.replace(`/chart?${searchParams.toString()}`);
     }
     setCurrentInput((old) => old + 1);
+    setError('');
   }
 
   return (
@@ -126,7 +127,6 @@ const Form: React.FC<FormProps> = () => {
             key="strategy-step"
             value={formData.strategy.value}
             onChange={handleChange}
-            availableStrategies={["Dummy strategy", "Another dummy strategy"]}
             handleContinue={handleContinue}
           >
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>

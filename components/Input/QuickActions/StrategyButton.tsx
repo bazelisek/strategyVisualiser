@@ -19,7 +19,7 @@ const StrategyButton: React.FC<StrategyButtonProps> = ({ children }) => {
 
   return (
     <AnimationButton onClick={handleClick}>
-      {children} <motion.span animate={{ rotate: open ? 0 : 180 }}>&#x25BC;</motion.span>
+      {children} <motion.span animate={{ rotate: open ? 180 : 0 }}>&#x25BC;</motion.span>
     </AnimationButton>
   );
 };
