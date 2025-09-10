@@ -42,14 +42,23 @@ export function calculateStrategyPerformance(
       transformedData.candles[candleIndex].time.toString() !==
         strategyPoint.time.toString()
     ) {
-      if (86400*2 >= Math.abs(strategyPoint.time - Number(transformedData.candles[candleIndex].time))) {
-        console.log(transformedData.candles[candleIndex].time.toString() + ' '+ strategyPoint.time.toString());
+      if (
+        86400 * 2 >=
+        Math.abs(
+          strategyPoint.time - Number(transformedData.candles[candleIndex].time)
+        )
+      ) {
+        /*console.log(
+          transformedData.candles[candleIndex].time.toString() +
+            " " +
+            strategyPoint.time.toString()
+        );*/
       }
       candleIndex++;
     }
 
     if (candleIndex >= transformedData.candles.length) {
-        console.log('break');
+      //console.log('break');
       break;
     } // no more matches
 

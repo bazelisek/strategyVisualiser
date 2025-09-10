@@ -30,12 +30,9 @@ export function checkFormValidity(formData: {
 
 
 export function getValidIntervals(from: Date, to: Date): string[] {
-  console.log(from);
-  console.log(to)
   if (isNaN(from.getTime()) || isNaN(to.getTime()) || from >= to) {
     return [];
   }
-  console.log('p');
   const diffDays = (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24);
 
   if (diffDays <= 7) {

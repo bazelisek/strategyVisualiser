@@ -29,7 +29,7 @@ const StrategyPerformanceOverview: React.FC<
     strategyData,
     transformedData
   );
-  console.log(performance);
+  
   return (
     <>
       <h2>Strategy Performance Overview</h2>
