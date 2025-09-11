@@ -1,8 +1,8 @@
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode } from "react";
 import AnimationButton from "../Buttons/AnimationButton";
 import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
-import { setModal } from "@/store/reduxStore";
+import { RootState, setModal } from "@/store/reduxStore";
 
 interface SymbolButtonProps {
   children?: ReactNode;
@@ -10,7 +10,7 @@ interface SymbolButtonProps {
 
 const SymbolButton: React.FC<SymbolButtonProps> = ({ children }) => {
   const dispatch = useDispatch();
-  const modals = useSelector((state: any) => state.modals);
+  const modals = useSelector((state: RootState) => state.modals);
   const open = modals.symbol;
   function handleClick() {
     dispatch(setModal({modal: 'symbol', value: !open}))

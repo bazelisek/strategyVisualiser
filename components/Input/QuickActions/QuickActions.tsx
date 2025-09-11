@@ -9,7 +9,7 @@ interface QuickActionsProps {
   children?: ReactNode;
 }
 
-const QuickActions: React.FC<QuickActionsProps> = (props) => {
+const QuickActions: React.FC<QuickActionsProps> = () => {
   const params = useSearchParams();
   const symbol = params.get("symbol") || "Symbol";
   const strategy = params.get("strategy") || "Strategy";

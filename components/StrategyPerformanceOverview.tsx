@@ -1,4 +1,4 @@
-import { calculateStrategyPerformance } from "@/util/strategyPerformance";
+import { getStrategyPerformance } from "@/util/strategyPerformance";
 import React, { ReactNode } from "react";
 
 interface StrategyPerformanceOverviewProps {
@@ -7,7 +7,7 @@ interface StrategyPerformanceOverviewProps {
     longName: string;
     symbol: string;
     candles: {
-      time: string;
+      time: number;
       open: number;
       high: number;
       low: number;
@@ -24,12 +24,12 @@ interface StrategyPerformanceOverviewProps {
 const StrategyPerformanceOverview: React.FC<
   StrategyPerformanceOverviewProps
 > = ({ transformedData, strategy, strategyData }) => {
-  const performance = calculateStrategyPerformance(
-    10000,
+  const performance = getStrategyPerformance(
     strategyData,
-    transformedData
+    transformedData,
+    strategy
   );
-  
+
   return (
     <>
       <h2>Strategy Performance Overview</h2>
@@ -37,25 +37,15 @@ const StrategyPerformanceOverview: React.FC<
       <table>
         <thead>
           <tr>
-            <th>Time</th>
-            <th>Price</th>
-            <th>Average buy price</th>
-            <th>Current Capital</th>
-            <th>Portfolio Value</th>
-            <th>Total Value</th>
-            <th>Action</th>
+            {performance.headers.map((a, index) => <th key={index}>{a}</th>)}
           </tr>
         </thead>
         <tbody>
-          {performance.map(a => (
-            <tr key={a.time}>
-              <th>{new Date(+a.time * 1000).toLocaleString()}</th>
-              <th>{a.price.toFixed(1)}</th>
-              <th>{a.avgBuyPrice ? a.avgBuyPrice.toFixed(1) : ''}</th>
-              <th>{a.currentCapital.toFixed(1)}</th>
-              <th>{a.portfolioValue.toFixed(1)}</th>
-              <th>{a.totalValue.toFixed(1)}</th>
-              <th>{a.action}</th>
+          {performance.data.map((a, index) => (
+            <tr key={index}>
+              {a.map((value, index) => (
+                <th key={index}>{value}</th>
+              ))}
             </tr>
           ))}
         </tbody>

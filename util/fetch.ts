@@ -12,6 +12,6 @@ export async function fetchDataFromUrl(url: string) {
     return { data, error: null };
   } catch (error) {
     console.log(error);
-    return { data: null, error: `failed to fetch from ${url}` };
+    throw new Error(`failed to fetch from ${url}`);
   }
 }

@@ -15,7 +15,7 @@ interface CandlestickChartWrapperProps {
     longName: string;
     symbol: string;
     candles: {
-      time: string;
+      time: number;
       open: number;
       high: number;
       low: number;

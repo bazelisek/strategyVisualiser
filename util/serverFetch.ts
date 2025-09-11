@@ -1,7 +1,7 @@
 // serverFetch.ts
 "use server";
 import { fetchDataFromUrl } from "@/util/fetch";
-import { SeriesMarker, Time, UTCTimestamp } from "lightweight-charts";
+import { UTCTimestamp } from "lightweight-charts";
 
 export async function getCandlestickChartData({
   symbol,
@@ -36,7 +36,7 @@ export async function getCandlestickChartData({
     symbol: string;
     longName: string;
     candles: {
-      time: string;
+      time: UTCTimestamp;
       open: number;
       high: number;
       low: number;
@@ -51,16 +51,48 @@ export async function getCandlestickChartData({
     return {
       symbol,
       longName,
-      candles: ts.map((t: number, i: number) => {
-        return {
-          time: t as UTCTimestamp,
-          open: quote.open[i],
-          high: quote.high[i],
-          low: quote.low[i],
-          close: quote.close[i],
-        };
-      }),
+      candles: filterOutInvalidCandles(
+        ts.map((t: number, i: number) => {
+          return {
+            time: t as UTCTimestamp,
+            open: quote.open[i],
+            high: quote.high[i],
+            low: quote.low[i],
+            close: quote.close[i],
+          };
+        }),
+        period1,
+        period2
+      ),
     };
+  }
+  function filterOutInvalidCandles(
+    candleData: {
+      time: UTCTimestamp;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+    }[],
+    period1: number,
+    period2: number
+  ) {
+    return candleData.filter((candle) => {
+      const unixTime: number = candle.time;
+      return (
+        Number.isFinite(candle.time) &&
+        Number.isFinite(candle.open) &&
+        Number.isFinite(candle.high) &&
+        Number.isFinite(candle.low) &&
+        Number.isFinite(candle.close) &&
+        candle.open > 0 &&
+        candle.high > 0 &&
+        candle.low > 0 &&
+        candle.close > 0 &&
+        unixTime >= period1 &&
+        unixTime <= period2
+      );
+    });
   }
 }
 
@@ -85,7 +117,7 @@ export async function getTradeDataForStrategy({
   }
   return {data, error: null};  
   */
-  const tradeMarkers: {time: number, amount: number}[] = [
+  const tradeMarkers: { time: number; amount: number }[] = [
     {
       time: 1748871000,
       amount: 5,
@@ -96,5 +128,5 @@ export async function getTradeDataForStrategy({
     },
   ];
 
-  return { data: tradeMarkers, error: null };;
+  return { data: tradeMarkers, error: null };
 }

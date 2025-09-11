@@ -1,15 +1,15 @@
 import { motion } from "framer-motion";
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode } from "react";
 import AnimationButton from "../Buttons/AnimationButton";
 import { useDispatch, useSelector } from "react-redux";
-import { setModal } from "@/store/reduxStore";
+import { RootState, setModal } from "@/store/reduxStore";
 
 interface StrategyButtonProps {
   children?: ReactNode;
 }
 
 const StrategyButton: React.FC<StrategyButtonProps> = ({ children }) => {
-  const modals = useSelector((state: any) => state.modals);
+  const modals = useSelector((state: RootState) => state.modals);
   const open = modals.strategy;
   const dispatch = useDispatch();
 

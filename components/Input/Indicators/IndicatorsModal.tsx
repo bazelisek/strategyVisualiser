@@ -6,19 +6,18 @@ import { createPortal } from "react-dom";
 import ExponentialMovingAverage from "./ExponentialMovingAverage";
 import CommodityChannelIndex from "./CommodityChannelIndex";
 import { useDispatch, useSelector } from "react-redux";
-import { setModal } from "@/store/reduxStore";
+import { RootState, setModal } from "@/store/reduxStore";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
 }
 
 const IndicatorsModal: React.FC<IndicatorsModalProps> = () => {
-  const modalSlice = useSelector((state: any) => state.modals);
+  const modalSlice = useSelector((state: RootState) => state.modals);
   const open = modalSlice.indicators;
   const dispatch = useDispatch();
 
-  function handleClose(e: any) {
-    e.preventDefault();
+  function handleClose() {
     dispatch(setModal({modal: 'indicators', value: false}))
   }
   

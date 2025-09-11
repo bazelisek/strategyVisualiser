@@ -6,7 +6,7 @@ interface HeaderProps {
   children?: ReactNode;
 }
 
-const Header: React.FC<HeaderProps> = (props) => {
+const Header: React.FC<HeaderProps> = () => {
   return (
     <header className={classes.header}>
       <Link href={'/'}>

@@ -36,7 +36,7 @@ const Strategy: React.FC<StrategyProps> = ({
             <label>Strategy</label>
             <CustomSelect
               onChange={(val) =>
-                onChange({ target: { name: "strategy", value: val } } as any)
+                onChange({ target: { name: "strategy", value: val } } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)
               }
               options={availableStrategies}
               value={value}

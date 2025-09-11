@@ -92,19 +92,17 @@ const Time: React.FC<TimeProps> = ({
               onChange={(newValue) => {
                 if (newValue) {
                   const fixed = normalizeToMidnight(newValue);
-                  const newDate = new Date(
-                    fixed.getTime() + (23 * 60 + 59) * 60 * 1000
-                  ); // set to end of day
+                  fixed.setHours(23, 59, 59, 999); // set to actual end of day
                   onChange({
                     target: {
                       name: "period2",
-                      value: format(newDate, "yyyy-MM-dd'T'HH:mm"),
+                      value: format(fixed, "yyyy-MM-dd'T'HH:mm"),
                     },
                   } as React.ChangeEvent<HTMLInputElement>);
                 }
               }}
               format="dd.MM.yyyy HH:mm"
-              minDateTime={fromDate || undefined} // ensures To > From
+              minDateTime={fromDate || undefined}
               maxDateTime={new Date()}
               slotProps={{
                 textField: {

@@ -2,7 +2,7 @@ import React, { ReactNode } from "react";
 import Dropdown from "./Utilities/Dropdown";
 import { AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
-import { setIndicators } from "@/store/reduxStore";
+import { RootState, setIndicators } from "@/store/reduxStore";
 
 interface MovingAverageDropdownProps {
   children?: ReactNode;
@@ -12,11 +12,11 @@ interface MovingAverageDropdownProps {
 const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
   open,
 }) => {
-  const indicators = useSelector((state: any) => state.indicators);
+  const indicators = useSelector((state: RootState) => state.indicators);
   const dispatch = useDispatch();
 
-  function handleMaLengthChange(e: any) {
-    if (e.target.value && e.target.value > 1)
+  function handleMaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.value && Number(e.target.value) > 1)
       dispatch(
         setIndicators({
           indicator: "movingAverage",

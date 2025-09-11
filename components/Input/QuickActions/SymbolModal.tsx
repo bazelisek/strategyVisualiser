@@ -4,11 +4,11 @@ import { useDispatch, useSelector } from "react-redux";
 import QuickActionsModal from "./QuickActionsModal";
 import { symbols } from "@/util/symbols";
 import { motion } from "framer-motion";
-import { setModal } from "@/store/reduxStore";
+import { RootState, setModal } from "@/store/reduxStore";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const SymbolModal: React.FC = () => {
-  const modals = useSelector((state: any) => state.modals);
+  const modals = useSelector((state: RootState) => state.modals);
   const open = modals.symbol;
   const dispatch = useDispatch();
   const searchParams = useSearchParams();

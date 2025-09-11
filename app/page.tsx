@@ -1,7 +1,7 @@
 import Form from "@/components/Input/Form";
 import classes from "./page.module.css";
 
-export default function Home({ searchParams }: { searchParams: { [key: string]: string }}) {
+export default function Home() {
   //const newSearchParams = Promise.resolve(searchParams);
 
   return (

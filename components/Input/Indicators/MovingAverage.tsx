@@ -1,6 +1,6 @@
 import React, { ReactNode, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setIndicatorsVisibility } from "@/store/reduxStore";
+import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
 import Switch from "../Buttons/Switch";
 import classes from "./MovingAverage.module.css";
 import MovingAverageDropdown from "./MovingAverageDropdown";
@@ -10,8 +10,8 @@ interface MovingAverageProps {
   children?: ReactNode;
 }
 
-const MovingAverage: React.FC<MovingAverageProps> = (props) => {
-  const indicators = useSelector((state: any) => state.indicators);
+const MovingAverage: React.FC<MovingAverageProps> = () => {
+  const indicators = useSelector((state: RootState) => state.indicators);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {

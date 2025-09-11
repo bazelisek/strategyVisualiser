@@ -4,7 +4,7 @@ import React, { ReactNode, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import QuickActionsModal from "./QuickActionsModal";
 import { useRouter, useSearchParams } from "next/navigation";
-import { setModal } from "@/store/reduxStore";
+import { RootState, setModal } from "@/store/reduxStore";
 import { motion } from "framer-motion";
 import { getAvailableStrategies } from "@/util/strategies";
 
@@ -13,7 +13,7 @@ interface StrategyModalProps {
 }
 
 const StrategyModal: React.FC<StrategyModalProps> = () => {
-  const modals = useSelector((state: any) => state.modals);
+  const modals = useSelector((state: RootState) => state.modals);
   const open = modals.strategy;
   const dispatch = useDispatch();
   const searchParams = useSearchParams();

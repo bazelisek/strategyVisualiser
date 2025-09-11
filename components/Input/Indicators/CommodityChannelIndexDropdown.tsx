@@ -1,4 +1,4 @@
-import { setIndicators } from "@/store/reduxStore";
+import { RootState, setIndicators } from "@/store/reduxStore";
 import { AnimatePresence } from "framer-motion";
 import React, { ReactNode } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,7 +12,7 @@ interface CommodityChannelIndexDropdownProps {
 const CommodityChannelIndexDropdown: React.FC<
   CommodityChannelIndexDropdownProps
 > = ({open}) => {
-  const indicators = useSelector((state: any) => state.indicators);
+  const indicators = useSelector((state: RootState) => state.indicators);
   const dispatch = useDispatch();
 
   function handleCciLengthChange(e: React.ChangeEvent<HTMLInputElement>) {

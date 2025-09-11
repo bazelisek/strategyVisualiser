@@ -1,7 +1,6 @@
 import React, { ReactNode } from "react";
 import AnimationWrapper from "./AnimationWrapper";
 import CustomSelect from "./CustomSelect";
-import { getAvailableStrategies } from "@/util/strategies";
 import { symbols } from "@/util/symbols";
 
 interface SymbolProps {
@@ -30,7 +29,7 @@ const Symbol: React.FC<SymbolProps> = ({
         <label>Symbol</label>
         <CustomSelect
           onChange={(val) =>
-            onChange({ target: { name: "symbol", value: val } } as any)
+            onChange({ target: { name: "symbol", value: val } } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)
           }
           options={availableSymbols}
           value={value}

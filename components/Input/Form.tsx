@@ -8,7 +8,6 @@ import { AnimatePresence } from "framer-motion";
 import AnimationButton from "./Buttons/AnimationButton";
 import Time from "./Time";
 import { getValidIntervals } from "@/util/formCheck";
-import { form } from "framer-motion/client";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -38,6 +37,11 @@ const Form: React.FC<FormProps> = () => {
       [name]: { ...prev[name as keyof typeof prev], value },
     }));
   };
+
+  function handleBack() {
+    setCurrentInput(prev => prev - 1 < 0 ? 0 : prev - 1);
+    setError('');
+  }
 
   function handleContinue() {
     const value = formData.symbol.value;
@@ -95,6 +99,7 @@ const Form: React.FC<FormProps> = () => {
             handleContinue={handleContinue}
             key="time-step"
           >
+            <AnimationButton onClick={handleBack}>Back</AnimationButton>
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
             {error && <p>{error}</p>}
           </Time>
@@ -117,6 +122,7 @@ const Form: React.FC<FormProps> = () => {
             availableIntervals={getValidIntervals(new Date(formData.period1.value), new Date(formData.period2.value)) /*validRanges[formData.duration.value]*/}
             handleContinue={handleContinue}
           >
+            <AnimationButton onClick={handleBack}>Back</AnimationButton>
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
             {error && <p>{error}</p>}
           </Interval>
@@ -129,6 +135,7 @@ const Form: React.FC<FormProps> = () => {
             onChange={handleChange}
             handleContinue={handleContinue}
           >
+            <AnimationButton onClick={handleBack}>Back</AnimationButton>
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
             {error && <p>{error}</p>}
           </Strategy>

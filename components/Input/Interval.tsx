@@ -26,7 +26,7 @@ const Interval: React.FC<IntervalProps> = ({
         </h2>
         <label>Interval</label>
         <CustomSelect
-          onChange={(val) => onChange({ target: { name: "interval", value: val } } as any)}
+          onChange={(val) => onChange({ target: { name: "interval", value: val } } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)}
           options={availableIntervals}
           value={value}
           initialText="Plese select an interval"

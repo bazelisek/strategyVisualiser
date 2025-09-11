@@ -1,6 +1,6 @@
 "use client";
 import { useChartData } from "@/hooks/useChart";
-import { calculateMovingAverageSeriesData, getTradeMarkers } from "@/util/util";
+import { getTradeMarkers } from "@/util/util";
 import { useSearchParams } from "next/navigation";
 import React, { ReactNode } from "react";
 import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
@@ -12,7 +12,7 @@ interface ChartSectionProps {
   children?: ReactNode;
 }
 
-const ChartSection: React.FC<ChartSectionProps> = (props) => {
+const ChartSection: React.FC<ChartSectionProps> = () => {
   const searchParams = useSearchParams();
   const symbol = searchParams.get("symbol") || "";
   const interval = searchParams.get("interval") || "";

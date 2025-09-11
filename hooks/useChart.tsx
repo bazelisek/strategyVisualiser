@@ -31,7 +31,7 @@ export function useChartData(
     longName: string;
     symbol: string;
     candles: {
-      time: string;
+      time: number;
       open: number;
       high: number;
       low: number;
@@ -45,7 +45,7 @@ export function useChartData(
     longName: string;
     symbol: string;
     candles: {
-      time: string;
+      time: number;
       open: number;
       high: number;
       low: number;
@@ -88,14 +88,14 @@ export function useChartData(
           strategy,
         });
         if (data.error) {
-          setError(data.error);
+          throw new Error(data.error);
         } else {
           const newData = data.data as
             | {
                 symbol: string;
                 longName: string;
                 candles: {
-                  time: string;
+                  time: number;
                   open: number;
                   high: number;
                   low: number;
@@ -106,9 +106,7 @@ export function useChartData(
 
           // Guard against missing candles
           if (!newData || !newData.candles || newData.candles.length === 0) {
-            setError("No candlestick data found.");
-            setTransformedData({ longName: "", symbol: "", candles: [] });
-            return;
+            throw new Error("No candlestick data found.");
           }
 
           // Sort by time and remove duplicates
@@ -126,8 +124,8 @@ export function useChartData(
           });
         }
       } catch (e) {
-        setError("An error occurred while fetching chart data.");
         console.error(e);
+        throw new Error("An Error occured while fetching data");
       } finally {
         await handleGetTradeMarkers();
         setLoading(false);
@@ -147,8 +145,9 @@ export function useChartData(
           setStrategyData(data.data);
         }
       } catch (e) {
-        setError("An error occurred while fetching trade markers.");
         console.error(e);
+        throw new Error("An error occurred while fetching trade markers.");
+        setError("An error occurred while fetching trade markers.");
       }
     }
 

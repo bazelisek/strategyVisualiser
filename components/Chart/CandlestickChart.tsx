@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import {
   createChart,
@@ -10,32 +10,38 @@ import {
   CandlestickSeries,
   LineSeries,
   LineStyle,
+  SeriesMarker,
+  Time,
+  createSeriesMarkers,
+  ISeriesMarkersPluginApi,
 } from "lightweight-charts";
 import {
   calculateMovingAverageSeriesData,
   calculateExponentialMovingAverageSeriesData,
   calculateCCISeriesData,
 } from "@/util/util";
+import { RootState } from "@/store/reduxStore";
 
 interface CandlestickChartProps {
   width: number;
   height: number;
   candles: {
-    time: string;
+    time: number;
     open: number;
     high: number;
     low: number;
     close: number;
   }[];
-  tradeMarkers: any[];
+  tradeMarkers: SeriesMarker<Time>[];
 }
 
 const CandlestickChart: React.FC<CandlestickChartProps> = ({
   width,
   height,
-  candles
+  candles,
+  tradeMarkers
 }) => {
-  const indicatorSlice = useSelector((state: any) => state.indicators);
+  const indicatorSlice = useSelector((state: RootState) => state.indicators);
   const chartRef = useRef<HTMLDivElement>(null);
   const cciRef = useRef<HTMLDivElement>(null);
 
@@ -115,10 +121,19 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         low: c.low,
         close: c.close,
       }))
-      .filter(({ open, high, low, close }) => [open, high, low, close].every(Number.isFinite))
+      .filter(({ open, high, low, close }) =>
+        [open, high, low, close].every(Number.isFinite)
+      )
       .sort((a, b) => a.time - b.time);
 
     candleSeries.setData(data);
+    let seriesMarkersApi: ISeriesMarkersPluginApi<Time> | null = null;
+    
+
+    // Add trade markers
+    if (tradeMarkers && tradeMarkers.length > 0) {
+      seriesMarkersApi = createSeriesMarkers(candleSeries, tradeMarkers);
+    }
 
     // Moving Average
     if (indicatorSlice.movingAverage.visible) {
@@ -130,7 +145,10 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         calculateMovingAverageSeriesData(
           candles,
           indicatorSlice.movingAverage.value.maLength
-        )
+        ).map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
       );
     }
 
@@ -144,7 +162,10 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         calculateExponentialMovingAverageSeriesData(
           candles,
           indicatorSlice.exponentialMovingAverage.value.emaLength
-        )
+        ).map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
       );
     }
 
@@ -159,15 +180,23 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       cciSeries.createPriceLine({ price: -100, color: "green", lineWidth: 1 });
 
       cciSeries.setData(
-        calculateCCISeriesData(candles, indicatorSlice.commodityChannelIndex.value.cciLength)
+        calculateCCISeriesData(
+          candles,
+          indicatorSlice.commodityChannelIndex.value.cciLength
+        ).map((d) => ({
+          time: d.time as UTCTimestamp,
+          value: d.value,
+        }))
       );
     }
 
     return () => {
+      seriesMarkersApi?.setMarkers?.([]);
+      seriesMarkersApi?.detach?.();
       mainChart.remove();
       cciChart?.remove();
     };
-  }, [width, height, candles, indicatorSlice]);
+  }, [width, height, candles, indicatorSlice, tradeMarkers]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>

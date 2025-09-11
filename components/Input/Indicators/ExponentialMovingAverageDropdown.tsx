@@ -2,7 +2,7 @@ import React, { ReactNode } from "react";
 import Dropdown from "./Utilities/Dropdown";
 import { AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
-import { setIndicators } from "@/store/reduxStore";
+import { RootState, setIndicators } from "@/store/reduxStore";
 
 interface ExponentialMovingAverageDropdownProps {
   children?: ReactNode;
@@ -12,7 +12,7 @@ interface ExponentialMovingAverageDropdownProps {
 const ExponentialMovingAverageDropdown: React.FC<
   ExponentialMovingAverageDropdownProps
 > = ({ open }) => {
-  const indicators = useSelector((state: any) => state.indicators);
+  const indicators = useSelector((state: RootState) => state.indicators);
   const dispatch = useDispatch();
 
   function handleEmaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {

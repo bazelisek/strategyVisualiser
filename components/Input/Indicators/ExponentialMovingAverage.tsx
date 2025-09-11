@@ -1,7 +1,7 @@
-import { setIndicatorsVisibility } from "@/store/reduxStore";
+import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
 import React, { ReactNode, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import classes from './ExponentialMovingAverage.module.css'
+import classes from "./ExponentialMovingAverage.module.css";
 import DropdownButton from "../Buttons/DropdownButton";
 import Switch from "../Buttons/Switch";
 import ExponentialMovingAverageDropdown from "./ExponentialMovingAverageDropdown";
@@ -10,15 +10,18 @@ interface ExponentialMovingAverageProps {
   children?: ReactNode;
 }
 
-const ExponentialMovingAverage: React.FC<ExponentialMovingAverageProps> = (
-  props
-) => {
-  const indicators = useSelector((state: any) => state.indicators);
+const ExponentialMovingAverage: React.FC<
+  ExponentialMovingAverageProps
+> = () => {
+  const indicators = useSelector((state: RootState) => state.indicators);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {
     dispatch(
-      setIndicatorsVisibility({ indicator: "exponentialMovingAverage", value: value })
+      setIndicatorsVisibility({
+        indicator: "exponentialMovingAverage",
+        value: value,
+      })
     );
   }
 

@@ -8,7 +8,7 @@ interface DropdownButtonProps {
 }
 
 const DropdownButton: React.FC<DropdownButtonProps> = (props) => {
-  let [rotation, setRotation] = useState(-90);
+  const [rotation, setRotation] = useState(-90);
   function handleClick() {
     setRotation(old => old === -90 ? 0 : -90);
     if (props.onClick) props.onClick();

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 import React, { ReactNode } from "react";
 import classes from "./QuickActionsModal.module.css";
 import { AnimatePresence, motion } from "framer-motion";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { setModal } from "@/store/reduxStore";
 
 interface QuickActionsModalProps {
@@ -11,12 +11,19 @@ interface QuickActionsModalProps {
   open: boolean;
 }
 
-const QuickActionsModal: React.FC<QuickActionsModalProps> = ({ children, open, heading }) => {
-  const modals = useSelector((state: any) => state.modals);
+const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
+  children,
+  open,
+  heading,
+}) => {
   const dispatch = useDispatch();
-  function handleClose(e: any) {
+  function handleClose(
+    e:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.SyntheticEvent<HTMLDialogElement, Event>
+  ) {
     e.preventDefault();
-    dispatch(setModal({modal: 'symbol', value: false}));
+    dispatch(setModal({ modal: "symbol", value: false }));
   }
 
   return (
@@ -25,8 +32,16 @@ const QuickActionsModal: React.FC<QuickActionsModalProps> = ({ children, open, h
         {open && (
           <motion.dialog
             initial={{ opacity: 0, y: -400 }}
-            animate={{ opacity: 1, y: 0, transition: {type: 'spring', ease: 'easeIn', duration: 0.5}}}
-            exit={{ opacity: 0, y: -400, transition: {type: 'tween', ease: 'easeIn', duration: 0.25} }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              transition: { type: "spring", ease: "easeIn", duration: 0.5 },
+            }}
+            exit={{
+              opacity: 0,
+              y: -400,
+              transition: { type: "tween", ease: "easeIn", duration: 0.25 },
+            }}
             open
             className={classes.modal}
             onClose={handleClose}
