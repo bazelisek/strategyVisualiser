@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import classes from "./CustomSelect.module.css";
 
@@ -16,21 +16,27 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   initialText,
 }) => {
   const [open, setOpen] = useState(false);
-  const itemStagger = 0.06;
-  const baseDuration = 0.1; // minimal time for the roll-down itself
+  const [search, setSearch] = useState("");
 
-  // Parent variants with staggerChildren
+  // Filtered options based on search text
+  const filteredOptions = useMemo(() => {
+    if (!search) return options;
+    return options.filter((opt) =>
+      opt.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [options, search]);
+
   const listVariants = {
     hidden: { opacity: 0, height: 0 },
     visible: {
       opacity: 1,
       height: "auto",
-      transition: { staggerChildren: itemStagger, duration: baseDuration + itemStagger * options.length },
+      transition: { staggerChildren: 0.05, duration: 0.3 },
     },
     exit: {
       opacity: 0,
       height: 0,
-      transition: { staggerChildren: 0.05, staggerDirection: -1 },
+      transition: { staggerChildren: 0.03, staggerDirection: -1 },
     },
   };
 
@@ -45,34 +51,57 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
       <AnimatePresence mode="sync">
         {open && (
-          <motion.ul
-            className={classes.optionsList}
+          <motion.div
+            className={classes.optionsListWrapper}
             initial="hidden"
             animate="visible"
             exit="exit"
-            variants={listVariants} // attach parent variants
+            variants={listVariants}
           >
-            {options.map((option) => (
-              <motion.li
-                variants={{
-                  hidden: { opacity: 0, x: -20 },
-                  visible: {
-                    opacity: 1,
-                    x: 0,
-                    transition: { type: "spring" },
-                  },
-                  //exit: { opacity: 0, x: -20, transition: { type: "spring" } },
-                }}
-                key={option}
-                onClick={() => {
-                  onChange(option);
-                  setOpen(false);
-                }}
-              >
-                {option}
-              </motion.li>
-            ))}
-          </motion.ul>
+            {/* Search box */}
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className={classes.searchInput}
+              autoFocus
+            />
+
+            {/* Options list */}
+            <ul className={classes.optionsList}>
+              {filteredOptions.length === 0 && (
+                <li className={classes.noResults}>No results</li>
+              )}
+              {filteredOptions.map((option, index) => (
+                <motion.li
+                  key={option}
+                  variants={
+                    index < 12
+                      ? {
+                          hidden: { opacity: 0, x: -20 },
+                          visible: {
+                            opacity: 1,
+                            x: 0,
+                            transition: { type: "spring" },
+                          },
+                        }
+                      : {} // no variants, we’ll control it directly
+                  }
+                  initial={index < 12 ? undefined : { opacity: 0 }} // start invisible
+                  animate={index < 12 ? undefined : { opacity: 1 }} // instantly visible
+                  transition={index < 12 ? undefined : { duration: 0 }} // no delay
+                  onClick={() => {
+                    onChange(option);
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                >
+                  {option}
+                </motion.li>
+              ))}
+            </ul>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

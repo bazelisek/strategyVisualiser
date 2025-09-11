@@ -41,6 +41,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  height: auto;
+  max-height: 500px;
+  overflow-x: hidden;
+  overflow-y: auto;
 
   background: linear-gradient(145deg, rgba(35, 35, 55, 0.85), rgba(25, 25, 40, 0.85));
   backdrop-filter: blur(8px);
@@ -49,7 +53,6 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
 
-  overflow: hidden;
   z-index: 10;
 }
 
@@ -74,4 +77,20 @@
 
 .wrapper.open .selectionButton::after {
   transform: rotate(-180deg);
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--foreground);
+  outline: none;
+}
+
+.noResults {
+  padding: 0.7rem 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
 }

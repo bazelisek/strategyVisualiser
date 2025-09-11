@@ -32,7 +32,7 @@ const Strategy: React.FC<StrategyProps> = ({
       {availableStrategies && (
         <AnimationWrapper handleContinue={handleContinue}>
           <div>
-            <h2>Please enter the strategy you want to apply on the stock.</h2>
+            <h2>Please select the strategy you want to apply on the stock.</h2>
             <label>Strategy</label>
             <CustomSelect
               onChange={(val) =>
