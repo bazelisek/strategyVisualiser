@@ -1,5 +1,5 @@
 "use client";
-import { useChartData } from "@/hooks/useChart";
+import { useChartData } from "@/hooks/useChartData";
 import { getTradeMarkers } from "@/util/util";
 import { useSearchParams } from "next/navigation";
 import React, { ReactNode } from "react";
@@ -26,12 +26,19 @@ const ChartSection: React.FC<ChartSectionProps> = () => {
   const tradeMarkers = getTradeMarkers(strategyData);
   return (
     <>
-      <CandlestickChartWrapper
-        error={error}
-        loading={loading}
-        transformedData={transformedData}
-        tradeMarkers={tradeMarkers}
-      />
+      {error && (
+        <div>
+          <h2>Something went wrong...</h2>
+          <p>Please try again later.</p>
+        </div>
+      )}
+      {!error && (
+        <CandlestickChartWrapper
+          loading={loading}
+          transformedData={transformedData}
+          tradeMarkers={tradeMarkers}
+        />
+      )}
       {!loading && !error && (
         <motion.div
           // callback ref — při mountu React zavolá setContainerEl(el)

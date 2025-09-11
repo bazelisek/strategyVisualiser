@@ -22,14 +22,12 @@ interface CandlestickChartWrapperProps {
       close: number;
     }[];
   };
-  error: string;
 }
 
 const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
   tradeMarkers,
   loading,
   transformedData,
-  error,
 }) => {
   // místo useRef:
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
@@ -66,9 +64,8 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
 
   return (
     <>
-      {loading && !error && <p>Loading...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {!loading && !error && (
+      {loading && <p>Loading...</p>}
+      {!loading && (
         <motion.div
           // callback ref — při mountu React zavolá setContainerEl(el)
           ref={(el) => setContainerEl(el)}
