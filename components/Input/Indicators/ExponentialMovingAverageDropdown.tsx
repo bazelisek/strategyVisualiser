@@ -17,7 +17,7 @@ const ExponentialMovingAverageDropdown: React.FC<
 
   function handleEmaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
-    if (value && parseInt(value, 10) > 1) {
+    if (value && parseInt(value, 10) >= 1) {
       dispatch(
         setIndicators({
           indicator: "exponentialMovingAverage",

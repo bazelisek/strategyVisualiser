@@ -10,11 +10,11 @@ export async function getCandlestickChartData({
   period2,
   strategy,
 }: {
-  symbol: any;
-  interval: any;
-  period1: any;
-  period2: any;
-  strategy: any;
+  symbol: string;
+  interval: string;
+  period1: number;
+  period2: number;
+  strategy: string;
 }) {
   //console.log("exec");
 
@@ -32,7 +32,7 @@ export async function getCandlestickChartData({
   //console.log(transformedData);
   return { data: transformedData, error: null };
 
-  function transformYahooToCandles(raw: any): {
+  function transformYahooToCandles(raw: typeof data): {
     symbol: string;
     longName: string;
     candles: {
@@ -103,11 +103,11 @@ export async function getTradeDataForStrategy({
   period2,
   strategy,
 }: {
-  symbol: any;
-  interval: any;
-  period1: any;
-  period2: any;
-  strategy: any;
+  symbol: string;
+  interval: string;
+  period1: number;
+  period2: number;
+  strategy: string;
 }) {
   /*const { data, error } = await fetchDataFromUrl(
     `https://DUMMYURL/api/getStrategy/${symbol}?interval=${interval}&period1=${period1}&period2={period2}&strategy=${strategy}`

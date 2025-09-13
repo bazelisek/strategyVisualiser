@@ -7,6 +7,7 @@ import ExponentialMovingAverage from "./ExponentialMovingAverage";
 import CommodityChannelIndex from "./CommodityChannelIndex";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setModal } from "@/store/reduxStore";
+import Supertrend from "./Supertrend";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
@@ -47,6 +48,9 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = () => {
               </motion.li>
               <motion.li layout>
                 <CommodityChannelIndex />
+              </motion.li>
+              <motion.li layout>
+                <Supertrend />
               </motion.li>
             </motion.ul>
           </motion.dialog>

@@ -5,15 +5,22 @@ export const indicatorSlice = createSlice({
 
   initialState: {
     movingAverage: { visible: false, value: { maLength: 20 } },
-    onBalanceVolume: { visible: false, value: {} },
+    supertrend: { visible: false, value: { period: 10, multiplier: 3 } },
     exponentialMovingAverage: { visible: false, value: { emaLength: 20 } },
-    commodityChannelIndex: { visible: false, value: { cciLength: 20 } }
+    commodityChannelIndex: { visible: false, value: { cciLength: 20 } },
   },
 
   reducers: {
     setIndicators: (
       state,
-      action: PayloadAction<{ indicator: keyof typeof state; value: any }>
+      action: PayloadAction<{
+        indicator: keyof typeof state;
+        value:
+          | { maLength: number }
+          | { emaLength: number }
+          | { cciLength: number }
+          | { period: number; multiplier: number };
+      }>
     ) => {
       const indicator = action.payload.indicator;
       if (state[indicator]) {

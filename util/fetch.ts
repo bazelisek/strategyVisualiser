@@ -6,7 +6,7 @@ export async function fetchDataFromUrl(url: string) {
   // interval: for eample 1d
   // range: for example 1mo
   try {
-    const result = await axios.get(url);
+    const result = await axios.get(url, {timeout: 5000});
     const data = result.data;
     //console.log(JSON.stringify(data));
     return { data, error: null };

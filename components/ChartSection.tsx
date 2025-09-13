@@ -1,6 +1,6 @@
 "use client";
 import { useChartData } from "@/hooks/useChartData";
-import { getTradeMarkers } from "@/util/util";
+import { getTradeMarkers } from "@/util/markers";
 import { useSearchParams } from "next/navigation";
 import React, { ReactNode } from "react";
 import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";

@@ -15,12 +15,11 @@ import {
   createSeriesMarkers,
   ISeriesMarkersPluginApi,
 } from "lightweight-charts";
-import {
-  calculateMovingAverageSeriesData,
-  calculateExponentialMovingAverageSeriesData,
-  calculateCCISeriesData,
-} from "@/util/util";
+import { calculateMovingAverageSeriesData } from "@/util/indicators/movingAverage";
+import { calculateExponentialMovingAverageSeriesData } from "@/util/indicators/exponentialMovingAverage";
+import { calculateCCISeriesData } from "@/util/indicators/CCI";
 import { RootState } from "@/store/reduxStore";
+import { calculateSupertrendSeriesData } from "@/util/indicators/supertrend";
 
 interface CandlestickChartProps {
   width: number;
@@ -145,10 +144,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         calculateMovingAverageSeriesData(
           candles,
           indicatorSlice.movingAverage.value.maLength
-        ).map((d) => ({
-          time: d.time as UTCTimestamp,
-          value: d.value,
-        }))
+        )
       );
     }
 
@@ -162,17 +158,14 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         calculateExponentialMovingAverageSeriesData(
           candles,
           indicatorSlice.exponentialMovingAverage.value.emaLength
-        ).map((d) => ({
-          time: d.time as UTCTimestamp,
-          value: d.value,
-        }))
+        )
       );
     }
 
     // CCI
     if (indicatorSlice.commodityChannelIndex.visible && cciChart) {
       const cciSeries = cciChart.addSeries(LineSeries, {
-        color: "#adff29",
+        color: "#f829ffff",
         lineWidth: 1,
       });
 
@@ -183,10 +176,21 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         calculateCCISeriesData(
           candles,
           indicatorSlice.commodityChannelIndex.value.cciLength
-        ).map((d) => ({
-          time: d.time as UTCTimestamp,
-          value: d.value,
-        }))
+        )
+      );
+    }
+    if (indicatorSlice.supertrend.visible) {
+      const supertrendSeries = mainChart.addSeries(LineSeries, {
+        color: "#adff29",
+        lineWidth: 1,
+      });
+
+      supertrendSeries.setData(
+        calculateSupertrendSeriesData(
+          candles,
+          indicatorSlice.supertrend.value.multiplier,
+          indicatorSlice.supertrend.value.period,
+        )
       );
     }
 

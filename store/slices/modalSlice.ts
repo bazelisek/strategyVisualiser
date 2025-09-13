@@ -20,7 +20,7 @@ export const modalSlice = createSlice({
 
       // reset all to false
       Object.keys(state).forEach((key) => {
-        (state as any)[key] = false;
+        state[key as keyof typeof state] = false;
       });
 
       // open/close the one you want

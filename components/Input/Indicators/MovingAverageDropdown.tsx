@@ -16,11 +16,11 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
   const dispatch = useDispatch();
 
   function handleMaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.value && Number(e.target.value) > 1)
+    if (e.target.value && Number(e.target.value) >= 1)
       dispatch(
         setIndicators({
           indicator: "movingAverage",
-          value: { maLength: e.target.value },
+          value: { maLength: Number(e.target.value) },
         })
       );
   }

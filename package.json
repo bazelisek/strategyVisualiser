@@ -23,6 +23,7 @@
     "react-datetime-picker": "^7.0.1",
     "react-dom": "19.1.0",
     "react-redux": "^9.2.0",
+    "supertrend": "^1.0.1",
     "technicalindicators": "^3.1.0"
   },
   "devDependencies": {
