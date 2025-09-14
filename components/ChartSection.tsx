@@ -7,14 +7,12 @@ import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
 import { motion } from "framer-motion";
 import classes from "./ChartSection.module.css";
 import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
-import { useRouter } from "next/navigation";
 
 interface ChartSectionProps {
   children?: ReactNode;
 }
 
 const ChartSection: React.FC<ChartSectionProps> = () => {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const symbol = searchParams.get("symbol") || "";
   const interval = searchParams.get("interval") || "";
@@ -35,7 +33,7 @@ const ChartSection: React.FC<ChartSectionProps> = () => {
         <div>
           <h2>Something went wrong...</h2>
           <p>Please try again later and check your internet connection.</p>
-          <button onClick={() => router.refresh()}>Try again</button>
+          <button onClick={() => window.location.reload()}>Try again</button>
         </div>
       )}
       {!error && (
