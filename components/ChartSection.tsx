@@ -7,20 +7,25 @@ import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
 import { motion } from "framer-motion";
 import classes from "./ChartSection.module.css";
 import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
+import { useRouter } from "next/navigation";
 
 interface ChartSectionProps {
   children?: ReactNode;
 }
 
 const ChartSection: React.FC<ChartSectionProps> = () => {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const symbol = searchParams.get("symbol") || "";
   const interval = searchParams.get("interval") || "";
   const period1 = searchParams.get("period1") || "";
   const period2 = searchParams.get("period2") || "";
   const strategy = searchParams.get("strategy") || "";
+  if (!Number(period1) || !Number(period2)){
+    throw new Error('period is not a  number');
+  }
   const { strategyData, loading, transformedData, error } = useChartData(
-    { symbol, interval, period1, period2, strategy },
+    { symbol, interval, period1: Number(period1), period2: Number(period2), strategy },
     "/"
   );
   const tradeMarkers = getTradeMarkers(strategyData);
@@ -29,7 +34,8 @@ const ChartSection: React.FC<ChartSectionProps> = () => {
       {error && (
         <div>
           <h2>Something went wrong...</h2>
-          <p>Please try again later.</p>
+          <p>Please try again later and check your internet connection.</p>
+          <button onClick={() => router.refresh()}>Try again</button>
         </div>
       )}
       {!error && (

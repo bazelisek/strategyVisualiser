@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import React, { ReactNode } from "react";
 
 interface ErrorProps {
@@ -6,12 +7,15 @@ interface ErrorProps {
 }
 
 const Error: React.FC<ErrorProps> = () => {
+  const router = useRouter();
+
   return (
     <html>
       <body>
         <div>
           <h2>Something went wrong...</h2>
-          <p>Please try again later.</p>
+          <p>Please try again later and check your internet connection.</p>
+          <button onClick={() => router.refresh()}>Try again</button>
         </div>
       </body>
     </html>

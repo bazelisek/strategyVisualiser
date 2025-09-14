@@ -45,10 +45,14 @@ a {
 button {
   cursor: pointer;
   font-family: var(--font-base);
-  border: none;
   border-radius: var(--border-radius);
   padding: 0.5rem 1rem;
   transition: background 0.2s ease;
+  margin: 4px;
+  color: white;
+  background-color: var(--primary-light);
+  border-color: var(--accent);
+  border-width: 1px;
 }
 
 button:hover {

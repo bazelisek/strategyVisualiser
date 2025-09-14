@@ -1,8 +1,8 @@
 export function checkFormValidity(formData: {
   symbol: { value: string };
   interval: { value: string };
-  period1: { value: string };
-  period2: { value: string };
+  period1: { value: number };
+  period2: { value: number };
   strategy: { value: string };
 }): string {
   const { symbol, interval, period1, period2 } = formData;

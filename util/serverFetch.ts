@@ -8,7 +8,6 @@ export async function getCandlestickChartData({
   interval,
   period1,
   period2,
-  strategy,
 }: {
   symbol: string;
   interval: string;

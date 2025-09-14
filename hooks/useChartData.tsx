@@ -16,8 +16,8 @@ export function useChartData(
   }: {
     symbol: string;
     interval: string;
-    period2: string;
-    period1: string;
+    period2: number;
+    period1: number;
     strategy: string;
   },
   redirectPathOnInvalid: string
@@ -152,7 +152,7 @@ export function useChartData(
 
     setLoading(true);
     handleGetChartData();
-  }, [symbol, interval, period1, period2, strategy]);
+  }, [symbol, interval, period1, period2, strategy, redirectPathOnInvalid, router]);
 
   return { error, loading, strategyData, transformedData };
 }
