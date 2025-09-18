@@ -42,13 +42,30 @@ const Time: React.FC<TimeProps> = ({
   const toDate = valueTo ? new Date(valueTo) : null;
 
   // helper: normalize to 13:30 if only date is picked
-  const normalizeToMidnight = (date: Date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    if (hours === 0 && minutes === 0) {
-      date.setHours(0, 0, 0, 0);
+  const adjustPickedDate = (date: Date, isToPicker = false) => {
+    const now = new Date();
+
+    // strip ms for comparisons
+    const picked = new Date(date);
+    picked.setSeconds(0, 0);
+
+    const isToday =
+      picked.getFullYear() === now.getFullYear() &&
+      picked.getMonth() === now.getMonth() &&
+      picked.getDate() === now.getDate();
+
+    if (isToday) {
+      if (isToPicker) {
+        // "To" should not go past current time
+        return now;
+      } else {
+        // "From" today gets current time instead of 00:00
+        return now;
+      }
     }
-    return date;
+
+    // for non-today dates, you can keep midnight if you want
+    return picked;
   };
 
   return (
@@ -62,7 +79,7 @@ const Time: React.FC<TimeProps> = ({
               value={fromDate}
               onChange={(newValue) => {
                 if (newValue) {
-                  const fixed = normalizeToMidnight(newValue);
+                  const fixed = adjustPickedDate(newValue, false);
                   onChange({
                     target: {
                       name: "period1",
@@ -91,8 +108,7 @@ const Time: React.FC<TimeProps> = ({
               value={toDate}
               onChange={(newValue) => {
                 if (newValue) {
-                  const fixed = normalizeToMidnight(newValue);
-                  fixed.setHours(23, 59, 59, 999); // set to actual end of day
+                  const fixed = adjustPickedDate(newValue, true);
                   onChange({
                     target: {
                       name: "period2",
