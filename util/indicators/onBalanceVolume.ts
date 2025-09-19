@@ -1,5 +1,5 @@
 import { IChartApi, LineSeries, UTCTimestamp } from "lightweight-charts";
-import { obv, OBV } from "technicalindicators";
+import { OBV } from "technicalindicators";
 import { candleData } from "../serverFetch";
 
 export function calculateOnBalanceVolumeData(

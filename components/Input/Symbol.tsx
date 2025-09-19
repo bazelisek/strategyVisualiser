@@ -33,7 +33,7 @@ const Symbol: React.FC<SymbolProps> = ({
           }
           options={availableSymbols}
           value={value}
-          initialText="Plese select a smybol"
+          initialText="Plese select a symbol"
         />
         {/*<label>Symbol</label>
         <input type="text" name="symbol" value={value} onChange={onChange} />*/}
