@@ -2,8 +2,8 @@ import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
 import React, { ReactNode, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import classes from "./ExponentialMovingAverage.module.css";
-import DropdownButton from "../Buttons/DropdownButton";
-import Switch from "../Buttons/Switch";
+import DropdownButton from "../../Buttons/DropdownButton";
+import Switch from "../../Buttons/Switch";
 import ExponentialMovingAverageDropdown from "./ExponentialMovingAverageDropdown";
 
 interface ExponentialMovingAverageProps {

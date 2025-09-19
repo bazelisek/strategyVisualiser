@@ -4,11 +4,23 @@ export const indicatorSlice = createSlice({
   name: "indicators",
 
   initialState: {
-    movingAverage: { visible: false, value: { maLength: 20 } },
-    supertrend: { visible: false, value: { period: 10, multiplier: 3 } },
-    exponentialMovingAverage: { visible: false, value: { emaLength: 20 } },
-    commodityChannelIndex: { visible: false, value: { cciLength: 20 } },
-    onBalanceVolume: { visible: false, value: {} },
+    movingAverage: {
+      visible: false,
+      value: { maLength: 20, color: "#2962FF" },
+    },
+    supertrend: {
+      visible: false,
+      value: { period: 10, multiplier: 3, color: "#adff29" },
+    },
+    exponentialMovingAverage: {
+      visible: false,
+      value: { emaLength: 20, color: "#29f8ff" },
+    },
+    commodityChannelIndex: {
+      visible: false,
+      value: { cciLength: 20, color: "#f829ff" },
+    },
+    onBalanceVolume: { visible: false, value: { color: "#2962FF" } },
   },
 
   reducers: {
@@ -17,11 +29,11 @@ export const indicatorSlice = createSlice({
       action: PayloadAction<{
         indicator: keyof typeof state;
         value:
-          | { maLength: number }
-          | { emaLength: number }
-          | { cciLength: number }
-          | { period: number; multiplier: number }
-          | {};
+          | { maLength: number; color: string }
+          | { emaLength: number; color: string }
+          | { cciLength: number; color: string }
+          | { period: number; multiplier: number; color: string }
+          | { color: string };
       }>
     ) => {
       const indicator = action.payload.indicator;

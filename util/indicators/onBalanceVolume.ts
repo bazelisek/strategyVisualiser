@@ -22,12 +22,12 @@ export function calculateOnBalanceVolumeData(
 }
 export function createOBVGraph(
   obvChart: IChartApi | null,
-  config: {} = {},
+  config: {color: string},
   candles: candleData
 ): void {
     if (!obvChart) return;
   const ma = obvChart.addSeries(LineSeries, {
-    color: "#2962FF",
+    color: config.color,
     lineWidth: 1,
   });
   ma.setData(calculateOnBalanceVolumeData(candles));

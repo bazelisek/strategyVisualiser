@@ -1,8 +1,9 @@
 import { RootState, setIndicators } from "@/store/reduxStore";
 import { AnimatePresence } from "framer-motion";
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import Dropdown from "./Utilities/Dropdown";
+import Dropdown from "../Utilities/Dropdown";
+import { HexColorPicker } from "react-colorful";
 
 interface CommodityChannelIndexDropdownProps {
   children?: ReactNode;
@@ -11,8 +12,11 @@ interface CommodityChannelIndexDropdownProps {
 
 const CommodityChannelIndexDropdown: React.FC<
   CommodityChannelIndexDropdownProps
-> = ({open}) => {
+> = ({ open }) => {
   const indicators = useSelector((state: RootState) => state.indicators);
+  const [color, setColor] = useState(
+    indicators.commodityChannelIndex.value.color
+  );
   const dispatch = useDispatch();
 
   function handleCciLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -21,7 +25,7 @@ const CommodityChannelIndexDropdown: React.FC<
       dispatch(
         setIndicators({
           indicator: "commodityChannelIndex",
-          value: { cciLength: parseInt(value, 10) },
+          value: { cciLength: parseInt(value, 10), color },
         })
       );
     }
@@ -40,6 +44,7 @@ const CommodityChannelIndexDropdown: React.FC<
               defaultValue={indicators.commodityChannelIndex.value.cciLength}
             />
           </div>
+          <HexColorPicker color={color} onChange={setColor} />
         </Dropdown>
       )}
     </AnimatePresence>

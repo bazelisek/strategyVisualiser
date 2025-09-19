@@ -1,8 +1,9 @@
-import React, { ReactNode } from "react";
-import Dropdown from "./Utilities/Dropdown";
+import React, { ReactNode, useState } from "react";
+import Dropdown from "../Utilities/Dropdown";
 import { AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setIndicators } from "@/store/reduxStore";
+import { HexColorPicker } from "react-colorful";
 
 interface SupertrendDropdownProps {
   children?: ReactNode;
@@ -11,6 +12,7 @@ interface SupertrendDropdownProps {
 
 const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({ open }) => {
   const indicators = useSelector((state: RootState) => state.indicators);
+  const [color, setColor] = useState(indicators.supertrend.value.color);
   const dispatch = useDispatch();
 
   function handlePeriodChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -62,6 +64,7 @@ const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({ open }) => {
               defaultValue={indicators.supertrend.value.multiplier}
             />
           </div>
+          <HexColorPicker color={color} onChange={setColor} />
         </Dropdown>
       )}
     </AnimatePresence>

@@ -26,12 +26,12 @@ export function calculateCCISeriesData(
 
 export function createCCIGraph(
   cciChart: IChartApi | null,
-  config: { cciLength: number },
+  config: { cciLength: number, color: string },
   candles: candleData,
 ) {
   if (!cciChart) return;
   const cciSeries = cciChart.addSeries(LineSeries, {
-    color: "#f829ffff",
+    color: config.color,
     lineWidth: 1,
   });
 

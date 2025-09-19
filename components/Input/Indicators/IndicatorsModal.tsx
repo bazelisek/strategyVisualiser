@@ -1,14 +1,14 @@
 import React, { ReactNode } from "react";
-import MovingAverage from "./MovingAverage";
+import MovingAverage from "./MA/MovingAverage";
 import classes from "./IndicatorsModal.module.css";
 import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
-import ExponentialMovingAverage from "./ExponentialMovingAverage";
-import CommodityChannelIndex from "./CommodityChannelIndex";
+import ExponentialMovingAverage from "./EMA/ExponentialMovingAverage";
+import CommodityChannelIndex from "./CCI/CommodityChannelIndex";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setModal } from "@/store/reduxStore";
-import Supertrend from "./Supertrend";
-import OnBalanceVolume from "./OnBalanceVolume";
+import Supertrend from "./Supertrend/Supertrend";
+import OnBalanceVolume from "./OBV/OnBalanceVolume";
 
 interface IndicatorsModalProps {
   children?: ReactNode;

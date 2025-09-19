@@ -1,7 +1,7 @@
 import React, { ReactNode } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
-import Switch from "../Buttons/Switch";
+import Switch from "../../Buttons/Switch";
 //import classes from "./OnBalanceVolume.module.css";
 //import OnBalanceVolumeDropdown from "./OnBalanceVolumeDropdown";
 //import DropdownButton from "../Buttons/DropdownButton";

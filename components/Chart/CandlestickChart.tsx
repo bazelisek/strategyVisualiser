@@ -8,18 +8,17 @@ import {
   ColorType,
   UTCTimestamp,
   CandlestickSeries,
-  LineSeries,
   LineStyle,
   SeriesMarker,
   Time,
   createSeriesMarkers,
   ISeriesMarkersPluginApi,
 } from "lightweight-charts";
-import { calculateMovingAverageSeriesData, createMAGraph } from "@/util/indicators/movingAverage";
-import { calculateExponentialMovingAverageSeriesData, createEMAGraph } from "@/util/indicators/exponentialMovingAverage";
-import { calculateCCISeriesData, createCCIGraph } from "@/util/indicators/CCI";
+import { createMAGraph } from "@/util/indicators/movingAverage";
+import { createEMAGraph } from "@/util/indicators/exponentialMovingAverage";
+import { createCCIGraph } from "@/util/indicators/CCI";
 import { RootState } from "@/store/reduxStore";
-import { calculateSupertrendSeriesData, createSTGraph } from "@/util/indicators/supertrend";
+import { createSTGraph } from "@/util/indicators/supertrend";
 import { candleData } from "@/util/serverFetch";
 import { createOBVGraph } from "@/util/indicators/onBalanceVolume";
 import { createSecondaryChart } from "@/util/charts";
@@ -35,7 +34,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   width,
   height,
   candles,
-  tradeMarkers
+  tradeMarkers,
 }) => {
   const indicatorSlice = useSelector((state: RootState) => state.indicators);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -45,12 +44,16 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const topHeight = indicatorSlice.commodityChannelIndex.visible || indicatorSlice.onBalanceVolume.visible
-      ? height * 0.7
-      : height;
-    const bottomHeight = indicatorSlice.commodityChannelIndex.visible || indicatorSlice.onBalanceVolume.visible
-      ? height * 0.3
-      : 0;
+    const topHeight =
+      indicatorSlice.commodityChannelIndex.visible ||
+      indicatorSlice.onBalanceVolume.visible
+        ? height * 0.7
+        : height;
+    const bottomHeight =
+      indicatorSlice.commodityChannelIndex.visible ||
+      indicatorSlice.onBalanceVolume.visible
+        ? height * 0.3
+        : 0;
 
     const mainChart = createChart(chartRef.current, {
       width,
@@ -104,21 +107,28 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     candleSeries.setData(data);
     let seriesMarkersApi: ISeriesMarkersPluginApi<Time> | null = null;
-    
 
     // Add trade markers
     if (tradeMarkers && tradeMarkers.length > 0) {
       seriesMarkersApi = createSeriesMarkers(candleSeries, tradeMarkers);
     }
-    
+
     if (indicatorSlice.movingAverage.visible) {
       createMAGraph(mainChart, indicatorSlice.movingAverage.value, candles);
     }
     if (indicatorSlice.exponentialMovingAverage.visible) {
-      createEMAGraph(mainChart, indicatorSlice.exponentialMovingAverage.value, candles);
+      createEMAGraph(
+        mainChart,
+        indicatorSlice.exponentialMovingAverage.value,
+        candles
+      );
     }
     if (indicatorSlice.commodityChannelIndex.visible) {
-      createCCIGraph(cciChart, indicatorSlice.commodityChannelIndex.value, candles);
+      createCCIGraph(
+        cciChart,
+        indicatorSlice.commodityChannelIndex.value,
+        candles
+      );
     }
     if (indicatorSlice.supertrend.visible) {
       createSTGraph(mainChart, indicatorSlice.supertrend.value, candles);

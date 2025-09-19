@@ -1,8 +1,9 @@
-import React, { ReactNode } from "react";
-import Dropdown from "./Utilities/Dropdown";
+import React, { ReactNode, useState } from "react";
+import Dropdown from "../Utilities/Dropdown";
 import { AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setIndicators } from "@/store/reduxStore";
+import { HexColorPicker } from "react-colorful";
 
 interface MovingAverageDropdownProps {
   children?: ReactNode;
@@ -13,6 +14,7 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
   open,
 }) => {
   const indicators = useSelector((state: RootState) => state.indicators);
+  const [color, setColor] = useState(indicators.movingAverage.value.color);
   const dispatch = useDispatch();
 
   function handleMaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -20,7 +22,7 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
       dispatch(
         setIndicators({
           indicator: "movingAverage",
-          value: { maLength: Number(e.target.value) },
+          value: { maLength: Number(e.target.value), color },
         })
       );
   }
@@ -39,6 +41,7 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
               defaultValue={indicators.movingAverage.value.maLength}
             />
           </div>
+          <HexColorPicker color={color} onChange={setColor} />
         </Dropdown>
       )}
     </AnimatePresence>

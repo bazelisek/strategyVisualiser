@@ -1,23 +1,23 @@
 import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
 import React, { ReactNode, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import classes from "./ExponentialMovingAverage.module.css";
-import DropdownButton from "../Buttons/DropdownButton";
-import Switch from "../Buttons/Switch";
-import SupertrendDropdown from "./SupertrendDropdown";
+import classes from "../EMA/ExponentialMovingAverage.module.css";
+import DropdownButton from "../../Buttons/DropdownButton";
+import Switch from "../../Buttons/Switch";
+import CommodityChannelIndexDropdown from "./CommodityChannelIndexDropdown";
 
-interface SupertrendProps {
+interface CommodityChannelIndexProps {
   children?: ReactNode;
 }
 
-const Supertrend: React.FC<SupertrendProps> = () => {
+const CommodityChannelIndex: React.FC<CommodityChannelIndexProps> = () => {
   const indicators = useSelector((state: RootState) => state.indicators);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {
     dispatch(
       setIndicatorsVisibility({
-        indicator: "supertrend",
+        indicator: "commodityChannelIndex",
         value: value,
       })
     );
@@ -29,18 +29,18 @@ const Supertrend: React.FC<SupertrendProps> = () => {
   return (
     <>
       <div className="indicator-selector-div">
-        <p>Supertrend</p>
+        <p>Commodity Channel Index</p>
         <div className={classes.alignmentDiv}>
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators.supertrend.visible}
+            isChecked={indicators.commodityChannelIndex.visible}
             clickHandler={handleMovingAverageToggle}
           />
         </div>
       </div>
-      <SupertrendDropdown open={open} />
+      <CommodityChannelIndexDropdown open={open} />
     </>
   );
 };
 
-export default Supertrend;
+export default CommodityChannelIndex;
