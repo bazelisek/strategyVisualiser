@@ -1,9 +1,9 @@
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode} from "react";
 import Dropdown from "../Utilities/Dropdown";
 import { AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setIndicators } from "@/store/reduxStore";
-import { HexColorPicker } from "react-colorful";
+import ColorPicker from "../Utilities/ColorPicker";
 
 interface ExponentialMovingAverageDropdownProps {
   children?: ReactNode;
@@ -14,7 +14,7 @@ const ExponentialMovingAverageDropdown: React.FC<
   ExponentialMovingAverageDropdownProps
 > = ({ open }) => {
   const indicators = useSelector((state: RootState) => state.indicators);
-  const [color, setColor] = useState(indicators.exponentialMovingAverage.value.color);
+  const color = indicators.exponentialMovingAverage.value.color;
   const dispatch = useDispatch();
 
   function handleEmaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -27,6 +27,14 @@ const ExponentialMovingAverageDropdown: React.FC<
         })
       );
     }
+  }
+  function handleSetColor(newColor: string) {
+    dispatch(
+      setIndicators({
+        indicator: "exponentialMovingAverage",
+        value: { ...indicators.movingAverage.value, color: newColor },
+      })
+    );
   }
 
   return (
@@ -42,7 +50,7 @@ const ExponentialMovingAverageDropdown: React.FC<
               defaultValue={indicators.exponentialMovingAverage.value.emaLength}
             />
           </div>
-          <HexColorPicker color={color} onChange={setColor} />
+          <ColorPicker color={color} setColor={handleSetColor} />
         </Dropdown>
       )}
     </AnimatePresence>

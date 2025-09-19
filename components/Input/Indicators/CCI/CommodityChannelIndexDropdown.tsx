@@ -4,6 +4,7 @@ import React, { ReactNode, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Dropdown from "../Utilities/Dropdown";
 import { HexColorPicker } from "react-colorful";
+import ColorPicker from "../Utilities/ColorPicker";
 
 interface CommodityChannelIndexDropdownProps {
   children?: ReactNode;
@@ -14,9 +15,7 @@ const CommodityChannelIndexDropdown: React.FC<
   CommodityChannelIndexDropdownProps
 > = ({ open }) => {
   const indicators = useSelector((state: RootState) => state.indicators);
-  const [color, setColor] = useState(
-    indicators.commodityChannelIndex.value.color
-  );
+  const color = indicators.commodityChannelIndex.value.color;
   const dispatch = useDispatch();
 
   function handleCciLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -29,6 +28,14 @@ const CommodityChannelIndexDropdown: React.FC<
         })
       );
     }
+  }
+  function handleSetColor(newColor: string) {
+    dispatch(
+      setIndicators({
+        indicator: "commodityChannelIndex",
+        value: { ...indicators.movingAverage.value, color: newColor },
+      })
+    );
   }
 
   return (
@@ -44,7 +51,7 @@ const CommodityChannelIndexDropdown: React.FC<
               defaultValue={indicators.commodityChannelIndex.value.cciLength}
             />
           </div>
-          <HexColorPicker color={color} onChange={setColor} />
+          <ColorPicker color={color} setColor={handleSetColor} />
         </Dropdown>
       )}
     </AnimatePresence>

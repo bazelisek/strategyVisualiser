@@ -1,0 +1,66 @@
+.div {
+  position: absolute;
+  top: 50px; /* adjust based on where you want it */
+  left: 0;
+  min-width: 280px;
+  border-radius: 20px;
+  border: 1px solid var(--accent);
+  background-color: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  padding: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.div label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.div input {
+  appearance: textfield;
+  background-color: var(--background-light);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  color: var(--foreground);
+  transition: box-shadow 0.2s ease;
+}
+
+.div input:focus {
+  outline: none;
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* Color swatch button */
+.div button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.color:hover {
+  transform: scale(1.05);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
