@@ -1,14 +1,9 @@
-import { UTCTimestamp } from "lightweight-charts";
+import { IChartApi, LineSeries, UTCTimestamp } from "lightweight-charts";
 import { CCI } from "technicalindicators";
+import { candleData } from "../serverFetch";
 
 export function calculateCCISeriesData(
-  candleData: {
-    time: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-  }[],
+  candleData: candleData,
   cciLength: number
 ): { time: UTCTimestamp; value?: number }[] {
   const validCandles = candleData;
@@ -27,4 +22,21 @@ export function calculateCCISeriesData(
     time: c.time as UTCTimestamp,
     value: i >= cciLength - 1 ? cciValues[i - (cciLength - 1)] : undefined,
   }));
+}
+
+export function createCCIGraph(
+  cciChart: IChartApi | null,
+  config: { cciLength: number },
+  candles: candleData,
+) {
+  if (!cciChart) return;
+  const cciSeries = cciChart.addSeries(LineSeries, {
+    color: "#f829ffff",
+    lineWidth: 1,
+  });
+
+  cciSeries.createPriceLine({ price: 100, color: "red", lineWidth: 1 });
+  cciSeries.createPriceLine({ price: -100, color: "green", lineWidth: 1 });
+
+  cciSeries.setData(calculateCCISeriesData(candles, config.cciLength));
 }

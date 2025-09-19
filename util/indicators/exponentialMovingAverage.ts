@@ -1,14 +1,9 @@
-import { UTCTimestamp } from "lightweight-charts";
+import { IChartApi, LineSeries, UTCTimestamp } from "lightweight-charts";
 import { EMA } from "technicalindicators";
+import { candleData } from "../serverFetch";
 
 export function calculateExponentialMovingAverageSeriesData(
-  candleData: {
-    time: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-  }[],
+  candleData: candleData,
   emaLength: number
 ): { time: UTCTimestamp; value?: number }[] {
   const validCandles = candleData;
@@ -20,4 +15,19 @@ export function calculateExponentialMovingAverageSeriesData(
     time: c.time as UTCTimestamp,
     value: i >= emaLength - 1 ? emaValues[i - (emaLength - 1)] : undefined,
   }));
+}
+
+export function createEMAGraph(mainChart: IChartApi,
+  config: {emaLength: number},
+  candles: candleData) {
+  const ema = mainChart.addSeries(LineSeries, {
+    color: "#29f8ff",
+    lineWidth: 1,
+  });
+  ema.setData(
+    calculateExponentialMovingAverageSeriesData(
+      candles,
+      config.emaLength
+    )
+  );
 }

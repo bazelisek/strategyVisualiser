@@ -1,14 +1,9 @@
-import { UTCTimestamp } from "lightweight-charts";
+import { IChartApi, LineSeries, UTCTimestamp } from "lightweight-charts";
 import { SMA } from "technicalindicators";
+import { candleData } from "../serverFetch";
 
 export function calculateMovingAverageSeriesData(
-  candleData: {
-    time: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-  }[],
+  candleData: candleData,
   maLength: number
 ): { time: UTCTimestamp; value?: number }[] {
   const validCandles = candleData;
@@ -24,4 +19,16 @@ export function calculateMovingAverageSeriesData(
   );
 
   return maData;
+}
+
+export function createMAGraph(
+  mainChart: IChartApi,
+  config: {maLength: number},
+  candles: candleData
+): void {
+  const ma = mainChart.addSeries(LineSeries, {
+    color: "#2962FF",
+    lineWidth: 1,
+  });
+  ma.setData(calculateMovingAverageSeriesData(candles, config.maLength));
 }

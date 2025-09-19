@@ -1,10 +1,4 @@
-interface Candle {
-  time: number; // UTC timestamp in seconds
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
+import { candleData } from "./serverFetch";
 
 interface StrategyPoint {
   time: number; // UTC timestamp int
@@ -13,7 +7,7 @@ interface StrategyPoint {
 
 export function getStrategyPerformance(
   strategyData: StrategyPoint[],
-  transformedData: { candles: Candle[] },
+  transformedData: { candles: candleData },
   strategyName: string
 ): {headers: string[], data: string[][]} {
   //fetch('http://DUMMYURL/strategyPerformance')

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import classes from "./CandlestickChartWrapper.module.css";
 import { SeriesMarker, Time } from "lightweight-charts";
 import ShowModalButton from "../Input/Indicators/ShowModalButton";
+import { candleData } from "@/util/serverFetch";
 
 interface CandlestickChartWrapperProps {
   //searchParams: Promise<{ [key: string]: string | undefined }>;
@@ -14,13 +15,7 @@ interface CandlestickChartWrapperProps {
   transformedData: {
     longName: string;
     symbol: string;
-    candles: {
-      time: number;
-      open: number;
-      high: number;
-      low: number;
-      close: number;
-    }[];
+    candles: candleData;
   };
 }
 

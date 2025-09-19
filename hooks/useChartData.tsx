@@ -1,5 +1,6 @@
 import { checkFormValidity } from "@/util/formCheck";
 import {
+  candleData,
   getCandlestickChartData,
   getTradeDataForStrategy,
 } from "@/util/serverFetch";
@@ -28,13 +29,7 @@ export function useChartData(
   transformedData: {
     longName: string;
     symbol: string;
-    candles: {
-      time: number;
-      open: number;
-      high: number;
-      low: number;
-      close: number;
-    }[];
+    candles: candleData;
   };
 } {
   const router = useRouter();
@@ -42,13 +37,7 @@ export function useChartData(
   const [transformedData, setTransformedData] = useState<{
     longName: string;
     symbol: string;
-    candles: {
-      time: number;
-      open: number;
-      high: number;
-      low: number;
-      close: number;
-    }[];
+    candles: candleData;
   }>({ longName: "", symbol: "", candles: [] });
   const [loading, setLoading] = useState(true);
   const [strategyData, setStrategyData] = useState<
@@ -92,13 +81,7 @@ export function useChartData(
             | {
                 symbol: string;
                 longName: string;
-                candles: {
-                  time: number;
-                  open: number;
-                  high: number;
-                  low: number;
-                  close: number;
-                }[];
+                candles: candleData;
               }
             | undefined;
 

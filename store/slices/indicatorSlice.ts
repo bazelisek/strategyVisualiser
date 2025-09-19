@@ -8,6 +8,7 @@ export const indicatorSlice = createSlice({
     supertrend: { visible: false, value: { period: 10, multiplier: 3 } },
     exponentialMovingAverage: { visible: false, value: { emaLength: 20 } },
     commodityChannelIndex: { visible: false, value: { cciLength: 20 } },
+    onBalanceVolume: { visible: false, value: {} },
   },
 
   reducers: {
@@ -19,7 +20,8 @@ export const indicatorSlice = createSlice({
           | { maLength: number }
           | { emaLength: number }
           | { cciLength: number }
-          | { period: number; multiplier: number };
+          | { period: number; multiplier: number }
+          | {};
       }>
     ) => {
       const indicator = action.payload.indicator;

@@ -27,7 +27,7 @@ const MovingAverage: React.FC<MovingAverageProps> = () => {
   return (
     <>
       <div className="indicator-selector-div">
-        <p>MovingAverage</p>
+        <p>Moving Average</p>
         <div className={classes.alignmentDiv}>
           <DropdownButton onClick={toggleDropdown} />
           <Switch

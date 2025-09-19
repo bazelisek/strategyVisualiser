@@ -3,6 +3,15 @@
 import { fetchDataFromUrl } from "@/util/fetch";
 import { UTCTimestamp } from "lightweight-charts";
 
+export type candleData = {
+  time: UTCTimestamp;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}[];
+
 export async function getCandlestickChartData({
   symbol,
   interval,
@@ -34,13 +43,7 @@ export async function getCandlestickChartData({
   function transformYahooToCandles(raw: typeof data): {
     symbol: string;
     longName: string;
-    candles: {
-      time: UTCTimestamp;
-      open: number;
-      high: number;
-      low: number;
-      close: number;
-    }[];
+    candles: candleData;
   } {
     const result = raw.chart.result[0];
     const ts = result.timestamp;
@@ -58,6 +61,7 @@ export async function getCandlestickChartData({
             high: quote.high[i],
             low: quote.low[i],
             close: quote.close[i],
+            volume: quote.volume[i]
           };
         }),
         period1,
@@ -66,13 +70,7 @@ export async function getCandlestickChartData({
     };
   }
   function filterOutInvalidCandles(
-    candleData: {
-      time: UTCTimestamp;
-      open: number;
-      high: number;
-      low: number;
-      close: number;
-    }[],
+    candleData: candleData,
     period1: number,
     period2: number
   ) {
@@ -84,10 +82,12 @@ export async function getCandlestickChartData({
         Number.isFinite(candle.high) &&
         Number.isFinite(candle.low) &&
         Number.isFinite(candle.close) &&
+        Number.isFinite(candle.volume) &&
         candle.open > 0 &&
         candle.high > 0 &&
         candle.low > 0 &&
         candle.close > 0 &&
+        candle.volume >= 0 &&
         unixTime >= period1 &&
         unixTime <= period2
       );

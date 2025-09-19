@@ -1,3 +1,4 @@
+import { candleData } from "@/util/serverFetch";
 import { getStrategyPerformance } from "@/util/strategyPerformance";
 import React, { ReactNode } from "react";
 
@@ -6,13 +7,7 @@ interface StrategyPerformanceOverviewProps {
   transformedData: {
     longName: string;
     symbol: string;
-    candles: {
-      time: number;
-      open: number;
-      high: number;
-      low: number;
-      close: number;
-    }[];
+    candles: candleData;
   };
   strategyData: {
     time: number;
