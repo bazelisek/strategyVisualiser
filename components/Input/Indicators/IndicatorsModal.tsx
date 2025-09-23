@@ -12,15 +12,16 @@ import OnBalanceVolume from "./OBV/OnBalanceVolume";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
+  index: number;
 }
 
-const IndicatorsModal: React.FC<IndicatorsModalProps> = () => {
+const IndicatorsModal: React.FC<IndicatorsModalProps> = ({index}) => {
   const modalSlice = useSelector((state: RootState) => state.modals);
-  const open = modalSlice.indicators;
+  const open = modalSlice[index]?.indicators;
   const dispatch = useDispatch();
 
   function handleClose() {
-    dispatch(setModal({modal: 'indicators', value: false}))
+    dispatch(setModal({modal: {index, modal: 'indicators'}, value: false}))
   }
   
   return createPortal(
@@ -42,19 +43,19 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = () => {
             </div>
             <motion.ul layout>
               <motion.li layout>
-                <MovingAverage />
+                <MovingAverage index={index}/>
               </motion.li>
               <motion.li layout>
-                <ExponentialMovingAverage />
+                <ExponentialMovingAverage index={index}/>
               </motion.li>
               <motion.li layout>
-                <CommodityChannelIndex />
+                <CommodityChannelIndex index={index}/>
               </motion.li>
               <motion.li layout>
-                <Supertrend />
+                <Supertrend index={index}/>
               </motion.li>
               <motion.li layout>
-                <OnBalanceVolume />
+                <OnBalanceVolume index={index}/>
               </motion.li>
             </motion.ul>
           </motion.dialog>

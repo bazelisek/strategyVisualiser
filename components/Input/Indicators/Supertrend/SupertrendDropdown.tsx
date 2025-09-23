@@ -9,20 +9,22 @@ import ColorPicker from "../Utilities/ColorPicker";
 interface SupertrendDropdownProps {
   children?: ReactNode;
   open: boolean;
+  index: number;
 }
 
-const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({ open }) => {
+const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({ index, open }) => {
   const indicators = useSelector((state: RootState) => state.indicators);
-  const color = indicators.supertrend.value.color;
+  const color = indicators[index].supertrend.value.color;
   const dispatch = useDispatch();
 
   function handlePeriodChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.value && Number(e.target.value) >= 1)
       dispatch(
         setIndicators({
+          index,
           indicator: "supertrend",
           value: {
-            ...indicators.supertrend.value,
+            ...indicators[index].supertrend.value,
             period: Number(e.target.value),
           },
         })
@@ -31,10 +33,10 @@ const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({ open }) => {
   function handleMultiplierChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.value && Number(e.target.value) >= 1)
       dispatch(
-        setIndicators({
+        setIndicators({index,
           indicator: "supertrend",
           value: {
-            ...indicators.supertrend.value,
+            ...indicators[index].supertrend.value,
             multiplier: Number(e.target.value),
           },
         })
@@ -42,9 +44,9 @@ const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({ open }) => {
   }
   function handleSetColor(newColor: string) {
     dispatch(
-      setIndicators({
+      setIndicators({index,
         indicator: "supertrend",
-        value: { ...indicators.movingAverage.value, color: newColor },
+        value: { ...indicators[index].movingAverage.value, color: newColor },
       })
     );
   }
@@ -60,7 +62,7 @@ const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({ open }) => {
               id="supertrend-period"
               placeholder=" "
               onChange={handlePeriodChange}
-              defaultValue={indicators.supertrend.value.period}
+              defaultValue={indicators[index].supertrend.value.period}
             />
           </div>
           <div>
@@ -70,7 +72,7 @@ const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({ open }) => {
               id="supertrend-multiplier"
               placeholder=" "
               onChange={handleMultiplierChange}
-              defaultValue={indicators.supertrend.value.multiplier}
+              defaultValue={indicators[index].supertrend.value.multiplier}
             />
           </div>
           <ColorPicker color={color} setColor={handleSetColor} />

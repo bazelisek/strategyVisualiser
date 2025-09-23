@@ -7,17 +7,18 @@ import classes from './QuickActions.module.css';
 
 interface QuickActionsProps {
   children?: ReactNode;
+  index: number;
 }
 
-const QuickActions: React.FC<QuickActionsProps> = () => {
+const QuickActions: React.FC<QuickActionsProps> = ({index}) => {
   const params = useSearchParams();
   const symbol = params.get("symbol") || "Symbol";
   const strategy = params.get("strategy") || "Strategy";
   
   return (
     <div className={classes.quickActions}>
-      <SymbolButton>{symbol}</SymbolButton>
-      <StrategyButton>{strategy}</StrategyButton>
+      <SymbolButton index={index}>{symbol}</SymbolButton>
+      <StrategyButton index={index}>{strategy}</StrategyButton>
     </div>
   );
 };

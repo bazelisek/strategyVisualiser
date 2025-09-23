@@ -8,15 +8,16 @@ import Switch from "../../Buttons/Switch";
 
 interface OnBalanceVolumeProps {
   children?: ReactNode;
+  index: number;
 }
 
-const OnBalanceVolume: React.FC<OnBalanceVolumeProps> = () => {
+const OnBalanceVolume: React.FC<OnBalanceVolumeProps> = ({index}) => {
   const indicators = useSelector((state: RootState) => state.indicators);
   const dispatch = useDispatch();
   //const [open, setOpen] = useState(false);
   function handleOBVToggle(value: boolean) {
     dispatch(
-      setIndicatorsVisibility({ indicator: "onBalanceVolume", value: value })
+      setIndicatorsVisibility({ index, indicator: "onBalanceVolume", value: value })
     );
   }
   /*
@@ -31,7 +32,7 @@ const OnBalanceVolume: React.FC<OnBalanceVolumeProps> = () => {
         <div>
           {/*<DropdownButton onClick={toggleDropdown} />*/}
           <Switch
-            isChecked={indicators.onBalanceVolume.visible}
+            isChecked={indicators[index].onBalanceVolume.visible}
             clickHandler={handleOBVToggle}
           />
         </div>

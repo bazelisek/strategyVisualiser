@@ -7,20 +7,21 @@ import { RootState, setModal } from '@/store/reduxStore';
 
 interface ShowModalButtonProps {
   children?: ReactNode;
+  index: number;
 }
 
-const ShowModalButton: React.FC<ShowModalButtonProps> = () => {
+const ShowModalButton: React.FC<ShowModalButtonProps> = ({index}) => {
   const dispatch = useDispatch();
   const modals = useSelector((state: RootState) => state.modals)
   function handleClick() {
-    dispatch(setModal({modal: 'indicators', value: !modals.indicators}))
+    dispatch(setModal({modal: {modal: 'indicators', index: index}, value: !modals[index].indicators}))
   }
   return (
     <>
     <AnimationButton className={classes.button} onClick={handleClick}>
       Indicators
     </AnimationButton>
-    <IndicatorsModal/>
+    <IndicatorsModal index={index}/>
     </>
   );
 };

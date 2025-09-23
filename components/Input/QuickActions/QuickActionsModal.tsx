@@ -9,12 +9,14 @@ interface QuickActionsModalProps {
   children?: ReactNode;
   heading: string;
   open: boolean;
+  index: number;
 }
 
 const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
   children,
   open,
   heading,
+  index
 }) => {
   const dispatch = useDispatch();
   function handleClose(
@@ -23,7 +25,7 @@ const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
       | React.SyntheticEvent<HTMLDialogElement, Event>
   ) {
     e.preventDefault();
-    dispatch(setModal({ modal: "symbol", value: false }));
+    dispatch(setModal({ modal: {modal: "symbol", index}, value: false }));
   }
 
   return (

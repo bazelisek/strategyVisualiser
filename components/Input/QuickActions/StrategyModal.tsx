@@ -10,11 +10,12 @@ import { getAvailableStrategies } from "@/util/strategies";
 
 interface StrategyModalProps {
   children?: ReactNode;
+  index: number;
 }
 
-const StrategyModal: React.FC<StrategyModalProps> = () => {
+const StrategyModal: React.FC<StrategyModalProps> = ({index}) => {
   const modals = useSelector((state: RootState) => state.modals);
-  const open = modals.strategy;
+  const open = modals[index].strategy;
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -27,7 +28,7 @@ const StrategyModal: React.FC<StrategyModalProps> = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("strategy", strategy);
     router.replace(`?${params.toString()}`);
-    dispatch(setModal({ modal: "strategy", value: false }));
+    dispatch(setModal({ modal: {index, modal: "strategy"}, value: false }));
   }
 
   useEffect(() => {
@@ -52,7 +53,7 @@ const StrategyModal: React.FC<StrategyModalProps> = () => {
   );
 
   return (
-    <QuickActionsModal open={open} heading="Strategy">
+    <QuickActionsModal index={index} open={open} heading="Strategy">
       <label htmlFor="strategySearch">Search</label>
       <input
         id="strategySearch"

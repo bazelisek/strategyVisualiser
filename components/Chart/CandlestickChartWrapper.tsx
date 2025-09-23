@@ -17,12 +17,14 @@ interface CandlestickChartWrapperProps {
     symbol: string;
     candles: candleData;
   };
+  index: number;
 }
 
 const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
   tradeMarkers,
   loading,
   transformedData,
+  index,
 }) => {
   // místo useRef:
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
@@ -68,12 +70,13 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: "spring" }}
           className={classes.div}
-        > 
-          <ShowModalButton />
+        >
+          <ShowModalButton index={index} />
           <h2>{transformedData.longName}</h2>
           <h3>{transformedData.symbol}</h3>
           <CandlestickChart
             width={chartWidth}
+            index={index}
             height={580}
             candles={transformedData.candles}
             tradeMarkers={tradeMarkers}

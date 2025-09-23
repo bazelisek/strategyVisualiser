@@ -8,17 +8,19 @@ import ExponentialMovingAverageDropdown from "./ExponentialMovingAverageDropdown
 
 interface ExponentialMovingAverageProps {
   children?: ReactNode;
+  index: number;
 }
 
 const ExponentialMovingAverage: React.FC<
   ExponentialMovingAverageProps
-> = () => {
+> = ({index}) => {
   const indicators = useSelector((state: RootState) => state.indicators);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {
     dispatch(
       setIndicatorsVisibility({
+        index,
         indicator: "exponentialMovingAverage",
         value: value,
       })
@@ -35,12 +37,12 @@ const ExponentialMovingAverage: React.FC<
         <div className={classes.alignmentDiv}>
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators.exponentialMovingAverage.visible}
+            isChecked={indicators[index].exponentialMovingAverage.visible}
             clickHandler={handleMovingAverageToggle}
           />
         </div>
       </div>
-      <ExponentialMovingAverageDropdown open={open} />
+      <ExponentialMovingAverageDropdown index={index} open={open} />
     </>
   );
 };

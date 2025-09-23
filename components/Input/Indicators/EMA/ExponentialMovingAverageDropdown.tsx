@@ -8,13 +8,14 @@ import ColorPicker from "../Utilities/ColorPicker";
 interface ExponentialMovingAverageDropdownProps {
   children?: ReactNode;
   open: boolean;
+  index: number;
 }
 
 const ExponentialMovingAverageDropdown: React.FC<
   ExponentialMovingAverageDropdownProps
-> = ({ open }) => {
+> = ({ open, index }) => {
   const indicators = useSelector((state: RootState) => state.indicators);
-  const color = indicators.exponentialMovingAverage.value.color;
+  const color = indicators[index].exponentialMovingAverage.value.color;
   const dispatch = useDispatch();
 
   function handleEmaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -22,6 +23,7 @@ const ExponentialMovingAverageDropdown: React.FC<
     if (value && parseInt(value, 10) >= 1) {
       dispatch(
         setIndicators({
+          index,
           indicator: "exponentialMovingAverage",
           value: { emaLength: parseInt(value, 10), color },
         })
@@ -31,8 +33,9 @@ const ExponentialMovingAverageDropdown: React.FC<
   function handleSetColor(newColor: string) {
     dispatch(
       setIndicators({
+        index,
         indicator: "exponentialMovingAverage",
-        value: { ...indicators.movingAverage.value, color: newColor },
+        value: { ...indicators[index].movingAverage.value, color: newColor },
       })
     );
   }
@@ -47,7 +50,7 @@ const ExponentialMovingAverageDropdown: React.FC<
               type="number"
               id="ema-length"
               onChange={handleEmaLengthChange}
-              defaultValue={indicators.exponentialMovingAverage.value.emaLength}
+              defaultValue={indicators[index].exponentialMovingAverage.value.emaLength}
             />
           </div>
           <ColorPicker color={color} setColor={handleSetColor} />

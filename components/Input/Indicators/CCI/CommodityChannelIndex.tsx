@@ -8,15 +8,17 @@ import CommodityChannelIndexDropdown from "./CommodityChannelIndexDropdown";
 
 interface CommodityChannelIndexProps {
   children?: ReactNode;
+  index: number;
 }
 
-const CommodityChannelIndex: React.FC<CommodityChannelIndexProps> = () => {
+const CommodityChannelIndex: React.FC<CommodityChannelIndexProps> = ({index}) => {
   const indicators = useSelector((state: RootState) => state.indicators);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {
     dispatch(
       setIndicatorsVisibility({
+        index,
         indicator: "commodityChannelIndex",
         value: value,
       })
@@ -33,12 +35,12 @@ const CommodityChannelIndex: React.FC<CommodityChannelIndexProps> = () => {
         <div className={classes.alignmentDiv}>
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators.commodityChannelIndex.visible}
+            isChecked={indicators[index].commodityChannelIndex.visible}
             clickHandler={handleMovingAverageToggle}
           />
         </div>
       </div>
-      <CommodityChannelIndexDropdown open={open} />
+      <CommodityChannelIndexDropdown index={index} open={open} />
     </>
   );
 };

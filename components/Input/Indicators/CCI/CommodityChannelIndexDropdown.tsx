@@ -9,13 +9,14 @@ import ColorPicker from "../Utilities/ColorPicker";
 interface CommodityChannelIndexDropdownProps {
   children?: ReactNode;
   open: boolean;
+  index: number;
 }
 
 const CommodityChannelIndexDropdown: React.FC<
   CommodityChannelIndexDropdownProps
-> = ({ open }) => {
+> = ({ open, index }) => {
   const indicators = useSelector((state: RootState) => state.indicators);
-  const color = indicators.commodityChannelIndex.value.color;
+  const color = indicators[index].commodityChannelIndex.value.color;
   const dispatch = useDispatch();
 
   function handleCciLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -23,6 +24,7 @@ const CommodityChannelIndexDropdown: React.FC<
     if (value && parseInt(value, 10) >= 1) {
       dispatch(
         setIndicators({
+          index,
           indicator: "commodityChannelIndex",
           value: { cciLength: parseInt(value, 10), color },
         })
@@ -32,8 +34,9 @@ const CommodityChannelIndexDropdown: React.FC<
   function handleSetColor(newColor: string) {
     dispatch(
       setIndicators({
+        index,
         indicator: "commodityChannelIndex",
-        value: { ...indicators.movingAverage.value, color: newColor },
+        value: { ...indicators[index].movingAverage.value, color: newColor },
       })
     );
   }
@@ -48,7 +51,7 @@ const CommodityChannelIndexDropdown: React.FC<
               type="number"
               id="cci-length"
               onChange={handleCciLengthChange}
-              defaultValue={indicators.commodityChannelIndex.value.cciLength}
+              defaultValue={indicators[index].commodityChannelIndex.value.cciLength}
             />
           </div>
           <ColorPicker color={color} setColor={handleSetColor} />
