@@ -32,7 +32,7 @@ const MovingAverage: React.FC<MovingAverageProps> = ({index}) => {
         <div className={classes.alignmentDiv}>
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators[index].movingAverage.visible}
+            isChecked={indicators[index]?.movingAverage.visible || false}
             clickHandler={handleMovingAverageToggle}
           />
         </div>

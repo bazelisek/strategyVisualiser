@@ -5,16 +5,22 @@ import AddTile from "@/components/Tiling/AddTile";
 import Tile from "@/components/Tiling/Tile";
 import Modal from "@/components/Modal";
 import Form from "@/components/Input/Form/Form";
-import { useDispatch } from "react-redux";
-import { newChart } from "@/store/reduxStore";
-import { Mosaic, MosaicWindow, MosaicNode } from 'react-mosaic-component';
-
+import "react-mosaic-component/react-mosaic-component.css";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Home() {
-  const dispatch = useDispatch();
-  const [tileCount, setTileCount] = useState(0);
+  const params = useSearchParams();
+  const symbols = params.getAll("symbol");
+  const strategies = params.getAll("strategy");
+  const period1s = params.getAll("period1");
+  const period2s = params.getAll("period2");
+  const intervals = params.getAll("interval");
+  const router = useRouter();
+
+  const tileCount = symbols.length;
   const [isAddTileActive, setIsAddTileActive] = useState<boolean>(true);
   const tileArr: React.JSX.Element[] = [];
+
   for (let i = 0; i < tileCount; i++) {
     tileArr.push(<Tile index={i} key={i} />);
   }
@@ -24,7 +30,7 @@ export default function Home() {
   }
 
   function handleClose() {
-    setIsAddTileActive(true);handleClose
+    setIsAddTileActive(true);
   }
 
   function handleSubmit(submittedData: {
@@ -32,55 +38,53 @@ export default function Home() {
     interval: string;
     period1: string;
     period2: string;
-    //duration: formData.duration.value,
     strategy: string;
   }) {
-    dispatch(newChart(submittedData));
-    setTileCount(old => old + 1);
+    let paramsArr: {
+      symbol: string;
+      strategy: string;
+      period1: string;
+      period2: string;
+      interval: string;
+    }[] = [];
+    for (let i = 0; i < tileCount; i++) {
+      paramsArr.push({
+        symbol: symbols[i],
+        strategy: strategies[i],
+        interval: intervals[i],
+        period1: period1s[i],
+        period2: period2s[i],
+      });
+    }
+    paramsArr.push(submittedData);
+    const newSearchParams = new URLSearchParams();
+    paramsArr.forEach((param) => {
+      newSearchParams.append("symbol", param.symbol);
+      newSearchParams.append("strategy", param.strategy);
+      newSearchParams.append("interval", param.interval);
+      newSearchParams.append("period1", param.period1);
+      newSearchParams.append("period2", param.period2);
+    });
+    router.replace("/?" + newSearchParams.toString());
+
+    //dispatch(newChart(submittedData));
     handleClose();
-  }
-
-  // Generate tile IDs
-  const tileIds = Array.from({ length: tileCount }, (_, i) => i.toString());
-
-  // Mosaic tree structure (simple row of tiles)
-  const mosaicTree: MosaicNode<string> | null =
-  tileIds.length === 0
-    ? null
-    : tileIds.length === 1
-    ? tileIds[0]
-    : {
-        direction: "row", // use string literal instead of enum
-        first: tileIds[0],
-        second:
-          tileIds.length === 2
-            ? tileIds[1]
-            : {
-                direction: "row", // use string literal instead of enum
-                first: tileIds[1],
-                second: tileIds[2], // keep it a single node
-              },
-      };
-
-  function renderTile(id: string) {
-    return <Tile index={parseInt(id)} key={id} />;
   }
 
   return (
     <main id="main" className={classes.main}>
       <Suspense fallback="Loading...">
         <AddTile onClick={handleAddTile} active={isAddTileActive} />
-        <Modal title="New Tile" onClose={handleClose} open={!isAddTileActive} className={classes.modal}>
+        <Modal
+          title="New Tile"
+          onClose={handleClose}
+          open={!isAddTileActive}
+          className={classes.modal}
+        >
           <Form onClose={handleSubmit} />
         </Modal>
-        {tileCount > 0 && (
-          <Mosaic<string>
-            renderTile={renderTile}
-            value={mosaicTree}
-            onChange={() => {}}
-            className="mosaic-root"
-          />
-        )}
+
+        {tileCount > 0 && <div className={classes.tileGrid}>{tileArr}</div>}
       </Suspense>
     </main>
   );

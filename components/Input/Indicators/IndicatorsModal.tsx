@@ -18,7 +18,7 @@ interface IndicatorsModalProps {
 
 const IndicatorsModal: React.FC<IndicatorsModalProps> = ({ index }) => {
   const modalSlice = useSelector((state: RootState) => state.modals);
-  const open = modalSlice[index]?.indicators;
+  const open = modalSlice[index]?.indicators || false;
   const dispatch = useDispatch();
 
   function handleClose() {

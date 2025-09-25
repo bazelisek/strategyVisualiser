@@ -12,7 +12,7 @@ interface SymbolButtonProps {
 const SymbolButton: React.FC<SymbolButtonProps> = ({ index, children }) => {
   const dispatch = useDispatch();
   const modals = useSelector((state: RootState) => state.modals);
-  const open = modals[index].symbol;
+  const open = modals[index]?.symbol || false;
   function handleClick() {
     dispatch(setModal({modal: {index, modal: 'symbol'}, value: !open}))
   }

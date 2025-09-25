@@ -11,7 +11,7 @@ interface StrategyButtonProps {
 
 const StrategyButton: React.FC<StrategyButtonProps> = ({ children, index }) => {
   const modals = useSelector((state: RootState) => state.modals);
-  const open = modals[index].strategy;
+  const open = modals[index]?.strategy || false;
   const dispatch = useDispatch();
 
   function handleClick() {

@@ -1,16 +1,18 @@
 .quickActions {
-    margin-top: 10px;
+  margin-top: 10px;
+  padding: 0.5rem; /* minimal padding if needed */
+  align-self: stretch; /* span full width of chartSection */
 }
 .quickActions button {
-    padding: 15px 20px;
-    margin: 5px;
-    font-size: 16px;
-    border-color: var(--accent);
-    border-style: solid;
-    border-width: 1px;
-    background-color: var(--background-light);
-    color: var(--accent);
+  padding: 15px 20px;
+  margin: 5px;
+  font-size: 16px;
+  border-color: var(--accent);
+  border-style: solid;
+  border-width: 1px;
+  background-color: var(--background-light);
+  color: var(--accent);
 }
 .quickActions span {
-    display: inline-block;
+  display: inline-block;
 }

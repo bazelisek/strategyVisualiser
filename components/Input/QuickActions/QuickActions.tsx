@@ -13,15 +13,14 @@ interface QuickActionsProps {
 }
 
 const QuickActions: React.FC<QuickActionsProps> = ({index}) => {
-  const charts = useSelector((state: RootState )=> state.charts);
-  const params = charts[index];
-  const symbol = params.symbol;
-  const strategy = params.strategy;
+  const params = useSearchParams();
+  const symbol = params.getAll("symbol");
+  const strategy = params.getAll("strategy");
   
   return (
     <div className={classes.quickActions}>
-      <SymbolButton index={index}>{symbol}</SymbolButton>
-      <StrategyButton index={index}>{strategy}</StrategyButton>
+      <SymbolButton index={index}>{symbol[index]}</SymbolButton>
+      <StrategyButton index={index}>{strategy[index]}</StrategyButton>
     </div>
   );
 };

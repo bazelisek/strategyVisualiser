@@ -16,13 +16,13 @@ interface ChartSectionProps {
 }
 
 const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
-  const charts = useSelector((state: RootState) => state.charts);
-  const params = charts[index];
-  const symbol = params.symbol;
-  const interval = params.interval;
-  const period1 = params.period1;
-  const period2 = params.period2;
-  const strategy = params.strategy;
+  const params = useSearchParams();
+  const symbol = params.getAll("symbol")[index];
+  const interval = params.getAll("interval")[index];
+  const period1 = params.getAll("period1")[index];
+  const period2 = params.getAll("period2")[index];
+  const strategy = params.getAll("strategy")[index];
+
   if (!Number(period1) || !Number(period2)) {
     throw new Error("period is not a  number");
   }

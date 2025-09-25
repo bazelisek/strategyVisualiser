@@ -34,7 +34,7 @@ const Supertrend: React.FC<SupertrendProps> = ({index}) => {
         <div className={classes.alignmentDiv}>
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators[index].supertrend.visible}
+            isChecked={indicators[index]?.supertrend.visible  || false}
             clickHandler={handleMovingAverageToggle}
           />
         </div>

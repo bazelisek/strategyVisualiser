@@ -66,9 +66,12 @@ export const indicatorSlice = createSlice({
     ) => {
       const indicator = action.payload.indicator;
       const index = action.payload.index;
-      if (state[index][indicator]) {
-        state[index][indicator].value = action.payload.value;
+      while (state.length <= index) {
+        state.push(JSON.parse(JSON.stringify(indicatorState)));
       }
+      // The type assertion is safe because we've ensured the index exists.
+      // Redux Toolkit with Immer allows direct mutation.
+      (state[index][indicator].value as any) = action.payload.value;
     },
     setIndicatorsVisibility: (
       state,
@@ -85,12 +88,16 @@ export const indicatorSlice = createSlice({
     ) => {
       const indicator = action.payload.indicator;
       const index = action.payload.index;
-      if (state[index][indicator]) {
-        state[index][indicator].visible = action.payload.value;
+      while (state.length <= index) {
+        state.push(JSON.parse(JSON.stringify(indicatorState)));
       }
+      state[index][indicator].visible = action.payload.value;
     },
-    newIndicators: (state) => {
-      state.push(indicatorState);
+    newIndicators: (state, action: PayloadAction<number>) => {
+      const index = action.payload;
+      while (state.length <= index) {
+        state.push(JSON.parse(JSON.stringify(indicatorState)));
+      }
     },
   },
 });

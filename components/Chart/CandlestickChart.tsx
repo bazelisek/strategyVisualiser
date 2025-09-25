@@ -44,16 +44,16 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const obvRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!chartRef.current || !indicatorSlice[index]) return;
+    if (!chartRef.current) return;
 
     const topHeight =
-      indicatorSlice[index].commodityChannelIndex.visible ||
-      indicatorSlice[index].onBalanceVolume.visible
+      indicatorSlice[index]?.commodityChannelIndex.visible ||
+      indicatorSlice[index]?.onBalanceVolume.visible
         ? height * 0.7
         : height;
     const bottomHeight =
-      indicatorSlice[index].commodityChannelIndex.visible ||
-      indicatorSlice[index].onBalanceVolume.visible
+      indicatorSlice[index]?.commodityChannelIndex.visible ||
+      indicatorSlice[index]?.onBalanceVolume.visible
         ? height * 0.3
         : 0;
 
@@ -75,11 +75,11 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     });
 
     let cciChart: ReturnType<typeof createChart> | null = null;
-    if (indicatorSlice[index].commodityChannelIndex.visible && cciRef.current) {
+    if ((indicatorSlice[index]?.commodityChannelIndex.visible || false) && cciRef.current) {
       cciChart = createSecondaryChart(cciRef, mainChart, width, bottomHeight);
     }
     let obvChart: ReturnType<typeof createChart> | null = null;
-    if (indicatorSlice[index].onBalanceVolume.visible && obvRef.current) {
+    if ((indicatorSlice[index]?.onBalanceVolume.visible || false) && obvRef.current) {
       obvChart = createSecondaryChart(obvRef, mainChart, width, bottomHeight);
     }
 
@@ -115,28 +115,28 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       seriesMarkersApi = createSeriesMarkers(candleSeries, tradeMarkers);
     }
 
-    if (indicatorSlice[index].movingAverage.visible) {
-      createMAGraph(mainChart, indicatorSlice[index].movingAverage.value, candles);
+    if (indicatorSlice[index]?.movingAverage.visible || false) {
+      createMAGraph(mainChart, indicatorSlice[index]?.movingAverage.value, candles);
     }
-    if (indicatorSlice[index].exponentialMovingAverage.visible) {
+    if (indicatorSlice[index]?.exponentialMovingAverage.visible || false) {
       createEMAGraph(
         mainChart,
-        indicatorSlice[index].exponentialMovingAverage.value,
+        indicatorSlice[index]?.exponentialMovingAverage.value || false,
         candles
       );
     }
-    if (indicatorSlice[index].commodityChannelIndex.visible) {
+    if (indicatorSlice[index]?.commodityChannelIndex.visible || false) {
       createCCIGraph(
         cciChart,
-        indicatorSlice[index].commodityChannelIndex.value,
+        indicatorSlice[index]?.commodityChannelIndex.value || false,
         candles
       );
     }
-    if (indicatorSlice[index].supertrend.visible) {
-      createSTGraph(mainChart, indicatorSlice[index].supertrend.value, candles);
+    if (indicatorSlice[index]?.supertrend.visible || false) {
+      createSTGraph(mainChart, indicatorSlice[index]?.supertrend.value || false, candles);
     }
-    if (indicatorSlice[index].onBalanceVolume.visible) {
-      createOBVGraph(obvChart, indicatorSlice[index].onBalanceVolume.value, candles);
+    if (indicatorSlice[index]?.onBalanceVolume.visible || false) {
+      createOBVGraph(obvChart, indicatorSlice[index]?.onBalanceVolume.value || false, candles);
     }
 
     return () => {
@@ -151,8 +151,8 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <div ref={chartRef} />
-      {indicatorSlice[index] && indicatorSlice[index].commodityChannelIndex.visible && <div ref={cciRef} />}
-      {indicatorSlice[index] && indicatorSlice[index].onBalanceVolume.visible && <div ref={obvRef} />}
+      {indicatorSlice[index] && (indicatorSlice[index]?.commodityChannelIndex.visible || false) && <div ref={cciRef} />}
+      {indicatorSlice[index] && (indicatorSlice[index]?.onBalanceVolume.visible  || false) && <div ref={obvRef} />}
     </div>
   );
 };

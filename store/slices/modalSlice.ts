@@ -29,20 +29,14 @@ export const modalSlice = createSlice({
       });
 
       // open/close the one you want
-      if (state[modal.index]) {
-        state[modal.index][modal.modal] = value;
-      } else {
-        throw new Error("Wrong index" + modal.index)
-        // Optionally, handle the error or log a warning
-        // console.warn(`Modal index ${modal.index} does not exist.`);
+      while (state.length <= modal.index) {
+        state.push({
+          indicators: false,
+          symbol: false,
+          strategy: false,
+        });
       }
-    },
-    addModal: (state) => {
-      state.push({
-        indicators: false,
-        symbol: false,
-        strategy: false,
-      });
+      state[modal.index][modal.modal] = value;
     },
   },
 });

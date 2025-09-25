@@ -37,7 +37,7 @@ const ExponentialMovingAverage: React.FC<
         <div className={classes.alignmentDiv}>
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators[index].exponentialMovingAverage.visible}
+            isChecked={indicators[index]?.exponentialMovingAverage.visible || false}
             clickHandler={handleMovingAverageToggle}
           />
         </div>

@@ -11,7 +11,7 @@ interface TileProps {
 
 const Tile: React.FC<TileProps> = ({index}) => {
   return (
-    <div>
+    <div className='chartSection'>
         <QuickActions index={index} />
         <ChartSection index={index} /> {/*Need to adjust chart fetching to fetch dynamically based on index*/}
         <SymbolModal index={index} />

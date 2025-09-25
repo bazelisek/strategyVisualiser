@@ -35,7 +35,7 @@ const CommodityChannelIndex: React.FC<CommodityChannelIndexProps> = ({index}) =>
         <div className={classes.alignmentDiv}>
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators[index].commodityChannelIndex.visible}
+            isChecked={indicators[index]?.commodityChannelIndex.visible || false}
             clickHandler={handleMovingAverageToggle}
           />
         </div>

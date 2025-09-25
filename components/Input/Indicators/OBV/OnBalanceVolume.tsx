@@ -32,7 +32,7 @@ const OnBalanceVolume: React.FC<OnBalanceVolumeProps> = ({index}) => {
         <div>
           {/*<DropdownButton onClick={toggleDropdown} />*/}
           <Switch
-            isChecked={indicators[index].onBalanceVolume.visible}
+            isChecked={indicators[index]?.onBalanceVolume.visible || false}
             clickHandler={handleOBVToggle}
           />
         </div>

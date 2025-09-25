@@ -4,7 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import QuickActionsModal from "./QuickActionsModal";
 import { symbols } from "@/util/symbols";
 import { motion } from "framer-motion";
-import { RootState, setChart, setModal } from "@/store/reduxStore";
+import { RootState, setModal } from "@/store/reduxStore";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface SymbolModalProps {
   children?: ReactNode;
@@ -13,14 +14,44 @@ interface SymbolModalProps {
 
 const SymbolModal: React.FC<SymbolModalProps> = ({index}) => {
   const modals = useSelector((state: RootState) => state.modals);
-  const open = modals[index].symbol;
+  const open = modals[index]?.symbol || false;
   const dispatch = useDispatch();
+  const router = useRouter();
+  const params = useSearchParams();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
   function handleSymbolClick(symbol: string) {
-    dispatch(setChart({id: "symbol", index, value: symbol}))
+    const symbols = params.getAll("symbol");
+    const strategies = params.getAll("strategy");
+    const period1s = params.getAll("period1");
+    const period2s = params.getAll("period2");
+    const intervals = params.getAll("interval");
+    const tileCount = symbols.length;
+
+    let paramsArr: {
+      symbol: string;
+      strategy: string;
+      period1: string;
+      period2: string;
+      interval: string;
+    }[] = [];
+    for (let i = 0; i < tileCount; i++) {
+      paramsArr.push({
+        symbol: symbols[i],
+        strategy: strategies[i],
+        interval: intervals[i],
+        period1: period1s[i],
+        period2: period2s[i],
+      });
+    }
+    paramsArr[index].symbol = symbol;
+
+    const newSearchParams = new URLSearchParams();
+    paramsArr.forEach((param) => Object.entries(param).forEach(([key, value]) => newSearchParams.append(key, value)));
+
+    router.replace(`/?${newSearchParams.toString()}`);
     dispatch(setModal({ modal: {index, modal:"symbol"}, value: false }));
   }
 
