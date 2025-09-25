@@ -16,6 +16,7 @@ interface TimeProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
   handleContinue: () => void;
+  modalContainerRef?: React.RefObject<HTMLDivElement>;
 }
 const darkTheme = createTheme({
   palette: {
@@ -36,6 +37,7 @@ const Time: React.FC<TimeProps> = ({
   valueTo,
   onChange,
   handleContinue,
+  modalContainerRef,
   children,
 }) => {
   const fromDate = valueFrom ? new Date(valueFrom) : null;
@@ -100,6 +102,11 @@ const Time: React.FC<TimeProps> = ({
                     },
                   },
                 },
+                popper: {
+                  sx: { zIndex: 3002 },
+                  // No longer need z-index, but we need to set the container
+                  container: modalContainerRef?.current,
+                },
               }}
             />
 
@@ -129,6 +136,11 @@ const Time: React.FC<TimeProps> = ({
                       padding: "0.7rem 0.9rem",
                     },
                   },
+                },
+                popper: {
+                  sx: { zIndex: 3002 },
+                  // No longer need z-index, but we need to set the container
+                  container: modalContainerRef?.current,
                 },
               }}
             />

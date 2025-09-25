@@ -57,6 +57,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             animate="visible"
             exit="exit"
             variants={listVariants}
+            style={{ zIndex: 3000 }} // Ensure it's on top of the modal
           >
             {/* Search box */}
             <input

@@ -18,11 +18,12 @@ interface FormProps {
         period2: string,
         //duration: formData.duration.value,
         strategy: string,
-      }) => void;
+  }) => void;  
+  modalContainerRef?: React.RefObject<HTMLDivElement>;
 }
 
 
-const Form: React.FC<FormProps> = ({onClose}) => {
+const Form: React.FC<FormProps> = ({onClose, modalContainerRef}) => {
   const router = useRouter();
   const [formData, setFormData] = useState({
     symbol: { value: "" },
@@ -77,7 +78,7 @@ const Form: React.FC<FormProps> = ({onClose}) => {
         //duration: formData.duration.value,
         strategy: formData.strategy.value,
       });
-      const searchParams = new URLSearchParams({
+      /*const searchParams = new URLSearchParams({
         symbol: formData.symbol.value,
         interval: interval,
         period1: (Math.floor(new Date(formData.period1.value).getTime()/1000)).toString(),
@@ -85,7 +86,7 @@ const Form: React.FC<FormProps> = ({onClose}) => {
         //duration: formData.duration.value,
         strategy: formData.strategy.value,
       });
-      router.replace(`/chart?${searchParams.toString()}`);
+      router.replace(`/chart?${searchParams.toString()}`);*/
     }
     setCurrentInput((old) => old + 1);
     setError('');
@@ -112,6 +113,7 @@ const Form: React.FC<FormProps> = ({onClose}) => {
             onChange={handleChange}
             valueTo={formData.period2.value}
             handleContinue={handleContinue}
+            modalContainerRef={modalContainerRef}
             key="time-step"
           >
             <AnimationButton onClick={handleBack}>Back</AnimationButton>

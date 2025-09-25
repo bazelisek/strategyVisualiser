@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ReduxWrapper from "@/store/ReduxWrapper";
 import Header from "@/components/Header";
+import "react-mosaic-component/react-mosaic-component.css";
 
 
 const geistSans = Geist({
