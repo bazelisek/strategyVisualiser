@@ -11,12 +11,12 @@ interface TileProps {
 
 const Tile: React.FC<TileProps> = ({index}) => {
   return (
-    <>
+    <div>
         <QuickActions index={index} />
         <ChartSection index={index} /> {/*Need to adjust chart fetching to fetch dynamically based on index*/}
         <SymbolModal index={index} />
         <StrategyModal index={index} />
-    </>
+    </div>
   );
 };
 

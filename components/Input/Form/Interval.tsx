@@ -21,19 +21,20 @@ const Interval: React.FC<IntervalProps> = ({
   return (
     <AnimationWrapper handleContinue={handleContinue}>
       <div>
-        <h2>
-          Please enter an interval of chart data records.
-        </h2>
+        <h2>Please enter an interval of chart data records.</h2>
         <label>Interval</label>
         <CustomSelect
-          onChange={(val) => onChange({ target: { name: "interval", value: val } } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)}
+          onChange={(val) =>
+            onChange({
+              target: { name: "interval", value: val },
+            } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)
+          }
           options={availableIntervals}
           value={value}
           initialText="Plese select an interval"
         />
         {children}
       </div>
-      
     </AnimationWrapper>
   );
 };

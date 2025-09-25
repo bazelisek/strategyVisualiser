@@ -23,13 +23,15 @@ const Symbol: React.FC<SymbolProps> = ({
     <AnimationWrapper handleContinue={handleContinue}>
       <div>
         <h2>
-          Please select the symbol code for the stock you want to chart the graph
-          for.
+          Please select the symbol code for the stock you want to chart the
+          graph for.
         </h2>
         <label>Symbol</label>
         <CustomSelect
           onChange={(val) =>
-            onChange({ target: { name: "symbol", value: val } } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)
+            onChange({
+              target: { name: "symbol", value: val },
+            } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)
           }
           options={availableSymbols}
           value={value}

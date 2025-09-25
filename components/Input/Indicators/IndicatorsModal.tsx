@@ -9,60 +9,49 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState, setModal } from "@/store/reduxStore";
 import Supertrend from "./Supertrend/Supertrend";
 import OnBalanceVolume from "./OBV/OnBalanceVolume";
+import Modal from "@/components/Modal";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
   index: number;
 }
 
-const IndicatorsModal: React.FC<IndicatorsModalProps> = ({index}) => {
+const IndicatorsModal: React.FC<IndicatorsModalProps> = ({ index }) => {
   const modalSlice = useSelector((state: RootState) => state.modals);
   const open = modalSlice[index]?.indicators;
   const dispatch = useDispatch();
 
   function handleClose() {
-    dispatch(setModal({modal: {index, modal: 'indicators'}, value: false}))
+    dispatch(setModal({ modal: { index, modal: "indicators" }, value: false }));
   }
-  
-  return createPortal(
+
+  return (
     <>
-      <AnimatePresence>
-        {open && (
-          <motion.dialog
-            layout
-            initial={{ opacity: 0, y: -400 }}
-            animate={{ opacity: 1, y: 0, transition: {type: 'spring', ease: 'easeIn', duration: 0.5} }}
-            exit={{ opacity: 0, y: -400, transition: {type: 'tween', ease: 'easeIn', duration: 0.25} }}
-            open
-            className={classes.modal}
-            onClose={handleClose}
-          >
-            <div className={classes.header}>
-              <h2>Indicators</h2>
-              <button onClick={handleClose}>&#10005;</button>
-            </div>
-            <motion.ul layout>
-              <motion.li layout>
-                <MovingAverage index={index}/>
-              </motion.li>
-              <motion.li layout>
-                <ExponentialMovingAverage index={index}/>
-              </motion.li>
-              <motion.li layout>
-                <CommodityChannelIndex index={index}/>
-              </motion.li>
-              <motion.li layout>
-                <Supertrend index={index}/>
-              </motion.li>
-              <motion.li layout>
-                <OnBalanceVolume index={index}/>
-              </motion.li>
-            </motion.ul>
-          </motion.dialog>
-        )}
-      </AnimatePresence>
-    </>,
-    document.getElementById("main")!
+      <Modal
+        title="Indicators"
+        className={classes.modal}
+        onClose={handleClose}
+        open={open}
+      >
+        <motion.ul layout>
+          <motion.li layout>
+            <MovingAverage index={index} />
+          </motion.li>
+          <motion.li layout>
+            <ExponentialMovingAverage index={index} />
+          </motion.li>
+          <motion.li layout>
+            <CommodityChannelIndex index={index} />
+          </motion.li>
+          <motion.li layout>
+            <Supertrend index={index} />
+          </motion.li>
+          <motion.li layout>
+            <OnBalanceVolume index={index} />
+          </motion.li>
+        </motion.ul>
+      </Modal>
+    </>
   );
 };
 

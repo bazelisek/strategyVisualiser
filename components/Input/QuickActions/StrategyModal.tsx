@@ -3,8 +3,7 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import QuickActionsModal from "./QuickActionsModal";
-import { useRouter, useSearchParams } from "next/navigation";
-import { RootState, setModal } from "@/store/reduxStore";
+import { RootState, setChart, setModal } from "@/store/reduxStore";
 import { motion } from "framer-motion";
 import { getAvailableStrategies } from "@/util/strategies";
 
@@ -17,17 +16,13 @@ const StrategyModal: React.FC<StrategyModalProps> = ({index}) => {
   const modals = useSelector((state: RootState) => state.modals);
   const open = modals[index].strategy;
   const dispatch = useDispatch();
-  const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [strategies, setStrategies] = useState<string[]>([]);
 
   function handleStrategyClick(strategy: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("strategy", strategy);
-    router.replace(`?${params.toString()}`);
+    dispatch(setChart({id:"strategy", index, value: strategy}))
     dispatch(setModal({ modal: {index, modal: "strategy"}, value: false }));
   }
 

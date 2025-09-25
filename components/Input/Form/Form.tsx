@@ -5,16 +5,24 @@ import Symbol from "./Symbol";
 import Interval from "./Interval";
 import Strategy from "./Strategy";
 import { AnimatePresence } from "framer-motion";
-import AnimationButton from "./Buttons/AnimationButton";
+import AnimationButton from "../Buttons/AnimationButton";
 import Time from "./Time";
 import { getValidIntervals } from "@/util/formCheck";
 
 interface FormProps {
   children?: React.ReactNode;
+  onClose?: (submittedData: {
+        symbol: string,
+        interval:string,
+        period1: string,
+        period2: string,
+        //duration: formData.duration.value,
+        strategy: string,
+      }) => void;
 }
 
 
-const Form: React.FC<FormProps> = () => {
+const Form: React.FC<FormProps> = ({onClose}) => {
   const router = useRouter();
   const [formData, setFormData] = useState({
     symbol: { value: "" },
@@ -61,7 +69,14 @@ const Form: React.FC<FormProps> = () => {
       const interval =
         formData.interval.value ||
         getValidIntervals(new Date(formData.period1.value), new Date(formData.period2.value))[0]; /*validRanges[formData.duration.value][0]*/
-      
+      if (onClose) onClose({
+        symbol: formData.symbol.value,
+        interval: interval,
+        period1: (Math.floor(new Date(formData.period1.value).getTime()/1000)).toString(),
+        period2: (Math.floor(new Date(formData.period2.value).getTime()/1000)).toString(),
+        //duration: formData.duration.value,
+        strategy: formData.strategy.value,
+      });
       const searchParams = new URLSearchParams({
         symbol: formData.symbol.value,
         interval: interval,

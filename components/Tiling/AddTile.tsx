@@ -1,14 +1,15 @@
 'use client';
 import { addModal, newIndicators } from '@/store/reduxStore';
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 interface AddTileProps {
   children?: ReactNode;
   onClick: () => void;
+  active?: boolean;
 }
 
-const AddTile: React.FC<AddTileProps> = ({onClick}) => {
+const AddTile: React.FC<AddTileProps> = ({onClick, active = true}) => {
     const dispatch = useDispatch();
 
     function handleAddTile() {
@@ -18,9 +19,11 @@ const AddTile: React.FC<AddTileProps> = ({onClick}) => {
         onClick();
     }
   return (
-    <button onClick={handleAddTile}>
-      AddTile
-    </button>
+    <>
+      <button disabled={!active} onClick={handleAddTile}>
+        AddTile
+      </button>
+    </>
   );
 };
 

@@ -4,6 +4,8 @@ import React, { ReactNode } from "react";
 import SymbolButton from "./SymbolButton";
 import StrategyButton from "./StrategyButton";
 import classes from './QuickActions.module.css';
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/reduxStore";
 
 interface QuickActionsProps {
   children?: ReactNode;
@@ -11,9 +13,10 @@ interface QuickActionsProps {
 }
 
 const QuickActions: React.FC<QuickActionsProps> = ({index}) => {
-  const params = useSearchParams();
-  const symbol = params.get("symbol") || "Symbol";
-  const strategy = params.get("strategy") || "Strategy";
+  const charts = useSelector((state: RootState )=> state.charts);
+  const params = charts[index];
+  const symbol = params.symbol;
+  const strategy = params.strategy;
   
   return (
     <div className={classes.quickActions}>

@@ -4,8 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import QuickActionsModal from "./QuickActionsModal";
 import { symbols } from "@/util/symbols";
 import { motion } from "framer-motion";
-import { RootState, setModal } from "@/store/reduxStore";
-import { useRouter, useSearchParams } from "next/navigation";
+import { RootState, setChart, setModal } from "@/store/reduxStore";
 
 interface SymbolModalProps {
   children?: ReactNode;
@@ -16,16 +15,12 @@ const SymbolModal: React.FC<SymbolModalProps> = ({index}) => {
   const modals = useSelector((state: RootState) => state.modals);
   const open = modals[index].symbol;
   const dispatch = useDispatch();
-  const searchParams = useSearchParams();
-  const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
   function handleSymbolClick(symbol: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("symbol", symbol);
-    router.replace(`?${params.toString()}`);
+    dispatch(setChart({id: "symbol", index, value: symbol}))
     dispatch(setModal({ modal: {index, modal:"symbol"}, value: false }));
   }
 

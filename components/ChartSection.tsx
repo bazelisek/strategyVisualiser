@@ -7,6 +7,8 @@ import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
 import { motion } from "framer-motion";
 import classes from "./ChartSection.module.css";
 import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
+import { RootState } from "@/store/reduxStore";
+import { useSelector } from "react-redux";
 
 interface ChartSectionProps {
   children?: ReactNode;
@@ -14,12 +16,13 @@ interface ChartSectionProps {
 }
 
 const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
-  const searchParams = useSearchParams();
-  const symbol = searchParams.get("symbol") || "";
-  const interval = searchParams.get("interval") || "";
-  const period1 = searchParams.get("period1") || "";
-  const period2 = searchParams.get("period2") || "";
-  const strategy = searchParams.get("strategy") || "";
+  const charts = useSelector((state: RootState) => state.charts);
+  const params = charts[index];
+  const symbol = params.symbol;
+  const interval = params.interval;
+  const period1 = params.period1;
+  const period2 = params.period2;
+  const strategy = params.strategy;
   if (!Number(period1) || !Number(period2)) {
     throw new Error("period is not a  number");
   }
