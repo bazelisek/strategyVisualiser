@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import {
   createChart,
@@ -22,6 +22,7 @@ import { createSTGraph } from "@/util/indicators/supertrend";
 import { candleData } from "@/util/serverFetch";
 import { createOBVGraph } from "@/util/indicators/onBalanceVolume";
 import { createSecondaryChart } from "@/util/charts";
+import { centerToMarker, toUTCTimestamp } from "@/util/markers";
 
 interface CandlestickChartProps {
   width: number;
@@ -42,6 +43,9 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const chartRef = useRef<HTMLDivElement>(null);
   const cciRef = useRef<HTMLDivElement>(null);
   const obvRef = useRef<HTMLDivElement>(null);
+
+  // New state: store the selected marker’s time (or null if none)
+  const [selectedTime, setSelectedTime] = useState<Time | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -75,15 +79,20 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     });
 
     let cciChart: ReturnType<typeof createChart> | null = null;
-    if ((indicatorSlice[index]?.commodityChannelIndex.visible || false) && cciRef.current) {
+    if (
+      (indicatorSlice[index]?.commodityChannelIndex.visible || false) &&
+      cciRef.current
+    ) {
       cciChart = createSecondaryChart(cciRef, mainChart, width, bottomHeight);
     }
     let obvChart: ReturnType<typeof createChart> | null = null;
-    if ((indicatorSlice[index]?.onBalanceVolume.visible || false) && obvRef.current) {
+    if (
+      (indicatorSlice[index]?.onBalanceVolume.visible || false) &&
+      obvRef.current
+    ) {
       obvChart = createSecondaryChart(obvRef, mainChart, width, bottomHeight);
     }
 
-    // Candlesticks
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
       upColor: "#26a69a",
       downColor: "#ef5350",
@@ -108,15 +117,45 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       .sort((a, b) => a.time - b.time);
 
     candleSeries.setData(data);
+
     let seriesMarkersApi: ISeriesMarkersPluginApi<Time> | null = null;
 
-    // Add trade markers
     if (tradeMarkers && tradeMarkers.length > 0) {
       seriesMarkersApi = createSeriesMarkers(candleSeries, tradeMarkers);
     }
 
+    // ** Subscribe to clicks on the chart **
+    mainChart.subscribeClick((param) => {
+      if (!param.time) {
+        setSelectedTime(null);
+        return;
+      }
+
+      const clickedTime = toUTCTimestamp(param.time);
+      if (clickedTime === null) {
+        setSelectedTime(null);
+        return;
+      }
+
+      // Find the marker that matches the clicked time (normalized)
+      const found = tradeMarkers.find(
+        (m) => toUTCTimestamp(m.time) === clickedTime
+      );
+
+      if (found) {
+        setSelectedTime(found.time);
+        centerToMarker(found.time, mainChart);
+      } else {
+        setSelectedTime(null);
+      }
+    });
+
     if (indicatorSlice[index]?.movingAverage.visible || false) {
-      createMAGraph(mainChart, indicatorSlice[index]?.movingAverage.value, candles);
+      createMAGraph(
+        mainChart,
+        indicatorSlice[index]?.movingAverage.value,
+        candles
+      );
     }
     if (indicatorSlice[index]?.exponentialMovingAverage.visible || false) {
       createEMAGraph(
@@ -133,10 +172,18 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       );
     }
     if (indicatorSlice[index]?.supertrend.visible || false) {
-      createSTGraph(mainChart, indicatorSlice[index]?.supertrend.value || false, candles);
+      createSTGraph(
+        mainChart,
+        indicatorSlice[index]?.supertrend.value || false,
+        candles
+      );
     }
     if (indicatorSlice[index]?.onBalanceVolume.visible || false) {
-      createOBVGraph(obvChart, indicatorSlice[index]?.onBalanceVolume.value || false, candles);
+      createOBVGraph(
+        obvChart,
+        indicatorSlice[index]?.onBalanceVolume.value || false,
+        candles
+      );
     }
 
     return () => {
@@ -151,8 +198,21 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <div ref={chartRef} />
-      {indicatorSlice[index] && (indicatorSlice[index]?.commodityChannelIndex.visible || false) && <div ref={cciRef} />}
-      {indicatorSlice[index] && (indicatorSlice[index]?.onBalanceVolume.visible  || false) && <div ref={obvRef} />}
+      {indicatorSlice[index] &&
+        indicatorSlice[index]?.commodityChannelIndex.visible && (
+          <div ref={cciRef} />
+        )}
+      {indicatorSlice[index] &&
+        indicatorSlice[index]?.onBalanceVolume.visible && <div ref={obvRef} />}
+
+      {/* Show selected marker time */}
+      <div style={{ marginTop: "8px", color: "#fff" }}>
+        {selectedTime !== null ? (
+          <>Selected marker time: {String(selectedTime)}</>
+        ) : (
+          <>Click a marker to select it</>
+        )}
+      </div>
     </div>
   );
 };
