@@ -1,7 +1,6 @@
 import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
 import React, { ReactNode, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import classes from "../EMA/ExponentialMovingAverage.module.css";
 import DropdownButton from "../../Buttons/DropdownButton";
 import Switch from "../../Buttons/Switch";
 import SupertrendDropdown from "./SupertrendDropdown";
@@ -31,7 +30,7 @@ const Supertrend: React.FC<SupertrendProps> = ({index}) => {
     <>
       <div className="indicator-selector-div">
         <p>Supertrend</p>
-        <div className={classes.alignmentDiv}>
+        <div className="alignmentDiv">
           <DropdownButton onClick={toggleDropdown} />
           <Switch
             isChecked={indicators[index]?.supertrend.visible  || false}

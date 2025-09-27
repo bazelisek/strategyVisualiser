@@ -35,7 +35,7 @@ const ExponentialMovingAverageDropdown: React.FC<
       setIndicators({
         index,
         indicator: "exponentialMovingAverage",
-        value: { ...indicators[index].movingAverage.value, color: newColor },
+        value: { ...indicators[index].exponentialMovingAverage.value, color: newColor },
       })
     );
   }

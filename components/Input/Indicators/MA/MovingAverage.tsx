@@ -2,7 +2,6 @@ import React, { ReactNode, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
 import Switch from "../../Buttons/Switch";
-import classes from "./MovingAverage.module.css";
 import MovingAverageDropdown from "./MovingAverageDropdown";
 import DropdownButton from "../../Buttons/DropdownButton";
 
@@ -29,7 +28,7 @@ const MovingAverage: React.FC<MovingAverageProps> = ({index}) => {
     <>
       <div className="indicator-selector-div">
         <p>Moving Average</p>
-        <div className={classes.alignmentDiv}>
+        <div className="alignmentDiv">
           <DropdownButton onClick={toggleDropdown} />
           <Switch
             isChecked={indicators[index]?.movingAverage.visible || false}
