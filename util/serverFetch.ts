@@ -108,9 +108,12 @@ export async function getTradeDataForStrategy({
   period2: number;
   strategy: string;
 }) {
-  /*const { data, error } = await fetchDataFromUrl(
-    `https://DUMMYURL/api/getStrategy/${symbol}?interval=${interval}&period1=${period1}&period2={period2}&strategy=${strategy}`
-  );
+  /*
+  data in format { time: number; amount: number }[]
+  
+  const { data, error } = await fetchDataFromUrl(
+    `https://DUMMYURL/api/getStrategy/$symbol={symbol}?interval=${interval}&period1=${period1}&period2={period2}&strategy=${strategy}`
+  );  
   if (error) {
     return { data: [], error };
   }
