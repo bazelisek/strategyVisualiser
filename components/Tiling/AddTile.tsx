@@ -1,5 +1,4 @@
 'use client';
-import { newIndicators } from '@/store/reduxStore';
 import React, { ReactNode, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
@@ -13,7 +12,7 @@ const AddTile: React.FC<AddTileProps> = ({onClick, active = true}) => {
     const dispatch = useDispatch();
 
     function handleAddTile() {
-        dispatch(newIndicators());
+        //dispatch(newIndicators());
         //dispatch addIndicators
         onClick();
     }

@@ -25,3 +25,11 @@
   font-size: 0.9rem;
   color: var(--accent);
 }
+.modal li {
+  display: flex;
+  justify-content: space-between; /* items spread across */
+  align-items: center;
+}
+.left {
+  flex: 1;
+}

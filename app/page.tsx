@@ -1,12 +1,15 @@
 "use client";
 import classes from "./page.module.css";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import AddTile from "@/components/Tiling/AddTile";
 import Tile from "@/components/Tiling/Tile";
 import Modal from "@/components/Modal";
 import Form from "@/components/Input/Form/Form";
 import "react-mosaic-component/react-mosaic-component.css";
 import { useRouter, useSearchParams } from "next/navigation";
+import Preconfiguration from "@/components/Input/Preconfiguration";
+import { useDispatch } from "react-redux";
+import { newIndicators } from "@/store/reduxStore";
 
 export default function Home() {
   const params = useSearchParams();
@@ -16,6 +19,7 @@ export default function Home() {
   const period2s = params.getAll("period2");
   const intervals = params.getAll("interval");
   const router = useRouter();
+  const dispatch = useDispatch();
 
   const tileCount = symbols.length;
   const [isAddTileActive, setIsAddTileActive] = useState<boolean>(true);
@@ -71,9 +75,14 @@ export default function Home() {
     handleClose();
   }
 
+  useEffect(() => {
+    dispatch(newIndicators(tileCount));
+  }, []);
+
   return (
     <main id="main" className={classes.main}>
       <Suspense fallback="Loading...">
+        <Preconfiguration />
         <AddTile onClick={handleAddTile} active={isAddTileActive} />
         <Modal
           title="New Tile"
@@ -81,9 +90,8 @@ export default function Home() {
           open={!isAddTileActive}
           className={classes.modal}
         >
-          <Form onClose={handleSubmit} />
+          <Form onClose={handleSubmit} index={tileCount + 1} />
         </Modal>
-
         {tileCount > 0 && <div className={classes.tileGrid}>{tileArr}</div>}
       </Suspense>
     </main>

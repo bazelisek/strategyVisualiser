@@ -1,6 +1,5 @@
 "use client";
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import Symbol from "./Symbol";
 import Interval from "./Interval";
 import Strategy from "./Strategy";
@@ -8,6 +7,8 @@ import { AnimatePresence } from "framer-motion";
 import AnimationButton from "../Buttons/AnimationButton";
 import Time from "./Time";
 import { getValidIntervals } from "@/util/formCheck";
+import { useDispatch } from "react-redux";
+import { newIndicators } from "@/store/reduxStore";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -20,11 +21,12 @@ interface FormProps {
         strategy: string,
   }) => void;  
   modalContainerRef?: React.RefObject<HTMLDivElement>;
+  index: number;
 }
 
 
-const Form: React.FC<FormProps> = ({onClose, modalContainerRef}) => {
-  const router = useRouter();
+const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     symbol: { value: "" },
     interval: { value: "" },
@@ -66,6 +68,8 @@ const Form: React.FC<FormProps> = ({onClose, modalContainerRef}) => {
       return;
     }
     if (currentInput === 3) {
+      console.log("Creating with index " + index)
+      dispatch(newIndicators(index));
       console.log(JSON.stringify(formData));
       const interval =
         formData.interval.value ||

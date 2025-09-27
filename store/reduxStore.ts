@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { indicatorSlice } from "./slices/indicatorSlice";
 import { modalSlice } from "./slices/modalSlice";
 
-export const { setIndicators, setIndicatorsVisibility, newIndicators } =
+export const { setIndicators, setIndicatorsVisibility, newIndicators, makeGlobal } =
   indicatorSlice.actions;
 export const { setModal } = modalSlice.actions;
 

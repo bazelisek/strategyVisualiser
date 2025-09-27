@@ -30,7 +30,7 @@ const indicatorState = {
     value: { period: 10, multiplier: 3, color: "#adff29" },
   },
   exponentialMovingAverage: {
-    visible: false,
+    visible: true,
     value: { emaLength: 20, color: "#29f8ff" },
   },
   commodityChannelIndex: {
@@ -39,6 +39,7 @@ const indicatorState = {
   },
   onBalanceVolume: { visible: false, value: { color: "#2962FF" } },
 };
+export type IndicatorKey = keyof typeof indicatorState;
 
 export const indicatorSlice = createSlice({
   name: "indicators",
@@ -49,12 +50,7 @@ export const indicatorSlice = createSlice({
     setIndicators: (
       state,
       action: PayloadAction<{
-        indicator:
-          | "movingAverage"
-          | "supertrend"
-          | "exponentialMovingAverage"
-          | "commodityChannelIndex"
-          | "onBalanceVolume";
+        indicator: IndicatorKey;
         index: number;
         value:
           | { maLength: number; color: string }
@@ -76,27 +72,41 @@ export const indicatorSlice = createSlice({
     setIndicatorsVisibility: (
       state,
       action: PayloadAction<{
-        indicator:
-          | "movingAverage"
-          | "supertrend"
-          | "exponentialMovingAverage"
-          | "commodityChannelIndex"
-          | "onBalanceVolume";
+        indicator: IndicatorKey;
         index: number;
         value: boolean;
       }>
     ) => {
+      console.log("Changing " + action.payload.index);
       const indicator = action.payload.indicator;
-      const index = action.payload.index;
+      const index = action.payload.index; // shift so 0 is for the base shit
+
       while (state.length <= index) {
-        state.push(JSON.parse(JSON.stringify(indicatorState)));
+        state.push(JSON.parse(JSON.stringify(state[0])));
       }
       state[index][indicator].visible = action.payload.value;
     },
     newIndicators: (state, action: PayloadAction<number>) => {
-      const index = action.payload;
+      let index = action.payload; // shift so 0 is for the base shit
+      if (state.length == 0) {
+        state.push(indicatorState);
+      }
       while (state.length <= index) {
-        state.push(JSON.parse(JSON.stringify(indicatorState)));
+        state.push(JSON.parse(JSON.stringify(state[0])));
+      }
+    },
+    makeGlobal: (state, action: PayloadAction<{ indicator: IndicatorKey }>) => {
+      if (state.length === 0) return;
+
+      const indicator = action.payload.indicator;
+      const base = state[0][indicator];
+
+      for (let i = 1; i < state.length; i++) {
+        // Deep clone to avoid shared references
+        state[i][indicator] = {
+          visible: base.visible,
+          value: JSON.parse(JSON.stringify(base.value)),
+        };
       }
     },
   },

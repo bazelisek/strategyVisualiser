@@ -71,7 +71,7 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
           transition={{ type: "spring" }}
           className={classes.div}
         >
-          <ShowModalButton index={index} />
+          <ShowModalButton index={index} className={classes.button} />
           <h2>{transformedData.longName}</h2>
           <h3>{transformedData.symbol}</h3>
           <CandlestickChart
