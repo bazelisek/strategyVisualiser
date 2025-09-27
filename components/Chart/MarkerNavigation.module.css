@@ -1,0 +1,9 @@
+.div {
+    text-align: center;
+}
+.div button {
+    margin: 5px 12px;
+}
+.div button:disabled {
+    cursor: not-allowed;
+}

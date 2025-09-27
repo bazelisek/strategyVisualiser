@@ -7,6 +7,7 @@ import {
   CrosshairMode,
   ColorType,
   UTCTimestamp,
+  IChartApi,
   CandlestickSeries,
   LineStyle,
   SeriesMarker,
@@ -23,6 +24,7 @@ import { candleData } from "@/util/serverFetch";
 import { createOBVGraph } from "@/util/indicators/onBalanceVolume";
 import { createSecondaryChart } from "@/util/charts";
 import { centerToMarker, toUTCTimestamp } from "@/util/markers";
+import MarkerNavigation from "./MarkerNavigation";
 
 interface CandlestickChartProps {
   width: number;
@@ -46,6 +48,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
   // New state: store the selected marker’s time (or null if none)
   const [selectedTime, setSelectedTime] = useState<{time: Time, index: number} | null>(null);
+  const [mainChart, setMainChart] = useState<IChartApi | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -60,7 +63,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       indicatorSlice[index]?.onBalanceVolume.visible
         ? height * 0.3
         : 0;
-
+    
     const mainChart = createChart(chartRef.current, {
       width,
       height: topHeight,
@@ -77,6 +80,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       rightPriceScale: { borderVisible: false },
       timeScale: { borderColor: "#2b2b43", timeVisible: true },
     });
+    setMainChart(mainChart);
 
     let cciChart: ReturnType<typeof createChart> | null = null;
     if (
@@ -213,6 +217,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
           <>Click a marker to select it</>
         )}
       </div>
+      {mainChart && <MarkerNavigation chart={mainChart} selectedTime={selectedTime} setSelectedTime={setSelectedTime} tradeMarkers={tradeMarkers} />}
     </div>
   );
 };
