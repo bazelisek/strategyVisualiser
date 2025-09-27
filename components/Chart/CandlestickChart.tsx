@@ -45,7 +45,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const obvRef = useRef<HTMLDivElement>(null);
 
   // New state: store the selected marker’s time (or null if none)
-  const [selectedTime, setSelectedTime] = useState<Time | null>(null);
+  const [selectedTime, setSelectedTime] = useState<{time: Time, index: number} | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -138,13 +138,13 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       }
 
       // Find the marker that matches the clicked time (normalized)
-      const found = tradeMarkers.find(
+      const found = tradeMarkers.findIndex(
         (m) => toUTCTimestamp(m.time) === clickedTime
       );
 
-      if (found) {
-        setSelectedTime(found.time);
-        centerToMarker(found.time, mainChart);
+      if (found !== -1) {
+        setSelectedTime({time: tradeMarkers[found].time, index: found});
+        centerToMarker(tradeMarkers[found].time, mainChart);
       } else {
         setSelectedTime(null);
       }
@@ -208,7 +208,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       {/* Show selected marker time */}
       <div style={{ marginTop: "8px", color: "#fff" }}>
         {selectedTime !== null ? (
-          <>Selected marker time: {String(selectedTime)}</>
+          <>Selected marker time: {selectedTime.time.toString()}</>
         ) : (
           <>Click a marker to select it</>
         )}
