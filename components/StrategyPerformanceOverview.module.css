@@ -1,0 +1,40 @@
+.div span {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.9rem;
+}
+.button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  width: 100%;             /* fill parent */
+  box-sizing: border-box;  /* include padding + border inside width */
+  
+  margin: 1rem 0 0 0;      /* no horizontal margins */
+  padding: 0.75rem 1rem;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-color, #fff);
+
+  background: var(--background-dark, #1e1e2a);
+  border: 1px solid var(--border-color, #444);
+  border-radius: var(--border-radius, 6px);
+
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.button:hover {
+  background: var(--background-hover, #2a2a3a);
+  border-color: var(--accent, #22ab94);
+  color: var(--text-color, #fff);
+}
+
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

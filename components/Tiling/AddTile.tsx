@@ -1,6 +1,6 @@
 'use client';
-import React, { ReactNode, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { ReactNode } from 'react';
+import AnimationButton from '../Input/Buttons/AnimationButton';
 
 interface AddTileProps {
   children?: ReactNode;
@@ -9,7 +9,6 @@ interface AddTileProps {
 }
 
 const AddTile: React.FC<AddTileProps> = ({onClick, active = true}) => {
-    const dispatch = useDispatch();
 
     function handleAddTile() {
         //dispatch(newIndicators());
@@ -18,9 +17,9 @@ const AddTile: React.FC<AddTileProps> = ({onClick, active = true}) => {
     }
   return (
     <>
-      <button disabled={!active} onClick={handleAddTile}>
+      <AnimationButton disabled={!active} onClick={handleAddTile}>
         AddTile
-      </button>
+      </AnimationButton>
     </>
   );
 };

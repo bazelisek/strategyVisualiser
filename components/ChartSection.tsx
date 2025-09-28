@@ -4,11 +4,8 @@ import { getTradeMarkers } from "@/util/markers";
 import { useSearchParams } from "next/navigation";
 import React, { ReactNode } from "react";
 import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
-import { motion } from "framer-motion";
 import classes from "./ChartSection.module.css";
 import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
-import { RootState } from "@/store/reduxStore";
-import { useSelector } from "react-redux";
 
 interface ChartSectionProps {
   children?: ReactNode;
@@ -55,19 +52,12 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
         />
       )}
       {!loading && !error && (
-        <motion.div
-          // callback ref — při mountu React zavolá setContainerEl(el)
-          initial={{ opacity: 0, y: -200 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring" }}
+        <StrategyPerformanceOverview
+          transformedData={transformedData}
+          strategyData={strategyData}
+          strategy={strategy}
           className={classes.div}
-        >
-          <StrategyPerformanceOverview
-            transformedData={transformedData}
-            strategyData={strategyData}
-            strategy={strategy}
-          />
-        </motion.div>
+        />
       )}
     </>
   );

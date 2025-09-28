@@ -1,7 +1,7 @@
 import { IChartApi, SeriesMarker, Time, UTCTimestamp } from "lightweight-charts";
 
 export function getTradeMarkers(fetchData: { time: number; amount: number }[]) {
-  return fetchData.map(({ time, amount }) => ({
+  return fetchData.map(({ time, amount }): SeriesMarker<Time> => ({
     time: time as Time,
     position: amount < 0 ? "belowBar" : "aboveBar",
     shape: amount < 0 ? "arrowDown" : "arrowUp",
