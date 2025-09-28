@@ -8,18 +8,12 @@ import { TbWorld } from "react-icons/tb";
 
 interface GlobalizeButtonProps {
   children?: ReactNode;
-  indicator: IndicatorKey;
+  onClick: () => void;
 }
 
-const GlobalizeButton: React.FC<GlobalizeButtonProps> = ({indicator}) => {
-    const dispatch = useDispatch();
-    function handleClick() {
-        console.log("Making global");
-        console.log(indicator)
-        dispatch(makeGlobal({indicator}))
-    }
+const GlobalizeButton: React.FC<GlobalizeButtonProps> = ({onClick}) => {    
   return (
-    <AnimationButton onClick={handleClick} className={classes.button}>
+    <AnimationButton onClick={onClick} className={classes.button}>
       <TbWorld size={20} color="black" />
     </AnimationButton>
   );

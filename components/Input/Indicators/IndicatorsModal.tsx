@@ -5,11 +5,12 @@ import { motion } from "framer-motion";
 import ExponentialMovingAverage from "./EMA/ExponentialMovingAverage";
 import CommodityChannelIndex from "./CCI/CommodityChannelIndex";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState, setModal } from "@/store/reduxStore";
+import { makeGlobal, RootState, setModal } from "@/store/reduxStore";
 import Supertrend from "./Supertrend/Supertrend";
 import OnBalanceVolume from "./OBV/OnBalanceVolume";
 import Modal from "@/components/Modal";
 import GlobalizeButton from "../Buttons/GlobalizeButton";
+import { IndicatorKey } from "@/store/slices/indicatorSlice";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
@@ -29,6 +30,12 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
     dispatch(setModal({ modal: { index, modal: "indicators" }, value: false }));
   }
 
+  function handleClick(indicator: IndicatorKey) {
+        console.log("Making global");
+        console.log(indicator)
+        dispatch(makeGlobal({indicator}))
+    }
+
   return (
     <>
       <Modal
@@ -42,31 +49,31 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
             <div className={classes.left}>
               <MovingAverage index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton indicator="movingAverage" />}
+            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("movingAverage")} />}
           </motion.li>
           <motion.li layout>
             <div className={classes.left}>
               <ExponentialMovingAverage index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton indicator="exponentialMovingAverage" />}
+            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("exponentialMovingAverage")} />}
           </motion.li>
           <motion.li layout>
             <div className={classes.left}>
               <CommodityChannelIndex index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton indicator="commodityChannelIndex" />}
+            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("commodityChannelIndex")} />}
           </motion.li>
           <motion.li layout>
             <div className={classes.left}>
               <Supertrend index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton indicator="supertrend" />}
+            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("supertrend")} />}
           </motion.li>
           <motion.li layout>
             <div className={classes.left}>
               <OnBalanceVolume index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton indicator="onBalanceVolume" />}
+            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("onBalanceVolume")} />}
           </motion.li>
         </motion.ul>
       </Modal>

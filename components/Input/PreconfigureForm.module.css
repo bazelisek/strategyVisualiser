@@ -1,0 +1,25 @@
+.modal ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  max-height: 70vh; /* or a fixed height like 500px */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.modal li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--accent-dark);
+  border-radius: var(--border-radius);
+  background-color: var(--background-light);
+}
+
+.left {
+  flex-grow: 1;
+}
