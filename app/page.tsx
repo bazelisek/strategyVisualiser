@@ -5,7 +5,6 @@ import AddTile from "@/components/Tiling/AddTile";
 import Tile from "@/components/Tiling/Tile";
 import Modal from "@/components/Modal";
 import Form from "@/components/Input/Form/Form";
-import "react-mosaic-component/react-mosaic-component.css";
 import { useRouter, useSearchParams } from "next/navigation";
 import Preconfiguration from "@/components/Input/Preconfiguration";
 import { useDispatch } from "react-redux";

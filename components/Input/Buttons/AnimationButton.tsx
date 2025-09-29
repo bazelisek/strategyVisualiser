@@ -20,7 +20,7 @@ const AnimationButton: React.FC<AnimationButtonProps> = ({
       animate={{ scale: 1, boxShadow: "none" }}
       whileHover={{ scale: 1.05, boxShadow: "1px 1px 15px var(--accent)" }}
       onClick={onClick}
-      className={classes.button + ' ' + className}
+      className={`${classes.button} ${className}`}
       disabled={disabled}
     >
       {children}
