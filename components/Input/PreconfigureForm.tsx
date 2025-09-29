@@ -9,20 +9,25 @@ import Time from "./Form/Time";
 import Interval from "./Form/Interval";
 import Strategy from "./Form/Strategy";
 import { getValidIntervals } from "@/util/formCheck";
+import { useRouter, useSearchParams } from "next/navigation";
+import { searchParamsType } from "@/util/serverFetch";
 
 interface PreconfigureFormProps {
   children?: ReactNode;
   open: boolean;
   onClose: (formData: {
-    symbol: { defaultValue: string },
-    interval: { defaultValue: string },
-    period1: { defaultValue: string },
-    period2: { defaultValue: string },
-    strategy: { defaultValue: string },
+    symbol: { defaultValue: string };
+    interval: { defaultValue: string };
+    period1: { defaultValue: string };
+    period2: { defaultValue: string };
+    strategy: { defaultValue: string };
   }) => void;
 }
 
-const PreconfigureForm: React.FC<PreconfigureFormProps> = ({ open, onClose }) => {
+const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
+  open,
+  onClose,
+}) => {
   const [formData, setFormData] = useState({
     symbol: { defaultValue: "" },
     interval: { defaultValue: "" },
@@ -30,6 +35,8 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({ open, onClose }) =>
     period2: { defaultValue: "" },
     strategy: { defaultValue: "" },
   });
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -42,7 +49,41 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({ open, onClose }) =>
   };
 
   function handleGlobalize(field: ConfigKey) {
-    //TODO: Should apply to all existing tiles via url change
+    const entries = searchParams.entries();
+
+    const object: searchParamsType[] = [];
+    for (const entry of entries) {
+      if (
+        object.length > 0 &&
+        object[object.length - 1][entry[0] as keyof searchParamsType] == ""
+      ) {
+        object[object.length - 1][entry[0] as keyof searchParamsType] = entry[1];
+        if (entry[0] == field) {
+          object[object.length - 1][entry[0] as keyof searchParamsType] = formData[field].defaultValue;
+        }
+      }
+      else {
+        object.push({
+          symbol: "",
+          strategy: "",
+          interval: "",
+          period1: "",
+          period2: "",
+        });
+        object[object.length - 1][entry[0] as keyof searchParamsType] = entry[1];
+      }
+    }
+
+    const newSearchParams = new URLSearchParams();
+    object.forEach((param) => {
+      newSearchParams.append("symbol", param.symbol);
+      newSearchParams.append("strategy", param.strategy);
+      newSearchParams.append("interval", param.interval);
+      newSearchParams.append("period1", param.period1);
+      newSearchParams.append("period2", param.period2);
+    });
+
+    router.replace("/?" + newSearchParams.toString());
   }
 
   return (

@@ -132,3 +132,11 @@ export async function getTradeDataForStrategy({
 
   return { data: tradeMarkers, error: null };
 }
+
+export type searchParamsType = {
+  symbol: string,
+  period1: string,
+  period2: string,
+  interval: string,
+  strategy: string
+}
