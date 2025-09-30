@@ -21,6 +21,7 @@ const Preconfiguration: React.FC<PreconfigurationProps> = (props) => {
     period2: { defaultValue: string };
     strategy: { defaultValue: string };
   }) {
+    console.log(JSON.stringify(formData))
     setOpen(false);
     dispatch(setConfigs(formData));
   }

@@ -25,11 +25,9 @@ export const configSlice = createSlice({
   initialState,
 
   reducers: {
-    setConfigs: (
-      state,
-      action: PayloadAction<typeof initialState>
-    ) => {      
-      state = action.payload;
+    setConfigs: (state, action: PayloadAction<typeof initialState>) => {
+      console.log(action.payload);
+      return action.payload;
     },
   },
 });

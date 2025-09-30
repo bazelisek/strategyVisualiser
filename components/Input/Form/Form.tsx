@@ -7,8 +7,8 @@ import { AnimatePresence } from "framer-motion";
 import AnimationButton from "../Buttons/AnimationButton";
 import Time from "./Time";
 import { getValidIntervals } from "@/util/formCheck";
-import { useDispatch } from "react-redux";
-import { newIndicators } from "@/store/reduxStore";
+import { useDispatch, useSelector } from "react-redux";
+import { newIndicators, RootState } from "@/store/reduxStore";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -27,14 +27,16 @@ interface FormProps {
 
 const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
   const dispatch = useDispatch();
+  const config = useSelector((state: RootState) => state.config);
   const [formData, setFormData] = useState({
-    symbol: { value: "" },
-    interval: { value: "" },
-    period1: { value: "" },
-    period2: { value: "" },
+    symbol: { value: config.symbol.defaultValue },
+    interval: { value: config.interval.defaultValue },
+    period1: { value: config.period1.defaultValue },
+    period2: { value: config.period2.defaultValue },
     //duration: { value: "" },
-    strategy: { value: "" },
+    strategy: { value: config.strategy.defaultValue },
   });
+  console.log(JSON.stringify(config));
   const [error, setError] = useState("");
   const [currentInput, setCurrentInput] = useState(0);
 

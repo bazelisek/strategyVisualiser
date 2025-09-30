@@ -49,33 +49,27 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
   };
 
   function handleGlobalize(field: ConfigKey) {
-    const entries = searchParams.entries();
+    const symbols = searchParams.getAll("symbol");
+    const strategies = searchParams.getAll("strategy");
+    const intervals = searchParams.getAll("interval");
+    const period1s = searchParams.getAll("period1");
+    const period2s = searchParams.getAll("period2");
 
-    const object: searchParamsType[] = [];
-    for (const entry of entries) {
-      if (
-        object.length > 0 &&
-        object[object.length - 1][entry[0] as keyof searchParamsType] == ""
-      ) {
-        object[object.length - 1][entry[0] as keyof searchParamsType] = entry[1];
-        if (entry[0] == field) {
-          object[object.length - 1][entry[0] as keyof searchParamsType] = formData[field].defaultValue;
-        }
-      }
-      else {
-        object.push({
-          symbol: "",
-          strategy: "",
-          interval: "",
-          period1: "",
-          period2: "",
-        });
-        object[object.length - 1][entry[0] as keyof searchParamsType] = entry[1];
-      }
+    const newParamsArray: searchParamsType[] = [];
+    const tileCount = symbols.length;
+
+    for (let i = 0; i < tileCount; i++) {
+      newParamsArray.push({
+        symbol: field === "symbol" ? formData.symbol.defaultValue : symbols[i],
+        strategy: field === "strategy" ? formData.strategy.defaultValue : strategies[i],
+        interval: field === "interval" ? formData.interval.defaultValue : intervals[i],
+        period1: field === "period1" ? formData.period1.defaultValue : period1s[i],
+        period2: field === "period2" ? formData.period2.defaultValue : period2s[i],
+      });
     }
 
     const newSearchParams = new URLSearchParams();
-    object.forEach((param) => {
+    newParamsArray.forEach((param) => {
       newSearchParams.append("symbol", param.symbol);
       newSearchParams.append("strategy", param.strategy);
       newSearchParams.append("interval", param.interval);
