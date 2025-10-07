@@ -94,6 +94,11 @@ const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
       });
       router.replace(`/chart?${searchParams.toString()}`);*/
     }
+    else if (currentInput == 1) {
+      if (!getValidIntervals(new Date(formData.period1.value), new Date(formData.period2.value)).includes(config.interval.defaultValue)) {
+        setFormData((old) => ({...old, interval: {value: ""}}));
+      }
+    }
     setCurrentInput((old) => old + 1);
     setError('');
   }

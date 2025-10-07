@@ -58,13 +58,19 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
     const newParamsArray: searchParamsType[] = [];
     const tileCount = symbols.length;
 
+    console.log(JSON.stringify(formData));
+
     for (let i = 0; i < tileCount; i++) {
       newParamsArray.push({
         symbol: field === "symbol" ? formData.symbol.defaultValue : symbols[i],
-        strategy: field === "strategy" ? formData.strategy.defaultValue : strategies[i],
-        interval: field === "interval" ? formData.interval.defaultValue : intervals[i],
-        period1: field === "period1" ? formData.period1.defaultValue : period1s[i],
-        period2: field === "period2" ? formData.period2.defaultValue : period2s[i],
+        strategy:
+          field === "strategy" ? formData.strategy.defaultValue : strategies[i],
+        interval:
+          field === "interval" ? formData.interval.defaultValue : intervals[i],
+        period1:
+          field === "period1" ? formData.period1.defaultValue : period1s[i],
+        period2:
+          field === "period2" ? formData.period2.defaultValue : period2s[i],
       });
     }
 
@@ -80,6 +86,27 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
     router.replace("/?" + newSearchParams.toString());
   }
 
+  const availableIntervals =
+    formData.period1.defaultValue && formData.period2.defaultValue
+      ? getValidIntervals(
+          new Date(formData.period1.defaultValue),
+          new Date(formData.period2.defaultValue)
+        )
+      : [
+          "1m",
+          "2m",
+          "5m",
+          "15m",
+          "30m",
+          "60m",
+          "90m",
+          "1d",
+          "5d",
+          "1wk",
+          "1mo",
+          "3mo",
+        ];
+
   return (
     <>
       <Modal
@@ -88,8 +115,8 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
         onClose={() => onClose(formData)}
         open={open}
       >
-        <motion.ul layout>
-          <motion.li layout>
+        <motion.ul className={classes.ul} layout>
+          <motion.li className={classes.li} layout>
             <Symbol
               value={formData.symbol.defaultValue}
               onChange={handleChange}
@@ -97,35 +124,30 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
             />
             <GlobalizeButton onClick={() => handleGlobalize("symbol")} />
           </motion.li>
-          <motion.li layout>
-            <Time
-              valueFrom={formData.period1.defaultValue}
-              valueTo={formData.period2.defaultValue}
-              onChange={handleChange}
-              handleContinue={() => {}}
-            />
-            <div>
+          <motion.li className={classes.timeLi} layout>
+            <div className={classes.left}>
+              <Time
+                valueFrom={formData.period1.defaultValue}
+                valueTo={formData.period2.defaultValue}
+                onChange={handleChange}
+                handleContinue={() => {}}
+              />
+            </div>
+            <div className={classes.timeButtons}>
               <GlobalizeButton onClick={() => handleGlobalize("period1")} />
               <GlobalizeButton onClick={() => handleGlobalize("period2")} />
             </div>
           </motion.li>
-          <motion.li layout>
+          <motion.li className={classes.li} layout>
             <Interval
               value={formData.interval.defaultValue}
               onChange={handleChange}
-              availableIntervals={
-                formData.period1.defaultValue && formData.period2.defaultValue
-                  ? getValidIntervals(
-                      new Date(formData.period1.defaultValue),
-                      new Date(formData.period2.defaultValue)
-                    )
-                  : []
-              }
+              availableIntervals={availableIntervals}
               handleContinue={() => {}}
             />
             <GlobalizeButton onClick={() => handleGlobalize("interval")} />
           </motion.li>
-          <motion.li layout>
+          <motion.li className={classes.li} layout>
             <Strategy
               value={formData.strategy.defaultValue}
               onChange={handleChange}
