@@ -1,3 +1,8 @@
+import { ReadonlyURLSearchParams } from "next/navigation";
+import { searchParamsType } from "./serverFetch";
+import { ConfigKey } from "@/store/slices/configSlice";
+import { UTCTimestamp } from "lightweight-charts";
+
 export function checkFormValidity(formData: {
   symbol: { value: string };
   interval: { value: string };
@@ -22,12 +27,13 @@ export function checkFormValidity(formData: {
   const allowed = getValidIntervals(from, to);
 
   if (!allowed.includes(interval.value)) {
-    return `The interval "${interval.value}" is not allowed. Allowed: ${allowed.join(", ")}`;
+    return `The interval "${
+      interval.value
+    }" is not allowed. Allowed: ${allowed.join(", ")}`;
   }
 
   return "";
 }
-
 
 export function getValidIntervals(from: Date, to: Date): string[] {
   if (isNaN(from.getTime()) || isNaN(to.getTime()) || from >= to) {
@@ -46,4 +52,75 @@ export function getValidIntervals(from: Date, to: Date): string[] {
   } else {
     return ["1d", "5d", "1wk", "1mo", "3mo"];
   }
+}
+
+export function addToArrayAndHandleEdgeCases(
+  searchParams: ReadonlyURLSearchParams,
+  field: ConfigKey,
+  formData: {
+    symbol: {
+      defaultValue: string;
+    };
+    interval: {
+      defaultValue: string;
+    };
+    period1: {
+      defaultValue: string;
+    };
+    period2: {
+      defaultValue: string;
+    };
+    strategy: {
+      defaultValue: string;
+    };
+  }
+) {
+  const symbols = searchParams.getAll("symbol");
+  const strategies = searchParams.getAll("strategy");
+  const intervals = searchParams.getAll("interval");
+  const period1s = searchParams.getAll("period1");
+  const period2s = searchParams.getAll("period2");
+
+  const newParamsArray: searchParamsType[] = [];
+  const tileCount = symbols.length;
+
+  console.log(JSON.stringify(formData));
+
+  for (let i = 0; i < tileCount; i++) {
+    const handledFormData = {...formData};
+    
+    if (["period1", "period2", "interval"].includes(field)){
+      if ( field == "interval" && !getValidIntervals(new Date(period1s[i]), new Date(period2s[i])).includes(formData.interval.defaultValue)) {
+        handledFormData.interval = {defaultValue: intervals[i]};
+      }
+      else if ( field == "period1" && !getValidIntervals(new Date(formData.period1.defaultValue), new Date(period2s[i])).includes(intervals[i])) {
+        handledFormData.period1 = {defaultValue: period1s[i]};
+      }
+      else if ( field == "period2" && !getValidIntervals(new Date(period1s[i]), new Date(formData.period2.defaultValue)).includes(intervals[i])) {
+        handledFormData.period2 = {defaultValue: period2s[i]};
+      }
+    }
+    newParamsArray.push({
+      symbol: field === "symbol" ? handledFormData.symbol.defaultValue : symbols[i],
+      strategy:
+        field === "strategy" ? handledFormData.strategy.defaultValue : strategies[i],
+      interval:
+        field === "interval" ? handledFormData.interval.defaultValue : intervals[i],
+      period1:
+        field === "period1" ? handledFormData.period1.defaultValue : period1s[i],
+      period2:
+        field === "period2" ? handledFormData.period2.defaultValue : period2s[i],
+    });
+  }
+
+  const newSearchParams = new URLSearchParams();
+  newParamsArray.forEach((param) => {
+    newSearchParams.append("symbol", param.symbol);
+    newSearchParams.append("strategy", param.strategy);
+    newSearchParams.append("interval", param.interval);
+    newSearchParams.append("period1", param.period1);
+    newSearchParams.append("period2", param.period2);
+  });
+
+  return newSearchParams.toString();
 }

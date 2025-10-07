@@ -8,7 +8,7 @@ import Symbol from "./Form/Symbol";
 import Time from "./Form/Time";
 import Interval from "./Form/Interval";
 import Strategy from "./Form/Strategy";
-import { getValidIntervals } from "@/util/formCheck";
+import { addToArrayAndHandleEdgeCases, getValidIntervals } from "@/util/formCheck";
 import { useRouter, useSearchParams } from "next/navigation";
 import { searchParamsType } from "@/util/serverFetch";
 
@@ -49,41 +49,9 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
   };
 
   function handleGlobalize(field: ConfigKey) {
-    const symbols = searchParams.getAll("symbol");
-    const strategies = searchParams.getAll("strategy");
-    const intervals = searchParams.getAll("interval");
-    const period1s = searchParams.getAll("period1");
-    const period2s = searchParams.getAll("period2");
+    const params = addToArrayAndHandleEdgeCases(searchParams, field, formData);
 
-    const newParamsArray: searchParamsType[] = [];
-    const tileCount = symbols.length;
-
-    console.log(JSON.stringify(formData));
-
-    for (let i = 0; i < tileCount; i++) {
-      newParamsArray.push({
-        symbol: field === "symbol" ? formData.symbol.defaultValue : symbols[i],
-        strategy:
-          field === "strategy" ? formData.strategy.defaultValue : strategies[i],
-        interval:
-          field === "interval" ? formData.interval.defaultValue : intervals[i],
-        period1:
-          field === "period1" ? formData.period1.defaultValue : period1s[i],
-        period2:
-          field === "period2" ? formData.period2.defaultValue : period2s[i],
-      });
-    }
-
-    const newSearchParams = new URLSearchParams();
-    newParamsArray.forEach((param) => {
-      newSearchParams.append("symbol", param.symbol);
-      newSearchParams.append("strategy", param.strategy);
-      newSearchParams.append("interval", param.interval);
-      newSearchParams.append("period1", param.period1);
-      newSearchParams.append("period2", param.period2);
-    });
-
-    router.replace("/?" + newSearchParams.toString());
+    router.replace("/?" + params);
   }
 
   const availableIntervals =
