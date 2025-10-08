@@ -1,7 +1,6 @@
 import { ReadonlyURLSearchParams } from "next/navigation";
 import { searchParamsType } from "./serverFetch";
 import { ConfigKey } from "@/store/slices/configSlice";
-import { UTCTimestamp } from "lightweight-charts";
 
 export function checkFormValidity(formData: {
   symbol: { value: string };
@@ -86,30 +85,93 @@ export function addToArrayAndHandleEdgeCases(
 
   console.log(JSON.stringify(formData));
 
+  const convertedFormData = {
+    ...formData,
+    period1: {
+      defaultValue: Math.floor(
+        new Date(formData.period1.defaultValue).getTime() / 1000
+      ),
+    },
+    period2: {
+      defaultValue: Math.floor(
+        new Date(formData.period2.defaultValue).getTime() / 1000
+      ),
+    },
+  };
+
   for (let i = 0; i < tileCount; i++) {
-    const handledFormData = {...formData};
-    
-    if (["period1", "period2", "interval"].includes(field)){
-      if ( field == "interval" && !getValidIntervals(new Date(period1s[i]), new Date(period2s[i])).includes(formData.interval.defaultValue)) {
-        handledFormData.interval = {defaultValue: intervals[i]};
-      }
-      else if ( field == "period1" && !getValidIntervals(new Date(formData.period1.defaultValue), new Date(period2s[i])).includes(intervals[i])) {
-        handledFormData.period1 = {defaultValue: period1s[i]};
-      }
-      else if ( field == "period2" && !getValidIntervals(new Date(period1s[i]), new Date(formData.period2.defaultValue)).includes(intervals[i])) {
-        handledFormData.period2 = {defaultValue: period2s[i]};
+    const handledFormData = { ...convertedFormData };
+
+    console.log(formData);
+    console.log(period1s);
+    console.log(period2s);
+    console.log(
+      convertedFormData.period2.defaultValue
+    );
+    console.log(
+      convertedFormData.period1.defaultValue
+    );
+    if (["period1", "period2", "interval"].includes(field)) {
+      if (
+        field == "interval" &&
+        !getValidIntervals(
+          new Date(period1s[i]),
+          new Date(period2s[i])
+        ).includes(formData.interval.defaultValue)
+      ) {
+        handledFormData.interval = { defaultValue: intervals[i] };
+      } else if (field == "period1") {
+        if (
+          !getValidIntervals(
+            new Date(formData.period1.defaultValue),
+            new Date(Number(period2s[i]) * 1000)
+          ).includes(intervals[i])
+        ) {
+          handledFormData.period1 = { defaultValue: Number(period1s[i]) };
+        } else if (
+          Number(period2s[i]) -
+            convertedFormData.period1.defaultValue <
+          0
+        ) {
+          console.log("Handlng");
+          handledFormData.period1 = { defaultValue: Number(period1s[i]) };
+        }
+      } else if (field == "period2") {
+        if (
+          !getValidIntervals(
+            new Date(Number(period1s[i]) * 1000),
+            new Date(formData.period2.defaultValue)
+          ).includes(intervals[i])
+        ) {
+          handledFormData.period2 = { defaultValue: Number(period2s[i]) };
+        } else if (
+          convertedFormData.period2.defaultValue -
+            Number(period1s[i]) <
+          0
+        ) {
+          handledFormData.period2 = { defaultValue: Number(period2s[i]) };
+        }
       }
     }
     newParamsArray.push({
-      symbol: field === "symbol" ? handledFormData.symbol.defaultValue : symbols[i],
+      symbol:
+        field === "symbol" ? handledFormData.symbol.defaultValue : symbols[i],
       strategy:
-        field === "strategy" ? handledFormData.strategy.defaultValue : strategies[i],
+        field === "strategy"
+          ? handledFormData.strategy.defaultValue
+          : strategies[i],
       interval:
-        field === "interval" ? handledFormData.interval.defaultValue : intervals[i],
+        field === "interval"
+          ? handledFormData.interval.defaultValue
+          : intervals[i],
       period1:
-        field === "period1" ? handledFormData.period1.defaultValue : period1s[i],
+        field === "period1"
+          ? String(handledFormData.period1.defaultValue)
+          : period1s[i],
       period2:
-        field === "period2" ? handledFormData.period2.defaultValue : period2s[i],
+        field === "period2"
+          ? String(handledFormData.period2.defaultValue)
+          : period2s[i],
     });
   }
 

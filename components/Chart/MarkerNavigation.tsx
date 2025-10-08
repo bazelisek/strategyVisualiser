@@ -20,7 +20,7 @@ const MarkerNavigation: React.FC<MarkerNavigationProps> = ({tradeMarkers, select
     const leftDisabled = selectedTime?.index === 0 || !selectedTime;
     const rightDisabled = selectedTime?.index === tradeMarkers.length - 1 || !selectedTime;
 
-    console.log(leftDisabled);
+    //console.log(leftDisabled);
 
     function handleLeft() {
         if (selectedTime?.index === 0 || !selectedTime) return;
