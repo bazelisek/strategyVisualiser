@@ -1,8 +1,7 @@
 .button {
   background: none;
   color: var(--foreground);
-  width: 40px;   /* square size */
-  height: 40px;
+  padding: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10,5 +9,8 @@
   border-style: none;
   border-radius: 6px; /* or 0 if you want sharp corners */
   font-size: 1.2rem;  /* scale arrow/text */
-  padding: 0;         /* reset default button padding */
+}
+
+.button span {
+  display: inline-block;
 }

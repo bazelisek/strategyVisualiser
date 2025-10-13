@@ -16,7 +16,10 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
   open,
 }) => {
   const indicators = useSelector((state: RootState) => state.indicators);
-  const color = indicators[index].movingAverage.value.color;
+  
+  // Guard against indicators[index] being undefined
+  if (!indicators[index]) return null;
+  const { color } = indicators[index].movingAverage.value;
   const dispatch = useDispatch();
 
   function handleMaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {

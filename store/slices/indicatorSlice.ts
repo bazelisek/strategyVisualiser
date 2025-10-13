@@ -4,40 +4,48 @@ export const initialState: {
   movingAverage: {
     visible: boolean;
     value: { maLength: number; color: string };
+    displayName: string;
   };
   supertrend: {
     visible: boolean;
     value: { period: number; multiplier: number; color: string };
+    displayName: string;
   };
   exponentialMovingAverage: {
     visible: boolean;
     value: { emaLength: number; color: string };
+    displayName: string;
   };
   commodityChannelIndex: {
     visible: boolean;
     value: { cciLength: number; color: string };
+    displayName: string;
   };
-  onBalanceVolume: { visible: boolean; value: { color: string } };
+  onBalanceVolume: { visible: boolean; value: { color: string }; displayName: string; };
 }[] = [];
 
-const indicatorState = {
+export const indicatorState = {
   movingAverage: {
     visible: false,
     value: { maLength: 20, color: "#2962FF" },
+    displayName: "Moving Average",
   },
   supertrend: {
     visible: false,
     value: { period: 10, multiplier: 3, color: "#adff29" },
+    displayName: "Supertrend",
   },
   exponentialMovingAverage: {
     visible: true,
     value: { emaLength: 20, color: "#29f8ff" },
+    displayName: "Exponenetial Moving Average",
   },
   commodityChannelIndex: {
     visible: false,
     value: { cciLength: 20, color: "#f829ff" },
+    displayName: "Commodity Channel Index",
   },
-  onBalanceVolume: { visible: false, value: { color: "#2962FF" } },
+  onBalanceVolume: { visible: false, value: { color: "#2962FF" }, displayName: "On Balance Volume", },
 };
 export type IndicatorKey = keyof typeof indicatorState;
 
@@ -106,6 +114,7 @@ export const indicatorSlice = createSlice({
         state[i][indicator] = {
           visible: base.visible,
           value: JSON.parse(JSON.stringify(base.value)),
+          displayName: JSON.parse(JSON.stringify(base.displayName))
         };
       }
     },

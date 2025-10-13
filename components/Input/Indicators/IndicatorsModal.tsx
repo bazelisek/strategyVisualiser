@@ -11,6 +11,8 @@ import OnBalanceVolume from "./OBV/OnBalanceVolume";
 import Modal from "@/components/Modal";
 import GlobalizeButton from "../Buttons/GlobalizeButton";
 import { IndicatorKey } from "@/store/slices/indicatorSlice";
+import AnimationButton from "../Buttons/AnimationButton";
+import NewIndicatorButton from "./NewIndicatorButton";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
@@ -20,7 +22,7 @@ interface IndicatorsModalProps {
 
 const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
   index,
-  globalButtonEnabled
+  globalButtonEnabled,
 }) => {
   const modalSlice = useSelector((state: RootState) => state.modals);
   const open = modalSlice[index]?.indicators || false;
@@ -31,10 +33,10 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
   }
 
   function handleClick(indicator: IndicatorKey) {
-        console.log("Making global");
-        console.log(indicator)
-        dispatch(makeGlobal({indicator}))
-    }
+    console.log("Making global");
+    console.log(indicator);
+    dispatch(makeGlobal({ indicator }));
+  }
 
   return (
     <>
@@ -44,36 +46,51 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
         onClose={handleClose}
         open={open}
       >
+        <NewIndicatorButton index={index}></NewIndicatorButton>
         <motion.ul layout>
           <motion.li layout>
             <div className={classes.left}>
               <MovingAverage index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("movingAverage")} />}
+            {globalButtonEnabled && (
+              <GlobalizeButton onClick={() => handleClick("movingAverage")} />
+            )}
           </motion.li>
           <motion.li layout>
             <div className={classes.left}>
               <ExponentialMovingAverage index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("exponentialMovingAverage")} />}
+            {globalButtonEnabled && (
+              <GlobalizeButton
+                onClick={() => handleClick("exponentialMovingAverage")}
+              />
+            )}
           </motion.li>
           <motion.li layout>
             <div className={classes.left}>
               <CommodityChannelIndex index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("commodityChannelIndex")} />}
+            {globalButtonEnabled && (
+              <GlobalizeButton
+                onClick={() => handleClick("commodityChannelIndex")}
+              />
+            )}
           </motion.li>
           <motion.li layout>
             <div className={classes.left}>
               <Supertrend index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("supertrend")} />}
+            {globalButtonEnabled && (
+              <GlobalizeButton onClick={() => handleClick("supertrend")} />
+            )}
           </motion.li>
           <motion.li layout>
             <div className={classes.left}>
               <OnBalanceVolume index={index} />
             </div>
-            {globalButtonEnabled && <GlobalizeButton onClick={() => handleClick("onBalanceVolume")} />}
+            {globalButtonEnabled && (
+              <GlobalizeButton onClick={() => handleClick("onBalanceVolume")} />
+            )}
           </motion.li>
         </motion.ul>
       </Modal>
