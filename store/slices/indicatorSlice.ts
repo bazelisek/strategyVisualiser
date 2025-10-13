@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-const initialState: {
+export const initialState: {
   movingAverage: {
     visible: boolean;
     value: { maLength: number; color: string };

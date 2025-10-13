@@ -64,6 +64,8 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
       {loading && <p>Loading...</p>}
       {!loading && (
         <motion.div
+          id="chart"
+          data-testid="chart-wrapper"
           // callback ref — při mountu React zavolá setContainerEl(el)
           ref={(el) => setContainerEl(el)}
           initial={{ opacity: 0, y: -200 }}

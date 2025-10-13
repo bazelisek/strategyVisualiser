@@ -102,15 +102,6 @@ export function addToArrayAndHandleEdgeCases(
   for (let i = 0; i < tileCount; i++) {
     const handledFormData = { ...convertedFormData };
 
-    console.log(formData);
-    console.log(period1s);
-    console.log(period2s);
-    console.log(
-      convertedFormData.period2.defaultValue
-    );
-    console.log(
-      convertedFormData.period1.defaultValue
-    );
     if (["period1", "period2", "interval"].includes(field)) {
       if (
         field == "interval" &&
@@ -133,7 +124,6 @@ export function addToArrayAndHandleEdgeCases(
             convertedFormData.period1.defaultValue <
           0
         ) {
-          console.log("Handlng");
           handledFormData.period1 = { defaultValue: Number(period1s[i]) };
         }
       } else if (field == "period2") {
