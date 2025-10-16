@@ -20,20 +20,20 @@ const MarkerNavigation: React.FC<MarkerNavigationProps> = ({tradeMarkers, select
     const leftDisabled = selectedTime?.index === 0 || !selectedTime;
     const rightDisabled = selectedTime?.index === tradeMarkers.length - 1 || !selectedTime;
 
-    //console.log(leftDisabled);
-
     function handleLeft() {
         if (selectedTime?.index === 0 || !selectedTime) return;
-        const time = {index: selectedTime?.index - 1, time: tradeMarkers[selectedTime?.index - 1].time};
-        setSelectedTime({index: selectedTime?.index - 1, time: tradeMarkers[selectedTime?.index - 1].time});
-        centerToMarker(time.time, chart)
+        const newIndex = selectedTime.index - 1;
+        const newMarker = { index: newIndex, time: tradeMarkers[newIndex].time };
+        setSelectedTime(newMarker);
+        centerToMarker(newMarker.time, chart);
     }
 
     function handleRight() {
         if (selectedTime?.index === tradeMarkers.length - 1 || !selectedTime) return;
-        const time = {index: selectedTime?.index + 1, time: tradeMarkers[selectedTime?.index + 1].time};
-        setSelectedTime({index: selectedTime?.index + 1, time: tradeMarkers[selectedTime?.index + 1].time});
-        centerToMarker(time.time, chart)
+        const newIndex = selectedTime.index + 1;
+        const newMarker = { index: newIndex, time: tradeMarkers[newIndex].time };
+        setSelectedTime(newMarker);
+        centerToMarker(newMarker.time, chart);
     }
 
     

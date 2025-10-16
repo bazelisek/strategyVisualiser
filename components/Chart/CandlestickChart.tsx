@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import {
   createChart,
@@ -42,9 +42,8 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   tradeMarkers,
 }) => {
   // Select all indicators for this chart
-  const indicatorSlice = useSelector((state: RootState) =>
-    state.indicators.filter((item) => item.index === index)
-  );
+  const indicatorSlice = useSelector((state: RootState) => state.indicators);
+  const indicatorsWithIndex = indicatorSlice.filter((item) => item.index === index);
 
   const chartRef = useRef<HTMLDivElement>(null);
   const mainChartRef = useRef<IChartApi | null>(null);
@@ -52,15 +51,14 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   // Dynamic refs for secondary charts
   const indicatorRefs = useRef<{ [id: string]: HTMLDivElement | null }>({});
 
-  const [selectedTime, setSelectedTime] = useState<{ time: Time; index: number } | null>(
-    null
-  );
+  const [selectedTime, setSelectedTime] =
+    useState<{ time: Time; index: number } | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
 
     // Calculate heights for main and secondary charts
-    const hasSecondary = indicatorSlice.some(
+    const hasSecondary = indicatorsWithIndex.some(
       (ind) =>
         (ind.key === "commodityChannelIndex" && ind.indicator.visible) ||
         (ind.key === "onBalanceVolume" && ind.indicator.visible)
@@ -91,7 +89,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     // Create secondary charts for each indicator
     const secondaryCharts: Record<string, ReturnType<typeof createChart> | null> = {};
 
-    indicatorSlice.forEach((indicator, i) => {
+    indicatorsWithIndex.forEach((indicator, i) => {
       const id = `${indicator.key}_${i}`;
       if (
         (indicator.key === "commodityChannelIndex" && indicator.indicator.visible) ||
@@ -167,8 +165,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     });
 
     // Render overlays for all indicators (allow multiple per type)
-    indicatorSlice.forEach((indicator, i) => {
-      console.log(indicator);
+    indicatorsWithIndex.forEach((indicator, i) => {
       const id = `${indicator.key}_${i}`;
 
       if (indicator.key === "movingAverage" && indicator.indicator.visible) {
@@ -179,7 +176,6 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
       if (indicator.key === "exponentialMovingAverage" && indicator.indicator.visible) {
         if ("emaLength" in indicator.indicator.value) {
-          console.log("ema");
           createEMAGraph(mainChart, indicator.indicator.value, candles);
         }
       }
@@ -231,13 +227,13 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       Object.values(secondaryCharts).forEach((chart) => chart?.remove());
       mainChartRef.current = null;
     };
-  }, [width, height, candles, indicatorSlice, tradeMarkers]);
+  }, [width, height, candles, indicatorSlice, tradeMarkers, index]);
 
   // Render
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <div ref={chartRef} />
-      {indicatorSlice.map((indicator, i) => {
+      {indicatorsWithIndex.map((indicator, i) => {
         const id = `${indicator.key}_${i}`;
         if (
           (indicator.key === "commodityChannelIndex" && indicator.indicator.visible) ||
