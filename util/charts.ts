@@ -13,7 +13,7 @@ export function createSecondaryChart(
   height: number
 ): IChartApi | null {
   if (!ref.current) return null;
-  let chart = createChart(ref.current, {
+  const chart = createChart(ref.current, {
     width,
     height,
     layout: {

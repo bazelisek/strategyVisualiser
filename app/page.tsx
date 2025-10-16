@@ -1,16 +1,14 @@
 "use client";
 import classes from "./page.module.css";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import AddTile from "@/components/Tiling/AddTile";
 import Tile from "@/components/Tiling/Tile";
 import Modal from "@/components/Modal";
 import Form from "@/components/Input/Form/Form";
 import { useRouter, useSearchParams } from "next/navigation";
 import Preconfiguration from "@/components/Input/Preconfiguration";
-import { useDispatch } from "react-redux";
-import { newIndicators } from "@/store/reduxStore";
 
-export default function Home() {
+function PageContent() {
   const params = useSearchParams();
   const symbols = params.getAll("symbol");
   const strategies = params.getAll("strategy");
@@ -18,7 +16,6 @@ export default function Home() {
   const period2s = params.getAll("period2");
   const intervals = params.getAll("interval");
   const router = useRouter();
-  const dispatch = useDispatch();
 
   const tileCount = symbols.length;
   const [isAddTileActive, setIsAddTileActive] = useState<boolean>(true);
@@ -43,7 +40,7 @@ export default function Home() {
     period2: string;
     strategy: string;
   }) {
-    let paramsArr: {
+    const paramsArr: {
       symbol: string;
       strategy: string;
       period1: string;
@@ -76,19 +73,25 @@ export default function Home() {
 
   return (
     <main id="main" className={classes.main}>
-      <Suspense fallback="Loading...">
-        <Preconfiguration />
-        <AddTile onClick={handleAddTile} active={isAddTileActive} />
-        <Modal
-          title="New Tile"
-          onClose={handleClose}
-          open={!isAddTileActive}
-          className={classes.modal}
-        >
-          <Form onClose={handleSubmit} index={tileCount + 1} />
-        </Modal>
-        {tileCount > 0 && <div className={classes.tileGrid}>{tileArr}</div>}
-      </Suspense>
+      <Preconfiguration />
+      <AddTile onClick={handleAddTile} active={isAddTileActive} />
+      <Modal
+        title="New Tile"
+        onClose={handleClose}
+        open={!isAddTileActive}
+        className={classes.modal}
+      >
+        <Form onClose={handleSubmit} index={tileCount + 1} />
+      </Modal>
+      {tileCount > 0 && <div className={classes.tileGrid}>{tileArr}</div>}
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PageContent />
+    </Suspense>
   );
 }

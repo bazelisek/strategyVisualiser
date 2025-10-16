@@ -1,7 +1,7 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import classes from './Modal.module.css';
+import { AnimatePresence, motion } from "framer-motion";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import classes from "./Modal.module.css";
 
 interface ModalProps {
   children?: ReactNode;
@@ -19,16 +19,16 @@ const Modal: React.FC<ModalProps> = ({
   className,
 }) => {
   const [isMounted, setIsMounted] = useState(false);
-  const modalContentRef = useRef<HTMLDialogElement>(null);
+  const modalContentRef = useRef<HTMLDialogElement | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
     // Optional: Add and remove a class on the body to prevent scrolling when modal is open
     if (open) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [open]);
 
@@ -45,7 +45,11 @@ const Modal: React.FC<ModalProps> = ({
           <motion.dialog
             layout
             initial={{ opacity: 0, y: -300 }}
-            animate={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              transition: { type: "spring", stiffness: 300, damping: 30 },
+            }}
             exit={{ opacity: 0, y: -300, transition: { duration: 0.2 } }}
             open
             className={`${classes.modalContent} ${className}`} // Renamed for clarity
@@ -59,7 +63,9 @@ const Modal: React.FC<ModalProps> = ({
             </div>
             {/* Pass the ref down to children that need it */}
             {React.isValidElement(children)
-              ? React.cloneElement(children as React.ReactElement<any>, { modalContainerRef: modalContentRef })
+              ? React.cloneElement(children as React.ReactElement<{ modalContainerRef?: React.RefObject<HTMLDialogElement | null> }>, {
+                  modalContainerRef: modalContentRef,
+                })
               : children}
           </motion.dialog>
         </motion.div>

@@ -8,7 +8,7 @@ import AnimationButton from "../Buttons/AnimationButton";
 import Time from "./Time";
 import { getValidIntervals } from "@/util/formCheck";
 import { useDispatch, useSelector } from "react-redux";
-import { makeGlobal, newIndicators, RootState } from "@/store/reduxStore";
+import { newIndicators, RootState } from "@/store/reduxStore";
 
 interface FormProps {
   children?: React.ReactNode;

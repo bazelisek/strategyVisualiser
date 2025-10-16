@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import classes from "./CustomSelect.module.css";
 import DropdownBox from "./DropdownBox";
 
@@ -17,29 +17,6 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   initialText,
 }) => {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-
-  // Filtered options based on search text
-  const filteredOptions = useMemo(() => {
-    if (!search) return options;
-    return options.filter((opt) =>
-      opt.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [options, search]);
-
-  const listVariants = {
-    hidden: { opacity: 0, height: 0 },
-    visible: {
-      opacity: 1,
-      height: "auto",
-      transition: { staggerChildren: 0.05, duration: 0.3 },
-    },
-    exit: {
-      opacity: 0,
-      height: 0,
-      transition: { staggerChildren: 0.03, staggerDirection: -1 },
-    },
-  };
 
   return (
     <div className={classes.wrapper}>

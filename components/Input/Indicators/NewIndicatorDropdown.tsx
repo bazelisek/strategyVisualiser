@@ -7,13 +7,11 @@ interface NewIndicatorDropdownProps {
   children?: ReactNode;
   onChange: (value: IndicatorKey) => void;
   setOpen: (value: React.SetStateAction<boolean>) => void;
-  index: number;
 }
 
 const NewIndicatorDropdown: React.FC<NewIndicatorDropdownProps> = ({
   onChange,
   setOpen,
-  index,
 }) => {
   const choices = Object.keys(indicatorState) as IndicatorKey[];
   const displayChoices = choices.map((key) => indicatorState[key].indicator.displayName);

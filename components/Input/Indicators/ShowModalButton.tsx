@@ -1,12 +1,11 @@
-import React, { ReactNode } from "react";
+import React from "react";
 import IndicatorsModal from "./IndicatorsModal";
 import classes from "./ShowModalButton.module.css";
 import AnimationButton from "../Buttons/AnimationButton";
 import { useDispatch, useSelector } from "react-redux";
-import { newIndicators, RootState, setModal } from "@/store/reduxStore";
+import { RootState, setModal } from "@/store/reduxStore";
 
 interface ShowModalButtonProps {
-  children?: ReactNode;
   index: number;
   className?: string;
   globalButtonEnabled?: boolean;
@@ -15,7 +14,6 @@ interface ShowModalButtonProps {
 const ShowModalButton: React.FC<ShowModalButtonProps> = ({
   index,
   className,
-  children,
   globalButtonEnabled = false,
 }) => {
   const dispatch = useDispatch();

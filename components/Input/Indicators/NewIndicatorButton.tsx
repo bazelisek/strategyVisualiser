@@ -29,7 +29,7 @@ const NewIndicatorButton: React.FC<NewIndicatorButtonProps> = ({ index }) => {
       <DropdownButton onClick={handleNewIndicatorClick}>
         New Indicator
       </DropdownButton>
-      {open && <NewIndicatorDropdown index={index} onChange={handleAddIndicator} setOpen={setOpen} />}
+      {open && <NewIndicatorDropdown onChange={handleAddIndicator} setOpen={setOpen} />}
     </div>
   );
 };

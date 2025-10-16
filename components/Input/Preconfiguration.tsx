@@ -10,7 +10,7 @@ interface PreconfigurationProps {
   children?: ReactNode;
 }
 
-const Preconfiguration: React.FC<PreconfigurationProps> = (props) => {
+const Preconfiguration: React.FC<PreconfigurationProps> = () => {
   const [open, setOpen] = useState(false);
   const dispatch = useDispatch();
 
@@ -21,7 +21,7 @@ const Preconfiguration: React.FC<PreconfigurationProps> = (props) => {
     period2: { defaultValue: string };
     strategy: { defaultValue: string };
   }) {
-    console.log(JSON.stringify(formData))
+    console.log(JSON.stringify(formData));
     setOpen(false);
     dispatch(setConfigs(formData));
   }
@@ -32,9 +32,7 @@ const Preconfiguration: React.FC<PreconfigurationProps> = (props) => {
     <div className={classes.div}>
       <h3>Defaults</h3>
       <div className={classes.flex}>
-        <ShowModalButton index={0} globalButtonEnabled={true}>
-          Ahoj
-        </ShowModalButton>
+        <ShowModalButton index={0} globalButtonEnabled={true} />
         <AnimationButton
           onClick={handleClick}
           disabled={open}

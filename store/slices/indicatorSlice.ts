@@ -107,7 +107,7 @@ export const indicatorSlice = createSlice({
       const indicatorIndex = action.payload.indicatorIndex;
       // The type assertion is safe because we've ensured the index exists.
       // Redux Toolkit with Immer allows direct mutation.
-      (state[indicatorIndex].indicator.value as any) = action.payload.value;
+      (state[indicatorIndex].indicator.value as typeof action.payload.value) = action.payload.value;
     },
     setIndicatorsVisibility: (
       state,

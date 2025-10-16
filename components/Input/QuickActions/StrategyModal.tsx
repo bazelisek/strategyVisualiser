@@ -32,7 +32,7 @@ const StrategyModal: React.FC<StrategyModalProps> = ({index}) => {
     const intervals = params.getAll("interval");
     const tileCount = symbols.length;
 
-    let paramsArr: {
+    const paramsArr: {
       symbol: string;
       strategy: string;
       period1: string;

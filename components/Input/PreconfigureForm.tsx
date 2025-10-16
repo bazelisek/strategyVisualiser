@@ -10,7 +10,6 @@ import Interval from "./Form/Interval";
 import Strategy from "./Form/Strategy";
 import { addToArrayAndHandleEdgeCases, getValidIntervals } from "@/util/formCheck";
 import { useRouter, useSearchParams } from "next/navigation";
-import { searchParamsType } from "@/util/serverFetch";
 
 interface PreconfigureFormProps {
   children?: ReactNode;
