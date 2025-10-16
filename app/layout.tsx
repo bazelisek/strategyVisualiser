@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next"
 import "./globals.css";
 import ReduxWrapper from "@/store/ReduxWrapper";
 import Header from "@/components/Header";
@@ -32,6 +33,7 @@ export default function RootLayout({
         <ReduxWrapper>
           {children}
         </ReduxWrapper>
+        <Analytics />
       </body>
     </html>
   );
