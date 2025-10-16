@@ -28,9 +28,10 @@ export function calculateSupertrendSeriesData(
 
 export function createSTGraph(
   mainChart: IChartApi,
-  config: { multiplier: number; period: number, color: string },
+  config: { multiplier: number; period: number, color: string } | undefined,
   candles: candleData,
 ): void {
+  if (!config) return;
   const supertrendSeries = mainChart.addSeries(LineSeries, {
     color: config.color,
     lineWidth: 1,

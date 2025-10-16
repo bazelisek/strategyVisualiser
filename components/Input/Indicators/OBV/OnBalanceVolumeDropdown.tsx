@@ -7,24 +7,23 @@ import ColorPicker from "../Utilities/ColorPicker";
 
 interface OnBalanceVolumeDropdownProps {
   children?: ReactNode;
-  index: number;
+  indicatorIndex: number;
   open: boolean;
 }
 
 const OnBalanceVolumeDropdown: React.FC<OnBalanceVolumeDropdownProps> = ({
-  index,
+  indicatorIndex,
   open,
 }) => {
-  const indicators = useSelector((state: RootState) => state.indicators);
-  const color = indicators[index].onBalanceVolume.value.color;
+  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
+  const color = indicator.indicator.value.color;
   const dispatch = useDispatch();
 
   function handleSetColor(newColor: string) {
     dispatch(
       setIndicators({
-        index,
-        indicator: "onBalanceVolume",
-        value: { ...indicators[index].onBalanceVolume.value, color: newColor },
+        indicatorIndex,
+        value: { ...indicator.indicator.value, color: newColor },
       })
     );
   }

@@ -8,7 +8,7 @@ import AnimationButton from "../Buttons/AnimationButton";
 import Time from "./Time";
 import { getValidIntervals } from "@/util/formCheck";
 import { useDispatch, useSelector } from "react-redux";
-import { newIndicators, RootState } from "@/store/reduxStore";
+import { makeGlobal, newIndicators, RootState } from "@/store/reduxStore";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -28,6 +28,7 @@ interface FormProps {
 const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
   const dispatch = useDispatch();
   const config = useSelector((state: RootState) => state.config);
+  const indicators = useSelector((state: RootState) => state.indicators);
   const [formData, setFormData] = useState({
     symbol: { value: config.symbol.defaultValue },
     interval: { value: config.interval.defaultValue },
@@ -71,7 +72,12 @@ const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
     }
     if (currentInput === 3) {
       console.log("Creating with index " + index)
-      dispatch(newIndicators(index));
+      for (let i = 0; i < indicators.length; i++) {
+        const ic = indicators[i];
+        if (ic.index != 0) continue;
+        dispatch(newIndicators({state: {index, key: ic.key, linkedGlobalStateIndex: i, indicator: JSON.parse(JSON.stringify(ic.indicator))}}));
+      }
+      
       console.log(JSON.stringify(formData));
       const interval =
         formData.interval.value ||

@@ -18,8 +18,9 @@ export function calculateExponentialMovingAverageSeriesData(
 }
 
 export function createEMAGraph(mainChart: IChartApi,
-  config: {emaLength: number, color: string},
+  config: {emaLength: number, color: string} | undefined,
   candles: candleData) {
+    if (!config) return;
   const ema = mainChart.addSeries(LineSeries, {
     color: config.color,
     lineWidth: 1,

@@ -10,16 +10,16 @@ import DropdownButton from "../../Buttons/DropdownButton";
 
 interface OnBalanceVolumeProps {
   children?: ReactNode;
-  index: number;
+  indicatorIndex: number;
 }
 
-const OnBalanceVolume: React.FC<OnBalanceVolumeProps> = ({index}) => {
-  const indicators = useSelector((state: RootState) => state.indicators);
+const OnBalanceVolume: React.FC<OnBalanceVolumeProps> = ({indicatorIndex}) => {
+  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleOBVToggle(value: boolean) {
     dispatch(
-      setIndicatorsVisibility({ index, indicator: "onBalanceVolume", value: value })
+      setIndicatorsVisibility({ indicatorIndex, value: value })
     );
   }
   
@@ -34,12 +34,12 @@ const OnBalanceVolume: React.FC<OnBalanceVolumeProps> = ({index}) => {
         <div className="alignmentDiv">
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators[index]?.onBalanceVolume.visible || false}
+            isChecked={indicator?.indicator.visible || false}
             clickHandler={handleOBVToggle}
           />
         </div>
       </div>
-      <OnBalanceVolumeDropdown open={open} index={index} />
+      <OnBalanceVolumeDropdown open={open} indicatorIndex={indicatorIndex} />
     </>
   );
 };

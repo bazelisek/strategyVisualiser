@@ -74,10 +74,6 @@ export default function Home() {
     handleClose();
   }
 
-  useEffect(() => {
-    dispatch(newIndicators(tileCount));
-  }, []);
-
   return (
     <main id="main" className={classes.main}>
       <Suspense fallback="Loading...">

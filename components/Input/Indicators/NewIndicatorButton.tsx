@@ -4,6 +4,8 @@ import DropdownButton from "../Buttons/DropdownButton";
 import { useDispatch } from "react-redux";
 //import { addIndicator } from "@/store/reduxStore";
 import classes from './NewIndicatorButton.module.css';
+import { newIndicators } from "@/store/reduxStore";
+import { IndicatorKey } from "@/store/slices/indicatorSlice";
 
 interface NewIndicatorButtonProps {
   children?: ReactNode;
@@ -17,8 +19,9 @@ const NewIndicatorButton: React.FC<NewIndicatorButtonProps> = ({ index }) => {
   function handleNewIndicatorClick() {
     setOpen((old) => !old);
   }
-  function handleAddIndicator(indicator: string) {
+  function handleAddIndicator(indicator: IndicatorKey) {
     //dispatch(addIndicator({ index, indicator }));
+    dispatch(newIndicators({tileIndex: index, indicatorKey: indicator }));
     setOpen(false);
   }
   return (
@@ -26,7 +29,7 @@ const NewIndicatorButton: React.FC<NewIndicatorButtonProps> = ({ index }) => {
       <DropdownButton onClick={handleNewIndicatorClick}>
         New Indicator
       </DropdownButton>
-      {open && <NewIndicatorDropdown onChange={handleAddIndicator} setOpen={setOpen} />}
+      {open && <NewIndicatorDropdown index={index} onChange={handleAddIndicator} setOpen={setOpen} />}
     </div>
   );
 };

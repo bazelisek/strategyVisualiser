@@ -1,22 +1,21 @@
 import { RootState, setIndicators } from "@/store/reduxStore";
 import { AnimatePresence } from "framer-motion";
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Dropdown from "../Utilities/Dropdown";
-import { HexColorPicker } from "react-colorful";
 import ColorPicker from "../Utilities/ColorPicker";
 
 interface CommodityChannelIndexDropdownProps {
   children?: ReactNode;
   open: boolean;
-  index: number;
+  indicatorIndex: number;
 }
 
 const CommodityChannelIndexDropdown: React.FC<
   CommodityChannelIndexDropdownProps
-> = ({ open, index }) => {
-  const indicators = useSelector((state: RootState) => state.indicators);
-  const color = indicators[index].commodityChannelIndex.value.color;
+> = ({ open, indicatorIndex }) => {
+  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
+  const color = indicator.indicator.value.color;
   const dispatch = useDispatch();
 
   function handleCciLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -24,8 +23,7 @@ const CommodityChannelIndexDropdown: React.FC<
     if (value && parseInt(value, 10) >= 1) {
       dispatch(
         setIndicators({
-          index,
-          indicator: "commodityChannelIndex",
+          indicatorIndex,
           value: { cciLength: parseInt(value, 10), color },
         })
       );
@@ -34,9 +32,8 @@ const CommodityChannelIndexDropdown: React.FC<
   function handleSetColor(newColor: string) {
     dispatch(
       setIndicators({
-        index,
-        indicator: "commodityChannelIndex",
-        value: { ...indicators[index].movingAverage.value, color: newColor },
+        indicatorIndex,
+        value: { ...indicator.indicator.value, color: newColor },
       })
     );
   }
@@ -51,7 +48,11 @@ const CommodityChannelIndexDropdown: React.FC<
               type="number"
               id="cci-length"
               onChange={handleCciLengthChange}
-              defaultValue={indicators[index].commodityChannelIndex.value.cciLength}
+              defaultValue={
+                "cciLength" in indicator.indicator.value
+                  ? indicator.indicator.value.cciLength
+                  : 20
+              }
             />
           </div>
           <ColorPicker color={color} setColor={handleSetColor} />

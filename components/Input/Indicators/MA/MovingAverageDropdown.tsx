@@ -7,27 +7,28 @@ import ColorPicker from "../Utilities/ColorPicker";
 
 interface MovingAverageDropdownProps {
   children?: ReactNode;
-  index: number;
+  indicatorIndex: number;
   open: boolean;
 }
 
 const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
-  index,
+  indicatorIndex,
   open,
 }) => {
-  const indicators = useSelector((state: RootState) => state.indicators);
-  
+  const indicator = useSelector(
+    (state: RootState) => state.indicators[indicatorIndex]
+  );
+
   // Guard against indicators[index] being undefined
-  if (!indicators[index]) return null;
-  const { color } = indicators[index].movingAverage.value;
+  if (!indicator) return null;
+  const { color } = indicator.indicator.value;
   const dispatch = useDispatch();
 
   function handleMaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.value && Number(e.target.value) >= 1)
       dispatch(
         setIndicators({
-          index,
-          indicator: "movingAverage",
+          indicatorIndex,
           value: { maLength: Number(e.target.value), color },
         })
       );
@@ -36,9 +37,8 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
   function handleSetColor(newColor: string) {
     dispatch(
       setIndicators({
-        index,
-        indicator: "movingAverage",
-        value: { ...indicators[index].movingAverage.value, color: newColor },
+        indicatorIndex,
+        value: { ...indicator.indicator.value, color: newColor },
       })
     );
   }
@@ -54,7 +54,7 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
               id="ma-length"
               placeholder=" "
               onChange={handleMaLengthChange}
-              defaultValue={indicators[index].movingAverage.value.maLength}
+              defaultValue={"maLength" in indicator.indicator.value ? indicator.indicator.value.maLength : 20}
             />
           </div>
           <ColorPicker color={color} setColor={handleSetColor} />

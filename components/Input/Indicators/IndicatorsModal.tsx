@@ -10,9 +10,8 @@ import Supertrend from "./Supertrend/Supertrend";
 import OnBalanceVolume from "./OBV/OnBalanceVolume";
 import Modal from "@/components/Modal";
 import GlobalizeButton from "../Buttons/GlobalizeButton";
-import { IndicatorKey } from "@/store/slices/indicatorSlice";
-import AnimationButton from "../Buttons/AnimationButton";
 import NewIndicatorButton from "./NewIndicatorButton";
+import { useSearchParams } from "next/navigation";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
@@ -24,7 +23,10 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
   index,
   globalButtonEnabled,
 }) => {
+  const params = useSearchParams();
+  const numberOfTiles = params.getAll("symbol").length;
   const modalSlice = useSelector((state: RootState) => state.modals);
+  const indicatorsState = useSelector((state: RootState) => state.indicators);
   const open = modalSlice[index]?.indicators || false;
   const dispatch = useDispatch();
 
@@ -32,10 +34,10 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
     dispatch(setModal({ modal: { index, modal: "indicators" }, value: false }));
   }
 
-  function handleClick(indicator: IndicatorKey) {
+  function handleClick(indicatorIndex: number) {
     console.log("Making global");
-    console.log(indicator);
-    dispatch(makeGlobal({ indicator }));
+    console.log(indicatorIndex);
+    dispatch(makeGlobal({ indicatorIndex, numberOfTiles }));
   }
 
   return (
@@ -48,6 +50,20 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
       >
         <NewIndicatorButton index={index}></NewIndicatorButton>
         <motion.ul layout>
+          {indicatorsState.map((indicator, indexOfIndicator) => {
+            if (indicator.index != index) return;
+            return (
+              <motion.li key={indexOfIndicator}>
+                <div className={classes.left}>
+                  {designateJSXToIndicator(indicator.key, indexOfIndicator)}
+                </div>
+                {globalButtonEnabled && (
+                  <GlobalizeButton onClick={() => handleClick(indexOfIndicator)} />
+                )}
+              </motion.li>
+            );
+          })}
+          {/*
           <motion.li layout>
             <div className={classes.left}>
               <MovingAverage index={index} />
@@ -91,11 +107,30 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
             {globalButtonEnabled && (
               <GlobalizeButton onClick={() => handleClick("onBalanceVolume")} />
             )}
-          </motion.li>
+          </motion.li>*/}
         </motion.ul>
       </Modal>
     </>
   );
+  function designateJSXToIndicator(indicatorKey: string, index: number) {
+    if (indicatorKey == "movingAverage") {
+      return <MovingAverage  indicatorIndex={index} />;
+    }
+    if (indicatorKey == "exponentialMovingAverage") {
+      return <ExponentialMovingAverage  indicatorIndex={index} />;
+    }
+    if (indicatorKey == "commodityChannelIndex") {
+      return <CommodityChannelIndex  indicatorIndex={index} />;
+    }
+    if (indicatorKey == "supertrend") {
+      return <Supertrend  indicatorIndex={index} />;
+    }
+    if (indicatorKey == "onBalanceVolume") {
+      return <OnBalanceVolume  indicatorIndex={index} />;
+    }
+    console.log(indicatorKey);
+    throw new Error("Wrong indicatorKey");
+  }
 };
 
 export default IndicatorsModal;

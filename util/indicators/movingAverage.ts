@@ -23,9 +23,12 @@ export function calculateMovingAverageSeriesData(
 
 export function createMAGraph(
   mainChart: IChartApi,
-  config: {maLength: number, color: string},
+  config: {maLength: number, color: string} | undefined,
   candles: candleData
 ): void {
+  if (!config) {
+    return;
+  }
   const ma = mainChart.addSeries(LineSeries, {
     color: config.color,
     lineWidth: 1,

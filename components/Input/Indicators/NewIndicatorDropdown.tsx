@@ -1,24 +1,35 @@
-import React, { ReactNode } from 'react';
-import { IndicatorKey, indicatorState } from '@/store/slices/indicatorSlice';
-import DropdownBox from '../Form/DropdownBox';
+"use client";
+import React, { ReactNode } from "react";
+import { IndicatorKey, indicatorState } from "@/store/slices/indicatorSlice";
+import DropdownBox from "../Form/DropdownBox";
 
 interface NewIndicatorDropdownProps {
   children?: ReactNode;
   onChange: (value: IndicatorKey) => void;
   setOpen: (value: React.SetStateAction<boolean>) => void;
-
+  index: number;
 }
 
-const NewIndicatorDropdown: React.FC<NewIndicatorDropdownProps> = ({ onChange, setOpen }) => {
-    const choices = Object.keys(indicatorState) as IndicatorKey[];
-    const displayChoices = choices.map(key => indicatorState[key].displayName);
+const NewIndicatorDropdown: React.FC<NewIndicatorDropdownProps> = ({
+  onChange,
+  setOpen,
+  index,
+}) => {
+  const choices = Object.keys(indicatorState) as IndicatorKey[];
+  const displayChoices = choices.map((key) => indicatorState[key].indicator.displayName);
 
-    function handleChange(displayName: string) {
-        const key = choices.find(k => indicatorState[k].displayName === displayName);
-        if (key) onChange(key);
-    }
+  function handleChange(displayName: string) {
+    const key = choices.find(
+      (k) => indicatorState[k].indicator.displayName === displayName
+    );
+    if (key) onChange(key);
+  }
   return (
-    <DropdownBox options={displayChoices} onChange={handleChange} setOpen={setOpen}/>
+    <DropdownBox
+      options={displayChoices}
+      onChange={handleChange}
+      setOpen={setOpen}
+    />
   );
 };
 

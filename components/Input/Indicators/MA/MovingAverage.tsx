@@ -7,17 +7,17 @@ import DropdownButton from "../../Buttons/DropdownButton";
 
 interface MovingAverageProps {
   children?: ReactNode;
-  index: number;
+  indicatorIndex: number;
 }
 
-const MovingAverage: React.FC<MovingAverageProps> = ({index}) => {
-  const indicators = useSelector((state: RootState) => state.indicators);
+const MovingAverage: React.FC<MovingAverageProps> = ({ indicatorIndex }) => {
+  const indicator = useSelector(
+    (state: RootState) => state.indicators[indicatorIndex]
+  );
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {
-    dispatch(
-      setIndicatorsVisibility({ indicator: "movingAverage", index, value: value })
-    );
+    dispatch(setIndicatorsVisibility({ indicatorIndex, value: value }));
   }
 
   function toggleDropdown() {
@@ -31,12 +31,12 @@ const MovingAverage: React.FC<MovingAverageProps> = ({index}) => {
         <div className="alignmentDiv">
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators[index]?.movingAverage.visible || false}
+            isChecked={indicator?.indicator.visible || false}
             clickHandler={handleMovingAverageToggle}
           />
         </div>
       </div>
-      <MovingAverageDropdown index={index} open={open} />
+      <MovingAverageDropdown indicatorIndex={indicatorIndex} open={open} />
     </>
   );
 };

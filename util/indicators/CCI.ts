@@ -26,10 +26,10 @@ export function calculateCCISeriesData(
 
 export function createCCIGraph(
   cciChart: IChartApi | null,
-  config: { cciLength: number, color: string },
+  config: { cciLength: number, color: string } | undefined,
   candles: candleData,
 ) {
-  if (!cciChart) return;
+  if (!cciChart || !config) return;
   const cciSeries = cciChart.addSeries(LineSeries, {
     color: config.color,
     lineWidth: 1,

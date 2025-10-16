@@ -7,17 +7,16 @@ import SupertrendDropdown from "./SupertrendDropdown";
 
 interface SupertrendProps {
   children?: ReactNode;
-  index: number;
+  indicatorIndex: number;
 }
 
-const Supertrend: React.FC<SupertrendProps> = ({index}) => {
-  const indicators = useSelector((state: RootState) => state.indicators);
+const Supertrend: React.FC<SupertrendProps> = ({indicatorIndex}) => {
+  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {
     dispatch(
-      setIndicatorsVisibility({index,
-        indicator: "supertrend",
+      setIndicatorsVisibility({indicatorIndex,
         value: value,
       })
     );
@@ -33,12 +32,12 @@ const Supertrend: React.FC<SupertrendProps> = ({index}) => {
         <div className="alignmentDiv">
           <DropdownButton onClick={toggleDropdown} />
           <Switch
-            isChecked={indicators[index]?.supertrend.visible  || false}
+            isChecked={indicator?.indicator.visible  || false}
             clickHandler={handleMovingAverageToggle}
           />
         </div>
       </div>
-      <SupertrendDropdown index={index} open={open} />
+      <SupertrendDropdown indicatorIndex={indicatorIndex} open={open} />
     </>
   );
 };

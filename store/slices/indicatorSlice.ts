@@ -1,53 +1,90 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+type stateType = {
+  key: string;
+  index: number;
+  indicator: {
+    visible: boolean;
+    value:
+      | { maLength: number; color: string }
+      | { period: number; multiplier: number; color: string }
+      | { emaLength: number; color: string }
+      | { cciLength: number; color: string }
+      | { color: string };
+    displayName: string;
+  };
+  linkedGlobalStateIndex?: number;
+};
+
 export const initialState: {
-  movingAverage: {
+  key: string;
+  index: number;
+  indicator: {
     visible: boolean;
-    value: { maLength: number; color: string };
+    value:
+      | { maLength: number; color: string }
+      | { period: number; multiplier: number; color: string }
+      | { emaLength: number; color: string }
+      | { cciLength: number; color: string }
+      | { color: string };
     displayName: string;
   };
-  supertrend: {
-    visible: boolean;
-    value: { period: number; multiplier: number; color: string };
-    displayName: string;
-  };
-  exponentialMovingAverage: {
-    visible: boolean;
-    value: { emaLength: number; color: string };
-    displayName: string;
-  };
-  commodityChannelIndex: {
-    visible: boolean;
-    value: { cciLength: number; color: string };
-    displayName: string;
-  };
-  onBalanceVolume: { visible: boolean; value: { color: string }; displayName: string; };
+  linkedGlobalStateIndex?: number;
 }[] = [];
 
 export const indicatorState = {
   movingAverage: {
-    visible: false,
-    value: { maLength: 20, color: "#2962FF" },
-    displayName: "Moving Average",
+    key: "movingAverage",
+    indicator: {
+      visible: true,
+      value: { maLength: 20, color: "#2962FF" },
+      displayName: "Moving Average",
+    },
+    linkedGlobalStateIndex: null,
   },
   supertrend: {
-    visible: false,
-    value: { period: 10, multiplier: 3, color: "#adff29" },
-    displayName: "Supertrend",
+    key: "supertrend",
+    indicator: {
+      visible: true,
+      value: { period: 10, multiplier: 3, color: "#adff29" },
+      displayName: "Supertrend",
+    },
+    linkedGlobalStateIndex: null,
   },
   exponentialMovingAverage: {
-    visible: true,
-    value: { emaLength: 20, color: "#29f8ff" },
-    displayName: "Exponenetial Moving Average",
+    key: "exponentialMovingAverage",
+    indicator: {
+      visible: true,
+      value: { emaLength: 20, color: "#29f8ff" },
+      displayName: "Exponenetial Moving Average",
+    },
+    linkedGlobalStateIndex: null,
   },
   commodityChannelIndex: {
-    visible: false,
-    value: { cciLength: 20, color: "#f829ff" },
-    displayName: "Commodity Channel Index",
+    key: "commodityChannelIndex",
+    indicator: {
+      visible: true,
+      value: { cciLength: 20, color: "#f829ff" },
+      displayName: "Commodity Channel Index",
+    },
+    linkedGlobalStateIndex: null,
   },
-  onBalanceVolume: { visible: false, value: { color: "#2962FF" }, displayName: "On Balance Volume", },
+  onBalanceVolume: {
+    key: "onBalanceVolume",
+    indicator: {
+      visible: true,
+      value: { color: "#2962FF" },
+      displayName: "On Balance Volume",
+    },
+    linkedGlobalStateIndex: null,
+  },
 };
-export type IndicatorKey = keyof typeof indicatorState;
+export type IndicatorKey =
+  | "movingAverage"
+  | "supertrend"
+  | "exponentialMovingAverage"
+  | "commodityChannelIndex"
+  | "onBalanceVolume";
 
 export const indicatorSlice = createSlice({
   name: "indicators",
@@ -58,8 +95,7 @@ export const indicatorSlice = createSlice({
     setIndicators: (
       state,
       action: PayloadAction<{
-        indicator: IndicatorKey;
-        index: number;
+        indicatorIndex: number;
         value:
           | { maLength: number; color: string }
           | { emaLength: number; color: string }
@@ -68,54 +104,115 @@ export const indicatorSlice = createSlice({
           | { color: string };
       }>
     ) => {
-      const indicator = action.payload.indicator;
-      const index = action.payload.index;
-      while (state.length <= index) {
-        state.push(JSON.parse(JSON.stringify(indicatorState)));
-      }
+      const indicatorIndex = action.payload.indicatorIndex;
       // The type assertion is safe because we've ensured the index exists.
       // Redux Toolkit with Immer allows direct mutation.
-      (state[index][indicator].value as any) = action.payload.value;
+      (state[indicatorIndex].indicator.value as any) = action.payload.value;
     },
     setIndicatorsVisibility: (
       state,
       action: PayloadAction<{
-        indicator: IndicatorKey;
-        index: number;
+        indicatorIndex: number;
         value: boolean;
       }>
     ) => {
-      console.log("Changing " + action.payload.index);
-      const indicator = action.payload.indicator;
-      const index = action.payload.index; // shift so 0 is for the base shit
+      console.log("Changing " + action.payload.indicatorIndex);
+      const indicatorIndex = action.payload.indicatorIndex;
+      
+        state[indicatorIndex].indicator.visible = action.payload.value;
+    },
 
-      while (state.length <= index) {
-        state.push(JSON.parse(JSON.stringify(state[0])));
+    newIndicators: (
+      state,
+      action: PayloadAction<{
+        tileIndex: number;
+        indicatorKey: IndicatorKey;
+        globalIndex?: number;
+      } | {state: stateType}>
+    ) => {
+      
+      if ("state" in action.payload) {
+        const defaultState = action.payload.state;
+        
+        state.push(defaultState);
+        return;
       }
-      state[index][indicator].visible = action.payload.value;
+
+      const { tileIndex, indicatorKey, globalIndex } = action.payload;
+
+      // If globalIndex is provided and exists, link to it
+      if (typeof globalIndex === "number" && state[globalIndex]) {
+        const newIndicator = {
+          ...JSON.parse(JSON.stringify(state[globalIndex])),
+          index: tileIndex,
+          key: indicatorKey,
+          linkedGlobalStateIndex: globalIndex,
+        };
+        // Find by both index and indicatorKey
+        const existing = state.find(
+          (ind) => ind.index === tileIndex && ind.key === indicatorKey
+        );
+        if (existing) {
+          Object.assign(existing, newIndicator);
+        } else {
+          state.push(newIndicator);
+        }
+      } else {
+        // Always use the correct indicator template for new indicators
+        const baseIndicator = {
+          ...indicatorState[indicatorKey],
+          index: tileIndex,
+          key: indicatorKey,
+          linkedGlobalStateIndex: undefined,
+        };
+        state.push(baseIndicator);
+      }
     },
-    newIndicators: (state, action: PayloadAction<number>) => {
-      let index = action.payload; // shift so 0 is for the base shit
-      if (state.length == 0) {
-        state.push(indicatorState);
-      }
-      while (state.length <= index) {
-        state.push(JSON.parse(JSON.stringify(state[0])));
-      }
-    },
-    makeGlobal: (state, action: PayloadAction<{ indicator: IndicatorKey }>) => {
+
+    makeGlobal: (
+      state,
+      action: PayloadAction<{ indicatorIndex: number; numberOfTiles: number }>
+    ) => {
+      console.log(action);
       if (state.length === 0) return;
 
-      const indicator = action.payload.indicator;
-      const base = state[0][indicator];
+      const indicatorIndex = action.payload.indicatorIndex;
+      const base = state[indicatorIndex];
+      if (!base) return;
 
-      for (let i = 1; i < state.length; i++) {
-        // Deep clone to avoid shared references
-        state[i][indicator] = {
-          visible: base.visible,
-          value: JSON.parse(JSON.stringify(base.value)),
-          displayName: JSON.parse(JSON.stringify(base.displayName))
+      for (
+        let tileIdx = 1;
+        tileIdx <= action.payload.numberOfTiles;
+        tileIdx++
+      ) {
+        // Get all indicators belonging to this tile
+        const indicatorsForTile = state.filter((ind) => ind.index === tileIdx);
+
+        // Check if this tile already has an indicator linked to our global indicator
+        const existingLinked = indicatorsForTile.find(
+          (ind) => ind.linkedGlobalStateIndex === indicatorIndex
+        );
+
+        // If it exists, remove it (we'll recreate a fresh copy)
+        if (existingLinked) {
+          const idxToRemove = state.indexOf(existingLinked);
+          if (idxToRemove !== -1) state.splice(idxToRemove, 1);
+        }
+
+        // Create a cloned indicator based on the global one
+        const newIndicator = {
+          key: base.key,
+          index: tileIdx,
+          indicator: {
+            visible: base.indicator.visible,
+            value: JSON.parse(JSON.stringify(base.indicator.value)),
+            displayName: JSON.parse(JSON.stringify(base.indicator.displayName)),
+          },
+          linkedGlobalStateIndex: indicatorIndex,
         };
+
+        // Add to the state (Redux Toolkit Immer allows direct mutation)
+        state.push(newIndicator);
       }
     },
   },
