@@ -164,6 +164,9 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       }
     });
 
+    // Track charts that already have CCI lines
+    const chartsWithCCILines = new Set<number>();
+
     // Render indicators on their respective charts
     Object.entries(groupedIndicators).forEach(([chartIndexStr, indicators]) => {
       const chartIndex = Number(chartIndexStr);
@@ -186,7 +189,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
             break;
 
           case "commodityChannelIndex":
-            if ("cciLength" in value) createCCIGraph(chart, value, candles);
+            if ("cciLength" in value) {
+              // Only pass addLines=true for the first CCI on this chart
+              const addLines = !chartsWithCCILines.has(chartIndex);
+              createCCIGraph(chart, value, candles, addLines);
+              chartsWithCCILines.add(chartIndex);
+            }
             break;
 
           case "supertrend":

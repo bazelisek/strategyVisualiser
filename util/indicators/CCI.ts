@@ -27,10 +27,12 @@ export function calculateCCISeriesData(
     };
   });
 }
+
 export function createCCIGraph(
   cciChart: IChartApi | null,
   config: { cciLength: number, color: string } | undefined,
   candles: candleData,
+  addLines: boolean = true
 ) {
   if (!cciChart || !config) return;
   const cciSeries = cciChart.addSeries(LineSeries, {
@@ -38,8 +40,14 @@ export function createCCIGraph(
     lineWidth: 1,
   });
 
-  cciSeries.createPriceLine({ price: 100, color: "red", lineWidth: 1 });
-  cciSeries.createPriceLine({ price: -100, color: "green", lineWidth: 1 });
-
+  // Calculate and set CCI data
   cciSeries.setData(calculateCCISeriesData(candles, config.cciLength));
+
+  // Only add the horizontal lines if addLines is true
+  if (addLines) {
+    cciSeries.createPriceLine({ price: 100, color: "red", lineWidth: 1 });
+    cciSeries.createPriceLine({ price: -100, color: "green", lineWidth: 1 });
+  }
+
+  return cciSeries;
 }
