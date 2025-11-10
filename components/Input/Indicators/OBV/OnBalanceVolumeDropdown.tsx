@@ -15,7 +15,9 @@ const OnBalanceVolumeDropdown: React.FC<OnBalanceVolumeDropdownProps> = ({
   indicatorIndex,
   open,
 }) => {
-  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
+  const indicator = useSelector(
+    (state: RootState) => state.indicators[indicatorIndex]
+  );
   const color = indicator.indicator.value.color;
   const dispatch = useDispatch();
 
@@ -27,11 +29,29 @@ const OnBalanceVolumeDropdown: React.FC<OnBalanceVolumeDropdownProps> = ({
       })
     );
   }
+  function handleChartIndexChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+    if (value && parseInt(value, 10) >= 0) {
+      dispatch(
+        setIndicators({
+          indicatorIndex,
+          chartIndex: parseInt(value, 10),
+        })
+      );
+    }
+  }
 
   return (
     <AnimatePresence>
       {open && (
         <Dropdown>
+          <label htmlFor="chart-index">Chart number</label>
+          <input
+            type="number"
+            id="chart-index"
+            onChange={handleChartIndexChange}
+            defaultValue={"chartIndex" in indicator ? indicator.chartIndex : 0}
+          />
           <ColorPicker color={color} setColor={handleSetColor} />
         </Dropdown>
       )}

@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 type stateType = {
   key: string;
   index: number;
+  chartIndex: number;
   indicator: {
     visible: boolean;
     value:
@@ -19,6 +20,7 @@ type stateType = {
 export const initialState: {
   key: string;
   index: number;
+  chartIndex: number;
   indicator: {
     visible: boolean;
     value:
@@ -35,6 +37,7 @@ export const initialState: {
 export const indicatorState = {
   movingAverage: {
     key: "movingAverage",
+    chartIndex: 0,
     indicator: {
       visible: true,
       value: { maLength: 20, color: "#2962FF" },
@@ -44,6 +47,7 @@ export const indicatorState = {
   },
   supertrend: {
     key: "supertrend",
+    chartIndex: 0,
     indicator: {
       visible: true,
       value: { period: 10, multiplier: 3, color: "#adff29" },
@@ -53,6 +57,7 @@ export const indicatorState = {
   },
   exponentialMovingAverage: {
     key: "exponentialMovingAverage",
+    chartIndex: 0,
     indicator: {
       visible: true,
       value: { emaLength: 20, color: "#29f8ff" },
@@ -62,6 +67,7 @@ export const indicatorState = {
   },
   commodityChannelIndex: {
     key: "commodityChannelIndex",
+    chartIndex: 1,
     indicator: {
       visible: true,
       value: { cciLength: 20, color: "#f829ff" },
@@ -71,6 +77,7 @@ export const indicatorState = {
   },
   onBalanceVolume: {
     key: "onBalanceVolume",
+    chartIndex: 2,
     indicator: {
       visible: true,
       value: { color: "#2962FF" },
@@ -96,7 +103,8 @@ export const indicatorSlice = createSlice({
       state,
       action: PayloadAction<{
         indicatorIndex: number;
-        value:
+        chartIndex?: number;
+        value?:
           | { maLength: number; color: string }
           | { emaLength: number; color: string }
           | { cciLength: number; color: string }
@@ -104,10 +112,16 @@ export const indicatorSlice = createSlice({
           | { color: string };
       }>
     ) => {
+      console.log(JSON.stringify(action.payload))
       const indicatorIndex = action.payload.indicatorIndex;
       // The type assertion is safe because we've ensured the index exists.
       // Redux Toolkit with Immer allows direct mutation.
-      (state[indicatorIndex].indicator.value as typeof action.payload.value) = action.payload.value;
+      if (action.payload.value)
+        (state[indicatorIndex].indicator.value as typeof action.payload.value) =
+          action.payload.value;
+      if (typeof action.payload.chartIndex === "number")
+        (state[indicatorIndex].chartIndex as typeof action.payload.chartIndex) =
+          action.payload.chartIndex;
     },
     setIndicatorsVisibility: (
       state,
@@ -118,22 +132,24 @@ export const indicatorSlice = createSlice({
     ) => {
       console.log("Changing " + action.payload.indicatorIndex);
       const indicatorIndex = action.payload.indicatorIndex;
-      
-        state[indicatorIndex].indicator.visible = action.payload.value;
+
+      state[indicatorIndex].indicator.visible = action.payload.value;
     },
 
     newIndicators: (
       state,
-      action: PayloadAction<{
-        tileIndex: number;
-        indicatorKey: IndicatorKey;
-        globalIndex?: number;
-      } | {state: stateType}>
+      action: PayloadAction<
+        | {
+            tileIndex: number;
+            indicatorKey: IndicatorKey;
+            globalIndex?: number;
+          }
+        | { state: stateType }
+      >
     ) => {
-      
       if ("state" in action.payload) {
         const defaultState = action.payload.state;
-        
+
         state.push(defaultState);
         return;
       }
@@ -209,6 +225,7 @@ export const indicatorSlice = createSlice({
             displayName: JSON.parse(JSON.stringify(base.indicator.displayName)),
           },
           linkedGlobalStateIndex: indicatorIndex,
+          chartIndex: base.chartIndex,
         };
 
         // Add to the state (Redux Toolkit Immer allows direct mutation)

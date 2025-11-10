@@ -18,12 +18,15 @@ export function calculateCCISeriesData(
     low: lows,
   });
 
-  return validCandles.map((c, i) => ({
-    time: c.time as UTCTimestamp,
-    value: i >= cciLength - 1 ? cciValues[i - (cciLength - 1)] : undefined,
-  }));
+  return validCandles.map((c, i) => {
+    const value = i >= cciLength - 1 ? cciValues[i - (cciLength - 1)] : undefined;
+    return {
+      time: c.time as UTCTimestamp,
+      // Only include valid numeric values
+      value: typeof value === 'number' && !isNaN(value) ? value : undefined
+    };
+  });
 }
-
 export function createCCIGraph(
   cciChart: IChartApi | null,
   config: { cciLength: number, color: string } | undefined,

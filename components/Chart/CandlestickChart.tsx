@@ -41,35 +41,40 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   index,
   tradeMarkers,
 }) => {
-  // Select all indicators for this chart
   const indicatorSlice = useSelector((state: RootState) => state.indicators);
-  const indicatorsWithIndex = indicatorSlice.filter((item) => item.index === index);
+  const indicatorsWithIndex = indicatorSlice.filter(
+    (item) => item.index === index
+  );
 
   const chartRef = useRef<HTMLDivElement>(null);
   const mainChartRef = useRef<IChartApi | null>(null);
+  const indicatorRefs = useRef<{ [chartIndex: number]: HTMLDivElement | null }>(
+    {}
+  );
 
-  // Dynamic refs for secondary charts
-  const indicatorRefs = useRef<{ [id: string]: HTMLDivElement | null }>({});
-
-  const [selectedTime, setSelectedTime] =
-    useState<{ time: Time; index: number } | null>(null);
+  const [selectedTime, setSelectedTime] = useState<{
+    time: Time;
+    index: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!chartRef.current) return;
 
-    // Calculate heights for main and secondary charts
-    const hasSecondary = indicatorsWithIndex.some(
-      (ind) =>
-        (ind.key === "commodityChannelIndex" && ind.indicator.visible) ||
-        (ind.key === "onBalanceVolume" && ind.indicator.visible)
+    // Group indicators by chartIndex
+    const groupedIndicators = indicatorsWithIndex.reduce(
+      (acc, indicator) => {
+        const chartIndex = indicator.chartIndex ?? 0;
+        if (!acc[chartIndex]) acc[chartIndex] = [];
+        acc[chartIndex].push(indicator);
+        return acc;
+      },
+      {} as Record<number, typeof indicatorsWithIndex>
     );
 
-    const topHeight = hasSecondary ? height * 0.7 : height;
-    const bottomHeight = hasSecondary ? height * 0.3 : 0;
-
+    // Create main chart
     const mainChart = createChart(chartRef.current, {
       width,
-      height: topHeight,
+      height: height * 0.7,
       layout: {
         background: { color: "#1e1e2a", type: ColorType.Solid },
         textColor: "#d1d4dc",
@@ -86,24 +91,22 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     mainChartRef.current = mainChart;
 
-    // Create secondary charts for each indicator
-    const secondaryCharts: Record<string, ReturnType<typeof createChart> | null> = {};
+    // ✅ Allow null to avoid type error
+    const charts: Record<number, IChartApi | null> = { 0: mainChart };
 
-    indicatorsWithIndex.forEach((indicator, i) => {
-      const id = `${indicator.key}_${i}`;
-      if (
-        (indicator.key === "commodityChannelIndex" && indicator.indicator.visible) ||
-        (indicator.key === "onBalanceVolume" && indicator.indicator.visible)
-      ) {
-        const ref = indicatorRefs.current[id];
-        if (ref) {
-          secondaryCharts[id] = createSecondaryChart(
-            { current: ref },
-            mainChart,
-            width,
-            bottomHeight
-          );
-        }
+    // Create secondary charts
+    Object.keys(groupedIndicators).forEach((key) => {
+      const chartIndex = Number(key);
+      if (chartIndex === 0) return;
+
+      const ref = indicatorRefs.current[chartIndex];
+      if (ref) {
+        charts[chartIndex] = createSecondaryChart(
+          { current: ref },
+          mainChart,
+          width,
+          height * 0.3
+        );
       }
     });
 
@@ -133,29 +136,26 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     candleSeries.setData(data);
 
+    // Add trade markers
     let seriesMarkersApi: ISeriesMarkersPluginApi<Time> | null = null;
-
     if (tradeMarkers && tradeMarkers.length > 0) {
       seriesMarkersApi = createSeriesMarkers(candleSeries, tradeMarkers);
     }
 
-    // Handle chart click -> marker selection
+    // Click marker handler
     mainChart.subscribeClick((param) => {
       if (!param.time) {
         setSelectedTime(null);
         return;
       }
-
       const clickedTime = toUTCTimestamp(param.time);
       if (clickedTime === null) {
         setSelectedTime(null);
         return;
       }
-
       const found = tradeMarkers.findIndex(
         (m) => toUTCTimestamp(m.time) === clickedTime
       );
-
       if (found !== -1) {
         setSelectedTime({ time: tradeMarkers[found].time, index: found });
         centerToMarker(tradeMarkers[found].time, mainChart);
@@ -164,92 +164,92 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       }
     });
 
-    // Render overlays for all indicators (allow multiple per type)
-    indicatorsWithIndex.forEach((indicator, i) => {
-      const id = `${indicator.key}_${i}`;
+    // Render indicators on their respective charts
+    Object.entries(groupedIndicators).forEach(([chartIndexStr, indicators]) => {
+      const chartIndex = Number(chartIndexStr);
+      const chart = charts[chartIndex];
+      if (!chart) return;
 
-      if (indicator.key === "movingAverage" && indicator.indicator.visible) {
-        if ("maLength" in indicator.indicator.value) {
-          createMAGraph(mainChart, indicator.indicator.value, candles);
-        }
-      }
-
-      if (indicator.key === "exponentialMovingAverage" && indicator.indicator.visible) {
-        if ("emaLength" in indicator.indicator.value) {
-          createEMAGraph(mainChart, indicator.indicator.value, candles);
-        }
-      }
-
-      if (indicator.key === "commodityChannelIndex" && indicator.indicator.visible) {
-        const chart = secondaryCharts[id];
-        if (chart && "cciLength" in indicator.indicator.value) {
-          createCCIGraph(chart, indicator.indicator.value, candles);
-        }
-      }
-
-      if (indicator.key === "supertrend" && indicator.indicator.visible) {
+      indicators.forEach((indicator) => {
         const value = indicator.indicator.value;
-        if (
-          value &&
-          typeof value === "object" &&
-          "multiplier" in value &&
-          "period" in value &&
-          "color" in value
-        ) {
-          createSTGraph(
-            mainChart,
-            {
-              multiplier: value.multiplier,
-              period: value.period,
-              color: value.color,
-            },
-            candles
-          );
-        }
-      }
+        const visible = indicator.indicator.visible;
 
-      if (indicator.key === "onBalanceVolume" && indicator.indicator.visible) {
-        const chart = secondaryCharts[id];
-        if (
-          chart &&
-          "color" in indicator.indicator.value &&
-          Object.keys(indicator.indicator.value).length === 1
-        ) {
-          createOBVGraph(chart, indicator.indicator.value, candles);
+        if (!visible) return;
+
+        switch (indicator.key) {
+          case "movingAverage":
+            if ("maLength" in value) createMAGraph(chart, value, candles);
+            break;
+
+          case "exponentialMovingAverage":
+            if ("emaLength" in value) createEMAGraph(chart, value, candles);
+            break;
+
+          case "commodityChannelIndex":
+            if ("cciLength" in value) createCCIGraph(chart, value, candles);
+            break;
+
+          case "supertrend":
+            if (
+              value &&
+              typeof value === "object" &&
+              "multiplier" in value &&
+              "period" in value &&
+              "color" in value
+            ) {
+              createSTGraph(mainChart, value, candles);
+            }
+            break;
+
+          case "onBalanceVolume":
+            if ("color" in value) createOBVGraph(chart, value, candles);
+            break;
         }
-      }
+      });
     });
 
+    // Cleanup
     return () => {
       seriesMarkersApi?.setMarkers?.([]);
       seriesMarkersApi?.detach?.();
-      mainChart.remove();
-      Object.values(secondaryCharts).forEach((chart) => chart?.remove());
+      Object.values(charts).forEach((chart) => chart?.remove());
       mainChartRef.current = null;
     };
   }, [width, height, candles, indicatorSlice, tradeMarkers, index]);
 
-  // Render
+  // Group again for rendering secondary divs
+  const groupedIndicators = indicatorsWithIndex.reduce(
+    (acc, indicator) => {
+      const chartIndex = indicator.chartIndex ?? 0;
+      if (!acc[chartIndex]) acc[chartIndex] = [];
+      acc[chartIndex].push(indicator);
+      return acc;
+    },
+    {} as Record<number, typeof indicatorsWithIndex>
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* Main chart */}
       <div ref={chartRef} />
-      {indicatorsWithIndex.map((indicator, i) => {
-        const id = `${indicator.key}_${i}`;
-        if (
-          (indicator.key === "commodityChannelIndex" && indicator.indicator.visible) ||
-          (indicator.key === "onBalanceVolume" && indicator.indicator.visible)
-        ) {
+
+      {/* Secondary charts */}
+      {Object.keys(groupedIndicators)
+        .filter((key) => Number(key) !== 0)
+        .map((key) => {
+          const chartIndex = Number(key);
           return (
             <div
-              key={id}
+              key={`secondary-${chartIndex}`}
               ref={(el) => {
-                indicatorRefs.current[id] = el;
+                indicatorRefs.current[chartIndex] = el;
               }}
+              style={{ marginTop: "8px" }}
             />
           );
-        }
-        return null;
-      })}
+        })}
+
+      {/* Marker info */}
       <div style={{ marginTop: "8px", color: "#fff" }}>
         {selectedTime !== null ? (
           <>Selected marker time: {selectedTime.time.toString()}</>
@@ -257,6 +257,8 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
           <>Click a marker to select it</>
         )}
       </div>
+
+      {/* Marker navigation */}
       {mainChartRef.current && (
         <MarkerNavigation
           chart={mainChartRef.current}

@@ -39,6 +39,17 @@ const ExponentialMovingAverageDropdown: React.FC<
       })
     );
   }
+  function handleChartIndexChange(e: React.ChangeEvent<HTMLInputElement>) {
+      const value = e.target.value;
+      if (value && parseInt(value, 10) >= 0) {
+        dispatch(
+          setIndicators({
+            indicatorIndex,
+            chartIndex: parseInt(value, 10),
+          })
+        );
+      }
+    }
 
   return (
     <AnimatePresence>
@@ -51,6 +62,17 @@ const ExponentialMovingAverageDropdown: React.FC<
               id="ema-length"
               onChange={handleEmaLengthChange}
               defaultValue={"emaLength" in indicator.indicator.value ? indicator.indicator.value.emaLength : 20}
+            />
+            <label htmlFor="chart-index">Chart number</label>
+            <input
+              type="number"
+              id="chart-index"
+              onChange={handleChartIndexChange}
+              defaultValue={
+                "chartIndex" in indicator
+                  ? indicator.chartIndex
+                  : 0
+              }
             />
           </div>
           <ColorPicker color={color} setColor={handleSetColor} />

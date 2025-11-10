@@ -43,6 +43,17 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
       })
     );
   }
+  function handleChartIndexChange(e: React.ChangeEvent<HTMLInputElement>) {
+      const value = e.target.value;
+      if (value && parseInt(value, 10) >= 0) {
+        dispatch(
+          setIndicators({
+            indicatorIndex,
+            chartIndex: parseInt(value, 10),
+          })
+        );
+      }
+    }
 
   return (
     <AnimatePresence>
@@ -56,6 +67,17 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
               placeholder=" "
               onChange={handleMaLengthChange}
               defaultValue={"maLength" in indicator.indicator.value ? indicator.indicator.value.maLength : 20}
+            />
+            <label htmlFor="chart-index">Chart number</label>
+            <input
+              type="number"
+              id="chart-index"
+              onChange={handleChartIndexChange}
+              defaultValue={
+                "chartIndex" in indicator
+                  ? indicator.chartIndex
+                  : 0
+              }
             />
           </div>
           <ColorPicker color={color} setColor={handleSetColor} />

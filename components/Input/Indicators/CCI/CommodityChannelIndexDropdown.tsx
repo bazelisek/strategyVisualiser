@@ -37,6 +37,17 @@ const CommodityChannelIndexDropdown: React.FC<
       })
     );
   }
+  function handleChartIndexChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+    if (value && parseInt(value, 10) >= 0) {
+      dispatch(
+        setIndicators({
+          indicatorIndex,
+          chartIndex: parseInt(value, 10),
+        })
+      );
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -52,6 +63,17 @@ const CommodityChannelIndexDropdown: React.FC<
                 "cciLength" in indicator.indicator.value
                   ? indicator.indicator.value.cciLength
                   : 20
+              }
+            />
+            <label htmlFor="chart-index">Chart number</label>
+            <input
+              type="number"
+              id="chart-index"
+              onChange={handleChartIndexChange}
+              defaultValue={
+                "chartIndex" in indicator
+                  ? indicator.chartIndex
+                  : 0
               }
             />
           </div>
