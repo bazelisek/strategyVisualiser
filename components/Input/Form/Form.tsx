@@ -13,19 +13,18 @@ import { newIndicators, RootState } from "@/store/reduxStore";
 interface FormProps {
   children?: React.ReactNode;
   onClose?: (submittedData: {
-        symbol: string,
-        interval:string,
-        period1: string,
-        period2: string,
-        //duration: formData.duration.value,
-        strategy: string,
-  }) => void;  
+    symbol: string;
+    interval: string;
+    period1: string;
+    period2: string;
+    //duration: formData.duration.value,
+    strategy: string;
+  }) => void;
   modalContainerRef?: React.RefObject<HTMLDivElement>;
   index: number;
 }
 
-
-const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
+const Form: React.FC<FormProps> = ({ onClose, modalContainerRef, index }) => {
   const dispatch = useDispatch();
   const config = useSelector((state: RootState) => state.config);
   const indicators = useSelector((state: RootState) => state.indicators);
@@ -53,8 +52,8 @@ const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
   };
 
   function handleBack() {
-    setCurrentInput(prev => prev - 1 < 0 ? 0 : prev - 1);
-    setError('');
+    setCurrentInput((prev) => (prev - 1 < 0 ? 0 : prev - 1));
+    setError("");
   }
 
   function handleContinue() {
@@ -71,25 +70,44 @@ const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
       return;
     }
     if (currentInput === 3) {
-      console.log("Creating with index " + index)
+      console.log("Creating with index " + index);
       for (let i = 0; i < indicators.length; i++) {
+        // Replace line 78 with:
         const ic = indicators[i];
         if (ic.index != 0) continue;
-        dispatch(newIndicators({state: {index, key: ic.key, linkedGlobalStateIndex: i, indicator: JSON.parse(JSON.stringify(ic.indicator))}}));
+        dispatch(
+          newIndicators({
+            state: {
+              index,
+              key: ic.key,
+              linkedGlobalStateIndex: i,
+              indicator: JSON.parse(JSON.stringify(ic.indicator)),
+              chartIndex: ic.chartIndex, // Add the chartIndex property
+            },
+          })
+        );
       }
-      
+
       console.log(JSON.stringify(formData));
       const interval =
         formData.interval.value ||
-        getValidIntervals(new Date(formData.period1.value), new Date(formData.period2.value))[0]; /*validRanges[formData.duration.value][0]*/
-      if (onClose) onClose({
-        symbol: formData.symbol.value,
-        interval: interval,
-        period1: (Math.floor(new Date(formData.period1.value).getTime()/1000)).toString(),
-        period2: (Math.floor(new Date(formData.period2.value).getTime()/1000)).toString(),
-        //duration: formData.duration.value,
-        strategy: formData.strategy.value,
-      });
+        getValidIntervals(
+          new Date(formData.period1.value),
+          new Date(formData.period2.value)
+        )[0]; /*validRanges[formData.duration.value][0]*/
+      if (onClose)
+        onClose({
+          symbol: formData.symbol.value,
+          interval: interval,
+          period1: Math.floor(
+            new Date(formData.period1.value).getTime() / 1000
+          ).toString(),
+          period2: Math.floor(
+            new Date(formData.period2.value).getTime() / 1000
+          ).toString(),
+          //duration: formData.duration.value,
+          strategy: formData.strategy.value,
+        });
       /*const searchParams = new URLSearchParams({
         symbol: formData.symbol.value,
         interval: interval,
@@ -99,14 +117,18 @@ const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
         strategy: formData.strategy.value,
       });
       router.replace(`/chart?${searchParams.toString()}`);*/
-    }
-    else if (currentInput == 1) {
-      if (!getValidIntervals(new Date(formData.period1.value), new Date(formData.period2.value)).includes(config.interval.defaultValue)) {
-        setFormData((old) => ({...old, interval: {value: ""}}));
+    } else if (currentInput == 1) {
+      if (
+        !getValidIntervals(
+          new Date(formData.period1.value),
+          new Date(formData.period2.value)
+        ).includes(config.interval.defaultValue)
+      ) {
+        setFormData((old) => ({ ...old, interval: { value: "" } }));
       }
     }
     setCurrentInput((old) => old + 1);
-    setError('');
+    setError("");
   }
 
   return (
@@ -153,7 +175,12 @@ const Form: React.FC<FormProps> = ({onClose, modalContainerRef, index}) => {
             key="interval-step"
             value={formData.interval.value}
             onChange={handleChange}
-            availableIntervals={getValidIntervals(new Date(formData.period1.value), new Date(formData.period2.value)) /*validRanges[formData.duration.value]*/}
+            availableIntervals={
+              getValidIntervals(
+                new Date(formData.period1.value),
+                new Date(formData.period2.value)
+              ) /*validRanges[formData.duration.value]*/
+            }
             handleContinue={handleContinue}
           >
             <AnimationButton onClick={handleBack}>Back</AnimationButton>

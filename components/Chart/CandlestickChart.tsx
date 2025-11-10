@@ -215,7 +215,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       Object.values(charts).forEach((chart) => chart?.remove());
       mainChartRef.current = null;
     };
-  }, [width, height, candles, indicatorSlice, tradeMarkers, index]);
+  }, [width, height, candles, indicatorSlice, tradeMarkers, index, indicatorsWithIndex]);
 
   // Group again for rendering secondary divs
   const groupedIndicators = indicatorsWithIndex.reduce(
