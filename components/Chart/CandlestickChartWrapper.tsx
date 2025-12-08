@@ -65,6 +65,7 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
       {!loading && (
         <motion.div
           id="chart"
+          tabIndex={index}
           data-testid="chart-wrapper"
           // callback ref — při mountu React zavolá setContainerEl(el)
           ref={(el) => setContainerEl(el)}
@@ -77,6 +78,7 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
           <h2>{transformedData.longName}</h2>
           <h3>{transformedData.symbol}</h3>
           <CandlestickChart
+            chartContainer={containerEl}
             width={chartWidth}
             index={index}
             height={580}

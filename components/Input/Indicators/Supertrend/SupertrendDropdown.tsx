@@ -97,13 +97,13 @@ const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({
               }
             />
           </div>
-          <label htmlFor="chart-index">Chart number</label>
+          {/*<label htmlFor="chart-index">Chart number</label>
           <input
             type="number"
             id="chart-index"
             onChange={handleChartIndexChange}
             defaultValue={"chartIndex" in indicator ? indicator.chartIndex : 0}
-          />
+          />*/}
           <ColorPicker color={color} setColor={handleSetColor} />
         </Dropdown>
       )}

@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, useEffect } from "react";
 import classes from "./MarkerNavigation.module.css";
 import { IChartApi, SeriesMarker, Time } from "lightweight-charts";
 import { centerToMarker } from "@/util/markers";
@@ -13,34 +13,64 @@ interface MarkerNavigationProps {
       index: number;
     } | null>
   >;
-  chart: IChartApi
+  chart: IChartApi;
+  chartContainer: HTMLDivElement | null;
 }
 
-const MarkerNavigation: React.FC<MarkerNavigationProps> = ({tradeMarkers, selectedTime, setSelectedTime, chart}) => {
-    const leftDisabled = selectedTime?.index === 0 || !selectedTime;
-    const rightDisabled = selectedTime?.index === tradeMarkers.length - 1 || !selectedTime;
+const MarkerNavigation: React.FC<MarkerNavigationProps> = ({
+  tradeMarkers,
+  selectedTime,
+  setSelectedTime,
+  chart,
+  chartContainer,
+}) => {
+  const leftDisabled = selectedTime?.index === 0 || !selectedTime;
+  const rightDisabled =
+    selectedTime?.index === tradeMarkers.length - 1 || !selectedTime;
 
-    function handleLeft() {
-        if (selectedTime?.index === 0 || !selectedTime) return;
-        const newIndex = selectedTime.index - 1;
-        const newMarker = { index: newIndex, time: tradeMarkers[newIndex].time };
-        setSelectedTime(newMarker);
-        centerToMarker(newMarker.time, chart);
+  function handleLeft() {
+    if (selectedTime?.index === 0 || !selectedTime) return;
+    const newIndex = selectedTime.index - 1;
+    const newMarker = { index: newIndex, time: tradeMarkers[newIndex].time };
+    setSelectedTime(newMarker);
+    centerToMarker(newMarker.time, chart);
+  }
+
+  function handleRight() {
+    if (selectedTime?.index === tradeMarkers.length - 1 || !selectedTime)
+      return;
+    const newIndex = selectedTime.index + 1;
+    const newMarker = { index: newIndex, time: tradeMarkers[newIndex].time };
+    setSelectedTime(newMarker);
+    centerToMarker(newMarker.time, chart);
+  }
+
+  // register a keydown listener that uses the latest disabled flags and chart reference
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "ArrowRight" && !rightDisabled) {
+        handleRight();
+      } else if (event.key === "ArrowLeft" && !leftDisabled) {
+        handleLeft();
+      }
     }
 
-    function handleRight() {
-        if (selectedTime?.index === tradeMarkers.length - 1 || !selectedTime) return;
-        const newIndex = selectedTime.index + 1;
-        const newMarker = { index: newIndex, time: tradeMarkers[newIndex].time };
-        setSelectedTime(newMarker);
-        centerToMarker(newMarker.time, chart);
-    }
+    if (!chartContainer) return;
+    chartContainer.addEventListener("keydown", handleKeyDown);
+    return () => {
+      chartContainer.removeEventListener("keydown", handleKeyDown);
+    };
+    // re-register whenever these values change so the handler has fresh closures
+  }, [leftDisabled, rightDisabled, selectedTime?.index, tradeMarkers.length, chart, chartContainer]);
 
-    
   return (
     <div className={classes.div}>
-      <button onClick={handleLeft} disabled={leftDisabled}>🠈</button>
-      <button onClick={handleRight} disabled={rightDisabled}>🠊</button>
+      <button onClick={handleLeft} disabled={leftDisabled}>
+        🠈
+      </button>
+      <button onClick={handleRight} disabled={rightDisabled}>
+        🠊
+      </button>
     </div>
   );
 };

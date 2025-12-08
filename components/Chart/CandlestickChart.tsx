@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import {
   createChart,
@@ -32,6 +32,7 @@ interface CandlestickChartProps {
   candles: candleData;
   tradeMarkers: SeriesMarker<Time>[];
   index: number;
+  chartContainer: HTMLDivElement | null;
 }
 
 const CandlestickChart: React.FC<CandlestickChartProps> = ({
@@ -40,10 +41,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   candles,
   index,
   tradeMarkers,
+  chartContainer,
 }) => {
   const indicatorSlice = useSelector((state: RootState) => state.indicators);
-  const indicatorsWithIndex = indicatorSlice.filter(
-    (item) => item.index === index
+  const indicatorsWithIndex = useMemo(
+    () => indicatorSlice.filter((item) => item.index === index),
+    [indicatorSlice, index]
   );
 
   const chartRef = useRef<HTMLDivElement>(null);
@@ -270,6 +273,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       {mainChartRef.current && (
         <MarkerNavigation
           chart={mainChartRef.current}
+          chartContainer={chartContainer}
           selectedTime={selectedTime}
           setSelectedTime={setSelectedTime}
           tradeMarkers={tradeMarkers}
