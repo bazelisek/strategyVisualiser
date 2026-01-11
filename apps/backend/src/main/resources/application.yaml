@@ -1,0 +1,35 @@
+
+spring:
+  application:
+    name: stock-strategy-server
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none   # Let Flyway manage schema creation
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+loader:
+  symbolXlsxPath: d:/My/Swings/devel/ws/data/Nasdaq100.xlsx
+  symbolTxtPath: d:/My/Swings/devel/ws/custom-strategy-server/data/nasdaq100.txt
+  #symbolTxtPath: d:/My/Swings/devel/ws/custom-strategy-server/data/nasdaq100_SBUX.txt
+  #symbolTxtPath: d:/My/Swings/devel/ws/custom-strategy-server/data/ru3000.txt
+  #symbolTxtPath: d:/My/Swings/devel/ws/custom-strategy-server/data/ru1000.txt
+  #symbolTxtPath: d:/My/Swings/devel/ws/custom-strategy-server/data/ruTest.txt
+  #dataDirPath: d:/My/Swings/devel/ws/data/yahoo
+  dataDirPath: d:/My/Swings/devel/ws/custom-strategy-server/data/yahoo
+  # !!! Data download nefunguje NEZAPINAT!!!. Provadi se projektem download-data (Python)
+  downloadMissingData: false
+  downloadMissingBeforeData: false
+  downloadMissingAfterData: false
