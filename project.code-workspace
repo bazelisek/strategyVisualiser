@@ -1,0 +1,12 @@
+{
+  "folders": [
+    {
+      "name": "Web Frontend",
+      "path": "apps/web"
+    },
+    {
+      "name": "Java Backend",
+      "path": "apps/backend"
+    }
+  ]
+}

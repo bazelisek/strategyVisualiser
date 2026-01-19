@@ -7,6 +7,7 @@ import Modal from "@/components/Modal";
 import Form from "@/components/Input/Form/Form";
 import { useRouter, useSearchParams } from "next/navigation";
 import Preconfiguration from "@/components/Input/Preconfiguration";
+import {CircularProgress} from "@mui/joy";
 
 function PageContent() {
   const params = useSearchParams();
@@ -90,7 +91,13 @@ function PageContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="loading">
+          <CircularProgress />
+        </div>
+      }
+    >
       <PageContent />
     </Suspense>
   );

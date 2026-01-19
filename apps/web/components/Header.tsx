@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import classes from './Header.module.css';
 import Link from 'next/link';
+import Typography from '@mui/joy/Typography';
 
 interface HeaderProps {
   children?: ReactNode;
@@ -10,9 +11,9 @@ const Header: React.FC<HeaderProps> = () => {
   return (
     <header className={classes.header}>
       <Link href={'/'}>
-        <h1>
+        <Typography sx={{m: 3}}  level='h1'>
             React Strategy Visualiser
-        </h1>
+        </Typography>
         </Link>
     </header>
   );

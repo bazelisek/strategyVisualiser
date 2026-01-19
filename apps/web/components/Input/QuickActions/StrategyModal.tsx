@@ -7,13 +7,14 @@ import { RootState, setModal } from "@/store/reduxStore";
 import { motion } from "framer-motion";
 import { getAvailableStrategies } from "@/util/strategies";
 import { useSearchParams, useRouter } from "next/navigation";
+import { CircularProgress } from "@mui/joy";
 
 interface StrategyModalProps {
   children?: ReactNode;
   index: number;
 }
 
-const StrategyModal: React.FC<StrategyModalProps> = ({index}) => {
+const StrategyModal: React.FC<StrategyModalProps> = ({ index }) => {
   const modals = useSelector((state: RootState) => state.modals);
   const open = modals[index]?.strategy || false;
   const dispatch = useDispatch();
@@ -51,10 +52,14 @@ const StrategyModal: React.FC<StrategyModalProps> = ({index}) => {
     paramsArr[index].strategy = strategy;
 
     const newSearchParams = new URLSearchParams();
-    paramsArr.forEach((param) => Object.entries(param).forEach(([key, value]) => newSearchParams.append(key, value)));
+    paramsArr.forEach((param) =>
+      Object.entries(param).forEach(([key, value]) =>
+        newSearchParams.append(key, value),
+      ),
+    );
 
     router.replace(`/?${newSearchParams.toString()}`);
-    dispatch(setModal({ modal: {index, modal: "strategy"}, value: false }));
+    dispatch(setModal({ modal: { index, modal: "strategy" }, value: false }));
   }
 
   useEffect(() => {
@@ -75,7 +80,7 @@ const StrategyModal: React.FC<StrategyModalProps> = ({index}) => {
 
   // filter only when debouncedSearch changes
   const filteredStrategies = strategies.filter((s) =>
-    s.toLowerCase().includes(debouncedSearch.toLowerCase())
+    s.toLowerCase().includes(debouncedSearch.toLowerCase()),
   );
 
   return (
@@ -121,7 +126,11 @@ const StrategyModal: React.FC<StrategyModalProps> = ({index}) => {
           ))}
         </motion.ul>
       )}
-      {!strategies && <p>Loading...</p>}
+      {!strategies && (
+        <div className="loading">
+          <CircularProgress />
+        </div>
+      )}
     </QuickActionsModal>
   );
 };

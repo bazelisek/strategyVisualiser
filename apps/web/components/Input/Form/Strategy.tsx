@@ -3,6 +3,7 @@ import React, { ReactNode, useEffect, useState } from "react";
 import AnimationWrapper from "./AnimationWrapper";
 import CustomSelect from "./CustomSelect";
 import { getAvailableStrategies } from "@/util/strategies";
+import { CircularProgress } from "@mui/joy";
 
 interface StrategyProps {
   children?: ReactNode;
@@ -46,7 +47,7 @@ const Strategy: React.FC<StrategyProps> = ({
           </div>
         </AnimationWrapper>
       )}
-      {!availableStrategies && <p>Loading...</p>}
+      {!availableStrategies && <div className="loading"><CircularProgress/></div>}
     </>
   );
 };
