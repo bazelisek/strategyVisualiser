@@ -1,3 +1,4 @@
+'use client';
 import React, { ReactNode } from 'react';
 import classes from './Header.module.css';
 import Link from 'next/link';

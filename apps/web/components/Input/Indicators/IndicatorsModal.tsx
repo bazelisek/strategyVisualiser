@@ -12,6 +12,7 @@ import Modal from "@/components/Modal";
 import GlobalizeButton from "../Buttons/GlobalizeButton";
 import NewIndicatorButton from "./NewIndicatorButton";
 import { useSearchParams } from "next/navigation";
+import useIndicators from "@/hooks/useIndicators";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
@@ -26,7 +27,7 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
   const params = useSearchParams();
   const numberOfTiles = params.getAll("symbol").length;
   const modalSlice = useSelector((state: RootState) => state.modals);
-  const indicatorsState = useSelector((state: RootState) => state.indicators);
+  const indicatorsState = useIndicators();
   const open = modalSlice[index]?.indicators || false;
   const dispatch = useDispatch();
 

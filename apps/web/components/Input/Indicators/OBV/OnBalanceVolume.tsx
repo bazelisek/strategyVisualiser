@@ -4,6 +4,7 @@ import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
 import Switch from "../../Buttons/Switch";
 import OnBalanceVolumeDropdown from "./OnBalanceVolumeDropdown";
 import DropdownButton from "../../Buttons/DropdownButton";
+import useIndicators from "@/hooks/useIndicators";
 //import classes from "./OnBalanceVolume.module.css";
 //import OnBalanceVolumeDropdown from "./OnBalanceVolumeDropdown";
 //import DropdownButton from "../Buttons/DropdownButton";
@@ -14,7 +15,7 @@ interface OnBalanceVolumeProps {
 }
 
 const OnBalanceVolume: React.FC<OnBalanceVolumeProps> = ({indicatorIndex}) => {
-  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
+  const indicator = useIndicators((indicators) => indicators[indicatorIndex]);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleOBVToggle(value: boolean) {

@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import DropdownButton from "../../Buttons/DropdownButton";
 import Switch from "../../Buttons/Switch";
 import ExponentialMovingAverageDropdown from "./ExponentialMovingAverageDropdown";
+import useIndicators from "@/hooks/useIndicators";
 
 interface ExponentialMovingAverageProps {
   children?: ReactNode;
@@ -13,7 +14,7 @@ interface ExponentialMovingAverageProps {
 const ExponentialMovingAverage: React.FC<
   ExponentialMovingAverageProps
 > = ({indicatorIndex}) => {
-  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
+  const indicator = useIndicators((indicators) => indicators[indicatorIndex]);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {

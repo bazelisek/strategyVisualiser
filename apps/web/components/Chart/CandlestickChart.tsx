@@ -25,6 +25,7 @@ import { createOBVGraph } from "@/util/indicators/onBalanceVolume";
 import { createSecondaryChart } from "@/util/charts";
 import { centerToMarker, toUTCTimestamp } from "@/util/markers";
 import MarkerNavigation from "./MarkerNavigation";
+import useIndicators from "@/hooks/useIndicators";
 
 interface CandlestickChartProps {
   width: number;
@@ -43,7 +44,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   tradeMarkers,
   chartContainer,
 }) => {
-  const indicatorSlice = useSelector((state: RootState) => state.indicators);
+  const indicatorSlice = useIndicators();
   const indicatorsWithIndex = useMemo(
     () => indicatorSlice.filter((item) => item.index === index),
     [indicatorSlice, index]

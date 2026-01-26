@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import DropdownButton from "../../Buttons/DropdownButton";
 import Switch from "../../Buttons/Switch";
 import SupertrendDropdown from "./SupertrendDropdown";
+import useIndicators from "@/hooks/useIndicators";
 
 interface SupertrendProps {
   children?: ReactNode;
@@ -11,7 +12,7 @@ interface SupertrendProps {
 }
 
 const Supertrend: React.FC<SupertrendProps> = ({indicatorIndex}) => {
-  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
+  const indicator = useIndicators((indicators) => indicators[indicatorIndex]);
   const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {

@@ -9,6 +9,7 @@ import Time from "./Time";
 import { getValidIntervals } from "@/util/formCheck";
 import { useDispatch, useSelector } from "react-redux";
 import { newIndicators, RootState } from "@/store/reduxStore";
+import useIndicators from "@/hooks/useIndicators";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -27,7 +28,7 @@ interface FormProps {
 const Form: React.FC<FormProps> = ({ onClose, modalContainerRef, index }) => {
   const dispatch = useDispatch();
   const config = useSelector((state: RootState) => state.config);
-  const indicators = useSelector((state: RootState) => state.indicators);
+  const indicators = useIndicators();
   const [formData, setFormData] = useState({
     symbol: { value: config.symbol.defaultValue },
     interval: { value: config.interval.defaultValue },

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-type stateType = {
+export type stateType = {
   key: string;
   index: number;
   chartIndex: number;

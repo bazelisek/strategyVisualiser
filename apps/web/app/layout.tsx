@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ReduxWrapper from "@/store/ReduxWrapper";
 import Header from "@/components/Header";
 import '@fontsource/inter';
 import ThemeProvider from '@/theme/ThemeProvider';
+import StoreProvider from "@/app/StoreProvider"; // Import the new component
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,12 +29,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ThemeProvider>
-          <Header />
-          <ReduxWrapper>
+        {/* Wrap everything in StoreProvider. 
+          This ensures the Theme and Header (which cause the hydration mismatch)
+          wait for the client to load before rendering.
+        */}
+        <StoreProvider>
+          <ThemeProvider>
+            <Header />
             {children}
-          </ReduxWrapper>
-        </ThemeProvider>
+          </ThemeProvider>
+        </StoreProvider>
       </body>
     </html>
   );

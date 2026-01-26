@@ -4,6 +4,7 @@ import React, { ReactNode } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Dropdown from "../Utilities/Dropdown";
 import ColorPicker from "../Utilities/ColorPicker";
+import useIndicators from "@/hooks/useIndicators";
 
 interface CommodityChannelIndexDropdownProps {
   children?: ReactNode;
@@ -14,7 +15,7 @@ interface CommodityChannelIndexDropdownProps {
 const CommodityChannelIndexDropdown: React.FC<
   CommodityChannelIndexDropdownProps
 > = ({ open, indicatorIndex }) => {
-  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
+  const indicator = useIndicators((indicators) => indicators[indicatorIndex]);
   const color = indicator.indicator.value.color;
   const dispatch = useDispatch();
 

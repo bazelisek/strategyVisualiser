@@ -4,6 +4,7 @@ import { AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setIndicators } from "@/store/reduxStore";
 import ColorPicker from "../Utilities/ColorPicker";
+import useIndicators from "@/hooks/useIndicators";
 
 interface ExponentialMovingAverageDropdownProps {
   children?: ReactNode;
@@ -14,7 +15,7 @@ interface ExponentialMovingAverageDropdownProps {
 const ExponentialMovingAverageDropdown: React.FC<
   ExponentialMovingAverageDropdownProps
 > = ({ open, indicatorIndex }) => {
-  const indicator = useSelector((state: RootState) => state.indicators[indicatorIndex]);
+  const indicator = useIndicators((indicators) => indicators[indicatorIndex]);
   const color = indicator.indicator.value.color;
   const dispatch = useDispatch();
 

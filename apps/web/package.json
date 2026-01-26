@@ -29,6 +29,7 @@
     "react-icons": "^5.5.0",
     "react-mosaic-component": "^6.1.1",
     "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
     "supertrend": "^1.0.1",
     "technicalindicators": "^3.1.0"
   },
