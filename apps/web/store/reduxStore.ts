@@ -16,33 +16,44 @@ export const {
 export const { setModal } = modalSlice.actions;
 export const { setConfigs } = configSlice.actions;
 
-// 👇 combine reducers first
-const rootReducer = combineReducers({
+const appReducer = combineReducers({
   indicators: indicatorSlice.reducer,
   modals: modalSlice.reducer,
   config: configSlice.reducer,
 });
 
-// 👇 persist config
+// Wrapper to handle the Clear Action
+const rootReducer = (state: any, action: any) => {
+  if (action.type === 'RESET_APP') {
+    // Reset state to undefined, so reducers return their initial state
+    storage.removeItem('persist:root'); // Optional: explicitly clear storage too
+    state = undefined;
+  }
+  return appReducer(state, action);
+};
+
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["indicators", "config"], // 👈 ONLY these persist
+  whitelist: ["indicators", "config"],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
-// 👇 store
 export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // redux-persist needs this
+      serializableCheck: false,
     }),
 });
 
-// 👇 persistor
 export const persistor = persistStore(store);
+
+// Helper function to trigger the clear
+export const clearReduxData = () => {
+  store.dispatch({ type: 'RESET_APP' });
+};
 
 // types
 export type RootState = ReturnType<typeof store.getState>;

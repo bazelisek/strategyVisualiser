@@ -7,7 +7,8 @@ import Modal from "@/components/Modal";
 import Form from "@/components/Input/Form/Form";
 import { useRouter, useSearchParams } from "next/navigation";
 import Preconfiguration from "@/components/Input/Preconfiguration";
-import {CircularProgress} from "@mui/joy";
+import { CircularProgress, Grid, Stack } from "@mui/joy";
+import Sidebar from "@/components/Sidebar/Sidebar";
 
 function PageContent() {
   const params = useSearchParams();
@@ -73,19 +74,31 @@ function PageContent() {
   }
 
   return (
-    <main id="main" className={classes.main}>
-      <Preconfiguration />
-      <AddTile onClick={handleAddTile} active={isAddTileActive} />
-      <Modal
-        title="New Tile"
-        onClose={handleClose}
-        open={!isAddTileActive}
-        className={classes.modal}
-      >
-        <Form onClose={handleSubmit} index={tileCount + 1} />
-      </Modal>
-      {tileCount > 0 && <div className={classes.tileGrid}>{tileArr}</div>}
-    </main>
+    <Grid container sx={{width: "100%"}} spacing={2}>
+      <Grid xs={2}>
+        <Sidebar />
+      </Grid>
+      <Grid xs={8}>
+        <div className={classes.centerContainer}>
+          <main id="main" className={classes.main}>
+            <Preconfiguration />
+            <AddTile onClick={handleAddTile} active={isAddTileActive} />
+            <Modal
+              title="New Tile"
+              onClose={handleClose}
+              open={!isAddTileActive}
+              className={classes.modal}
+            >
+              <Form onClose={handleSubmit} index={tileCount + 1} />
+            </Modal>
+            {tileCount > 0 && <div className={classes.tileGrid}>{tileArr}</div>}
+          </main>
+        </div>
+      </Grid>
+      <Grid xs={2}>
+        <div className="side-div"></div>
+      </Grid>
+    </Grid>
   );
 }
 
