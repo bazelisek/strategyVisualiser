@@ -7,18 +7,23 @@ interface AnimationButtonProps {
   onClick?: () => void;
   className?: string;
   disabled?: boolean;
+  whileHover?: {
+    scale: number;
+    boxShadow: string;
+  };
 }
 
 const AnimationButton: React.FC<AnimationButtonProps> = ({
   onClick,
   children,
   className,
+  whileHover,
   disabled
 }) => {
   return (
     <motion.button
       animate={{ scale: 1, boxShadow: "none" }}
-      whileHover={{ scale: 1.05, boxShadow: "1px 1px 15px var(--accent)" }}
+      whileHover={whileHover ?? { scale: 1.05, boxShadow: "1px 1px 15px var(--accent)" }}
       onClick={onClick}
       className={`${classes.button} ${className}`}
       disabled={disabled}

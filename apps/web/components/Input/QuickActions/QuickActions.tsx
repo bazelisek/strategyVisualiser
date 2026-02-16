@@ -4,6 +4,8 @@ import React, { ReactNode } from "react";
 import SymbolButton from "./SymbolButton";
 import StrategyButton from "./StrategyButton";
 import classes from "./QuickActions.module.css";
+import RemoveTileButton from "./RemoveTileButton";
+import { Stack } from "@mui/joy";
 
 interface QuickActionsProps {
   children?: ReactNode;
@@ -17,8 +19,15 @@ const QuickActions: React.FC<QuickActionsProps> = ({ index }) => {
 
   return (
     <div className={classes.quickActions}>
-      <SymbolButton index={index}>{symbol[index]}</SymbolButton>
-      <StrategyButton index={index}>{strategy[index]}</StrategyButton>
+      <Stack sx={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <div>
+          <SymbolButton index={index}>{symbol[index]}</SymbolButton>
+          <StrategyButton index={index}>{strategy[index]}</StrategyButton>
+        </div>
+        <div>
+          <RemoveTileButton index={index} />
+        </div>
+      </Stack>
     </div>
   );
 };

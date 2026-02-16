@@ -1,0 +1,5 @@
+.delete-button {
+    background: transparent !important;
+    color: var(--danger) !important;
+    border: 1px solid var(--danger) !important;
+}
