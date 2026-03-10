@@ -20,9 +20,9 @@
 }
 
 .modal {
-  width: 800px;
+  width: min(800px, 100%);
   max-width: 90vw;
-  height: 600px;
+  height: auto;
   max-height: 90vh;
   background-color: var(--background-light);
 }
@@ -47,10 +47,10 @@
 }
 .tileGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(500px, 1fr)); /* 2 cols, min width */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
   width: 100%;
-  max-width: 1400px;   /* total width of grid */
+  max-width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
   justify-items: center; /* center tiles inside their column */

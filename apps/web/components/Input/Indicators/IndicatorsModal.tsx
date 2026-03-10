@@ -13,6 +13,7 @@ import GlobalizeButton from "../Buttons/GlobalizeButton";
 import NewIndicatorButton from "./NewIndicatorButton";
 import { useSearchParams } from "next/navigation";
 import useIndicators from "@/hooks/useIndicators";
+import { readTilesFromSearchParams } from "@/util/tilesSearchParams";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
@@ -25,7 +26,7 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
   globalButtonEnabled,
 }) => {
   const params = useSearchParams();
-  const numberOfTiles = params.getAll("symbol").length;
+  const numberOfTiles = readTilesFromSearchParams(params).length;
   const modalSlice = useSelector((state: RootState) => state.modals);
   const indicatorsState = useIndicators();
   const open = modalSlice[index]?.indicators || false;

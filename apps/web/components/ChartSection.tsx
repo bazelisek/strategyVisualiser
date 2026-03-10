@@ -6,6 +6,7 @@ import React, { ReactNode } from "react";
 import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
 import classes from "./ChartSection.module.css";
 import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
+import { readTilesFromSearchParams } from "@/util/tilesSearchParams";
 
 interface ChartSectionProps {
   children?: ReactNode;
@@ -14,13 +15,15 @@ interface ChartSectionProps {
 
 const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   const params = useSearchParams();
-  const symbol = params.getAll("symbol")[index];
-  const interval = params.getAll("interval")[index];
-  const period1 = params.getAll("period1")[index];
-  const period2 = params.getAll("period2")[index];
-  const strategy = params.getAll("strategy")[index];
+  const tiles = readTilesFromSearchParams(params);
+  const tile = tiles[index];
+  const symbol = tile?.symbol;
+  const interval = tile?.interval;
+  const period1 = tile?.period1;
+  const period2 = tile?.period2;
+  const strategy = tile?.strategy;
 
-  if (!Number(period1) || !Number(period2)) {
+  if (!symbol || !interval || !strategy || !Number(period1) || !Number(period2)) {
     throw new Error("period is not a  number");
   }
   const { strategyData, loading, transformedData, error } = useChartData(

@@ -1,6 +1,10 @@
 import { ReadonlyURLSearchParams } from "next/navigation";
-import { searchParamsType } from "./serverFetch";
 import { ConfigKey } from "@/store/slices/configSlice";
+import {
+  readTilesFromSearchParams,
+  writeTilesToSearchParams,
+  TileSearchParam,
+} from "@/util/tilesSearchParams";
 
 export function checkFormValidity(formData: {
   symbol: { value: string };
@@ -74,16 +78,9 @@ export function addToArrayAndHandleEdgeCases(
     };
   }
 ) {
-  const symbols = searchParams.getAll("symbol");
-  const strategies = searchParams.getAll("strategy");
-  const intervals = searchParams.getAll("interval");
-  const period1s = searchParams.getAll("period1");
-  const period2s = searchParams.getAll("period2");
-
-  const newParamsArray: searchParamsType[] = [];
-  const tileCount = symbols.length;
-
-  console.log(JSON.stringify(formData));
+  const tiles = readTilesFromSearchParams(searchParams);
+  const newParamsArray: TileSearchParam[] = [];
+  const tileCount = tiles.length;
 
   const convertedFormData = {
     ...formData,
@@ -101,78 +98,68 @@ export function addToArrayAndHandleEdgeCases(
 
   for (let i = 0; i < tileCount; i++) {
     const handledFormData = { ...convertedFormData };
+    const current = tiles[i];
 
     if (["period1", "period2", "interval"].includes(field)) {
       if (
         field == "interval" &&
         !getValidIntervals(
-          new Date(period1s[i]),
-          new Date(period2s[i])
+          new Date(Number(current.period1) * 1000),
+          new Date(Number(current.period2) * 1000),
         ).includes(formData.interval.defaultValue)
       ) {
-        handledFormData.interval = { defaultValue: intervals[i] };
+        handledFormData.interval = { defaultValue: current.interval };
       } else if (field == "period1") {
         if (
           !getValidIntervals(
             new Date(formData.period1.defaultValue),
-            new Date(Number(period2s[i]) * 1000)
-          ).includes(intervals[i])
+            new Date(Number(current.period2) * 1000)
+          ).includes(current.interval)
         ) {
-          handledFormData.period1 = { defaultValue: Number(period1s[i]) };
+          handledFormData.period1 = { defaultValue: Number(current.period1) };
         } else if (
-          Number(period2s[i]) -
-            convertedFormData.period1.defaultValue <
-          0
+          Number(current.period2) - convertedFormData.period1.defaultValue < 0
         ) {
-          handledFormData.period1 = { defaultValue: Number(period1s[i]) };
+          handledFormData.period1 = { defaultValue: Number(current.period1) };
         }
       } else if (field == "period2") {
         if (
           !getValidIntervals(
-            new Date(Number(period1s[i]) * 1000),
+            new Date(Number(current.period1) * 1000),
             new Date(formData.period2.defaultValue)
-          ).includes(intervals[i])
+          ).includes(current.interval)
         ) {
-          handledFormData.period2 = { defaultValue: Number(period2s[i]) };
+          handledFormData.period2 = { defaultValue: Number(current.period2) };
         } else if (
           convertedFormData.period2.defaultValue -
-            Number(period1s[i]) <
+            Number(current.period1) <
           0
         ) {
-          handledFormData.period2 = { defaultValue: Number(period2s[i]) };
+          handledFormData.period2 = { defaultValue: Number(current.period2) };
         }
       }
     }
     newParamsArray.push({
       symbol:
-        field === "symbol" ? handledFormData.symbol.defaultValue : symbols[i],
+        field === "symbol" ? handledFormData.symbol.defaultValue : current.symbol,
       strategy:
         field === "strategy"
           ? handledFormData.strategy.defaultValue
-          : strategies[i],
+          : current.strategy,
       interval:
         field === "interval"
           ? handledFormData.interval.defaultValue
-          : intervals[i],
+          : current.interval,
       period1:
         field === "period1"
           ? String(handledFormData.period1.defaultValue)
-          : period1s[i],
+          : current.period1,
       period2:
         field === "period2"
           ? String(handledFormData.period2.defaultValue)
-          : period2s[i],
+          : current.period2,
     });
   }
 
-  const newSearchParams = new URLSearchParams();
-  newParamsArray.forEach((param) => {
-    newSearchParams.append("symbol", param.symbol);
-    newSearchParams.append("strategy", param.strategy);
-    newSearchParams.append("interval", param.interval);
-    newSearchParams.append("period1", param.period1);
-    newSearchParams.append("period2", param.period2);
-  });
-
-  return newSearchParams.toString();
+  return writeTilesToSearchParams(newParamsArray);
 }

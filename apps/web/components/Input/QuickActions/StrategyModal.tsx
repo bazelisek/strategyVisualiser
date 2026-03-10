@@ -8,6 +8,10 @@ import { motion } from "framer-motion";
 import { getAvailableStrategies } from "@/util/strategies";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CircularProgress } from "@mui/joy";
+import {
+  readTilesFromSearchParams,
+  writeTilesToSearchParams,
+} from "@/util/tilesSearchParams";
 
 interface StrategyModalProps {
   children?: ReactNode;
@@ -26,39 +30,11 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ index }) => {
   const [strategies, setStrategies] = useState<string[]>([]);
 
   function handleStrategyClick(strategy: string) {
-    const symbols = params.getAll("symbol");
-    const strategies = params.getAll("strategy");
-    const period1s = params.getAll("period1");
-    const period2s = params.getAll("period2");
-    const intervals = params.getAll("interval");
-    const tileCount = symbols.length;
-
-    const paramsArr: {
-      symbol: string;
-      strategy: string;
-      period1: string;
-      period2: string;
-      interval: string;
-    }[] = [];
-    for (let i = 0; i < tileCount; i++) {
-      paramsArr.push({
-        symbol: symbols[i],
-        strategy: strategies[i],
-        interval: intervals[i],
-        period1: period1s[i],
-        period2: period2s[i],
-      });
-    }
-    paramsArr[index].strategy = strategy;
-
-    const newSearchParams = new URLSearchParams();
-    paramsArr.forEach((param) =>
-      Object.entries(param).forEach(([key, value]) =>
-        newSearchParams.append(key, value),
-      ),
+    const tiles = readTilesFromSearchParams(params);
+    const nextTiles = tiles.map((t, i) =>
+      i === index ? { ...t, strategy } : t,
     );
-
-    router.replace(`/?${newSearchParams.toString()}`);
+    router.replace(`/?${writeTilesToSearchParams(nextTiles)}`);
     dispatch(setModal({ modal: { index, modal: "strategy" }, value: false }));
   }
 

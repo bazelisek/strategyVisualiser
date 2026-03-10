@@ -7,19 +7,20 @@ import Modal from "@/components/Modal";
 import Form from "@/components/Input/Form/Form";
 import { useRouter, useSearchParams } from "next/navigation";
 import Preconfiguration from "@/components/Input/Preconfiguration";
-import { CircularProgress, Grid, Stack } from "@mui/joy";
+import { CircularProgress, Grid } from "@mui/joy";
 import Sidebar from "@/components/Sidebar/Sidebar";
+import {
+  readTilesFromSearchParams,
+  writeTilesToSearchParams,
+  TileSearchParam,
+} from "@/util/tilesSearchParams";
 
 function PageContent() {
   const params = useSearchParams();
-  const symbols = params.getAll("symbol");
-  const strategies = params.getAll("strategy");
-  const period1s = params.getAll("period1");
-  const period2s = params.getAll("period2");
-  const intervals = params.getAll("interval");
+  const tiles = readTilesFromSearchParams(params);
   const router = useRouter();
 
-  const tileCount = symbols.length;
+  const tileCount = tiles.length;
   const [isAddTileActive, setIsAddTileActive] = useState<boolean>(true);
   const tileArr: React.JSX.Element[] = [];
 
@@ -42,32 +43,8 @@ function PageContent() {
     period2: string;
     strategy: string;
   }) {
-    const paramsArr: {
-      symbol: string;
-      strategy: string;
-      period1: string;
-      period2: string;
-      interval: string;
-    }[] = [];
-    for (let i = 0; i < tileCount; i++) {
-      paramsArr.push({
-        symbol: symbols[i],
-        strategy: strategies[i],
-        interval: intervals[i],
-        period1: period1s[i],
-        period2: period2s[i],
-      });
-    }
-    paramsArr.push(submittedData);
-    const newSearchParams = new URLSearchParams();
-    paramsArr.forEach((param) => {
-      newSearchParams.append("symbol", param.symbol);
-      newSearchParams.append("strategy", param.strategy);
-      newSearchParams.append("interval", param.interval);
-      newSearchParams.append("period1", param.period1);
-      newSearchParams.append("period2", param.period2);
-    });
-    router.replace("/?" + newSearchParams.toString());
+    const nextTiles: TileSearchParam[] = [...tiles, submittedData];
+    router.replace("/?" + writeTilesToSearchParams(nextTiles));
 
     //dispatch(newChart(submittedData));
     handleClose();
