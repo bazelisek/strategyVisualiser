@@ -15,17 +15,16 @@ import {
   createSeriesMarkers,
   ISeriesMarkersPluginApi,
 } from "lightweight-charts";
-import { createMAGraph } from "@/util/indicators/movingAverage";
-import { createEMAGraph } from "@/util/indicators/exponentialMovingAverage";
-import { createCCIGraph } from "@/util/indicators/CCI";
 import { RootState } from "@/store/reduxStore";
-import { createSTGraph } from "@/util/indicators/supertrend";
 import { candleData } from "@/util/serverFetch";
-import { createOBVGraph } from "@/util/indicators/onBalanceVolume";
 import { createSecondaryChart } from "@/util/charts";
 import { centerToMarker, toUTCTimestamp } from "@/util/markers";
 import MarkerNavigation from "./MarkerNavigation";
 import useIndicators from "@/hooks/useIndicators";
+import indicators, {
+  IndicatorDefinition,
+  IndicatorGraphContext,
+} from "@/util/indicators";
 
 interface CandlestickChartProps {
   width: number;
@@ -45,6 +44,13 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   chartContainer,
 }) => {
   const indicatorSlice = useIndicators();
+  const indicatorDefinitionsByKey = useMemo(() => {
+    const map: Record<string, IndicatorDefinition> = {};
+    indicators.forEach((def) => {
+      map[def.key] = def;
+    });
+    return map;
+  }, []);
   const indicatorsWithIndex = useMemo(
     () => indicatorSlice.filter((item) => item.index === index),
     [indicatorSlice, index]
@@ -171,52 +177,31 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     // Track charts that already have CCI lines
     const chartsWithCCILines = new Set<number>();
 
-    // Render indicators on their respective charts
-    Object.entries(groupedIndicators).forEach(([chartIndexStr, indicators]) => {
+    // Render indicators on their respective charts using the registry
+    Object.entries(groupedIndicators).forEach(([chartIndexStr, chartIndicators]) => {
       const chartIndex = Number(chartIndexStr);
       const chart = charts[chartIndex];
       if (!chart) return;
 
-      indicators.forEach((indicator) => {
-        const value = indicator.indicator.value;
-        const visible = indicator.indicator.visible;
+      chartIndicators.forEach((indicatorInstance) => {
+        const value = indicatorInstance.indicator.value;
+        const visible = indicatorInstance.indicator.visible;
 
         if (!visible) return;
 
-        switch (indicator.key) {
-          case "movingAverage":
-            if ("maLength" in value) createMAGraph(chart, value, candles);
-            break;
+        const definition = indicatorDefinitionsByKey[indicatorInstance.key];
+        if (!definition) return;
 
-          case "exponentialMovingAverage":
-            if ("emaLength" in value) createEMAGraph(chart, value, candles);
-            break;
+        const context: IndicatorGraphContext = {
+          mainChart,
+          chart,
+          candles,
+          config: value,
+          chartIndex,
+          chartsWithCCILines,
+        };
 
-          case "commodityChannelIndex":
-            if ("cciLength" in value) {
-              // Only pass addLines=true for the first CCI on this chart
-              const addLines = !chartsWithCCILines.has(chartIndex);
-              createCCIGraph(chart, value, candles, addLines);
-              chartsWithCCILines.add(chartIndex);
-            }
-            break;
-
-          case "supertrend":
-            if (
-              value &&
-              typeof value === "object" &&
-              "multiplier" in value &&
-              "period" in value &&
-              "color" in value
-            ) {
-              createSTGraph(mainChart, value, candles);
-            }
-            break;
-
-          case "onBalanceVolume":
-            if ("color" in value) createOBVGraph(chart, value, candles);
-            break;
-        }
+        definition.createGraph(context);
       });
     });
 
@@ -227,7 +212,16 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       Object.values(charts).forEach((chart) => chart?.remove());
       mainChartRef.current = null;
     };
-  }, [width, height, candles, indicatorSlice, tradeMarkers, index, indicatorsWithIndex]);
+  }, [
+    width,
+    height,
+    candles,
+    indicatorSlice,
+    tradeMarkers,
+    index,
+    indicatorsWithIndex,
+    indicatorDefinitionsByKey,
+  ]);
 
   // Group again for rendering secondary divs
   const groupedIndicators = indicatorsWithIndex.reduce(
