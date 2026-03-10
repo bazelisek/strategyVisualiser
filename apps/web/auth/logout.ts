@@ -1,7 +1,17 @@
+"use client";
 
-'use server';
+import { authClient } from "@/auth-client";
+import { useRouter } from "next/navigation";
 
-export async function logout(): Promise<void> {
-  // TODO: Implement logout logic
+export function useLogout() {
+  const router = useRouter();
+  return async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/login"); // redirect to login page
+        },
+      },
+    });
+  };
 }
-

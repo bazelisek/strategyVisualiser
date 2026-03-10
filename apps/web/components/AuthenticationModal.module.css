@@ -1,0 +1,115 @@
+.modal {
+  width: min(520px, 92vw);
+  padding: 28px;
+}
+
+.authModal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  color: var(--foreground);
+}
+
+.tabList {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--background-light);
+  border: 1px solid var(--accent);
+  padding: 0.35rem;
+  border-radius: 999px;
+}
+
+.tab {
+  flex: 1;
+  border-radius: 999px;
+  color: var(--foreground);
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.tab[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--background-dark);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.tabPanel {
+  padding-top: 1rem;
+}
+
+.heading {
+  margin: 0 0 0.75rem 0;
+  color: var(--accent);
+  font-size: 1.25rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field label {
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+.field input {
+  appearance: textfield;
+  background-color: var(--background-light);
+  border: 1px solid var(--accent);
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  color: var(--foreground);
+  width: 100%;
+}
+
+.field input::-webkit-outer-spin-button,
+.field input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.field input:focus {
+  outline: none;
+  box-shadow: 1px 1px 4px var(--accent);
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0;
+}
+
+.primaryButton {
+  margin-top: 0.25rem;
+  background: var(--accent);
+  color: var(--background-dark);
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.primaryButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 1px 1px 10px var(--accent);
+}
+
+.primaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}

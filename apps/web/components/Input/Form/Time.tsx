@@ -15,7 +15,7 @@ interface TimeProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
   handleContinue: () => void;
-  modalContainerRef?: React.RefObject<HTMLDivElement>;
+  modalContainerRef?: React.RefObject<HTMLElement | null>;
 }
 const darkTheme = createTheme({
   palette: {

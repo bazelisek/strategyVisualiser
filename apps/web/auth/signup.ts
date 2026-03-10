@@ -1,9 +1,17 @@
-'use server';
+"use server";
 
-import type { AuthResult } from './login';
+import { signUpWithEmail } from "@/auth/server";
+import type { AuthResult } from "./login";
 
-export async function signup(email: string, password: string): Promise<AuthResult> {
-  // TODO: Implement sign-up logic
-  return { success: false, error: 'Not implemented' };
+export async function signup(
+  email: string,
+  password: string,
+  name: string,
+): Promise<AuthResult> {
+  const result = await signUpWithEmail(email, password, name, "/visualize");
+  if (!result.success) {
+    return { success: false, error: result.error ?? "Sign up failed" };
+  }
+
+  return { success: true };
 }
-

@@ -1,7 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
-import React, { ReactNode, useEffect, useRef, useState } from "react";
+import React, { ReactNode, useEffect, useRef, useState, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import classes from "./Modal.module.css";
+
+const ModalContext = createContext<React.RefObject<HTMLElement | null> | null>(null);
+
+export const useModalRef = () => useContext(ModalContext);
 
 interface ModalProps {
   children?: ReactNode;
@@ -62,11 +66,9 @@ const Modal: React.FC<ModalProps> = ({
               <button onClick={onClose}>&#10005;</button>
             </div>
             {/* Pass the ref down to children that need it */}
-            {React.isValidElement(children)
-              ? React.cloneElement(children as React.ReactElement<{ modalContainerRef?: React.RefObject<HTMLDialogElement | null> }>, {
-                  modalContainerRef: modalContentRef,
-                })
-              : children}
+            <ModalContext.Provider value={modalContentRef}>
+              {children}
+            </ModalContext.Provider>
           </motion.dialog>
         </motion.div>
       )}
