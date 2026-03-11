@@ -5,11 +5,7 @@ import QuickActionsModal from "./QuickActionsModal";
 import { symbols } from "@/util/symbols";
 import { motion } from "framer-motion";
 import { RootState, setModal } from "@/store/reduxStore";
-import { useSearchParams, useRouter } from "next/navigation";
-import {
-  readTilesFromSearchParams,
-  writeTilesToSearchParams,
-} from "@/util/tilesSearchParams";
+import { useTiles } from "@/hooks/useTiles";
 
 interface SymbolModalProps {
   children?: ReactNode;
@@ -20,16 +16,13 @@ const SymbolModal: React.FC<SymbolModalProps> = ({index}) => {
   const modals = useSelector((state: RootState) => state.modals);
   const open = modals[index]?.symbol || false;
   const dispatch = useDispatch();
-  const router = useRouter();
-  const params = useSearchParams();
+  const { updateTile } = useTiles();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
   function handleSymbolClick(symbol: string) {
-    const tiles = readTilesFromSearchParams(params);
-    const nextTiles = tiles.map((t, i) => (i === index ? { ...t, symbol } : t));
-    router.replace(`/?${writeTilesToSearchParams(nextTiles)}`);
+    updateTile(index, { symbol });
     dispatch(setModal({ modal: {index, modal:"symbol"}, value: false }));
   }
 

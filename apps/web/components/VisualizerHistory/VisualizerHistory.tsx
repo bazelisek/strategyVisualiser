@@ -1,50 +1,21 @@
 "use client";
 
-import { TileSearchParam } from "@/util/tilesSearchParams";
 import { Sheet, Stack, Typography } from "@mui/joy";
 import Table from "@/components/common/Table";
 import React, { type ReactNode } from "react";
 import { formatLocalDateTime } from "@/util/time";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import AddVisualization from "./AddVisualization";
+import { VisualizerHistoryEntry, VisualizerParams } from "@/util/visualizerTypes";
+import { useRouter } from "next/navigation";
 
 interface VisualizerHistoryProps {
-  children?: ReactNode;
+  hasSheet?: boolean;
+  compact?: boolean;
 }
 
-export interface VisualizerHistoryEntry {
-  id: string; // uuid from db
-  name: string;
-  createdAt: number; // unix timestamp
-  updatedAt: number;
-  params: VisualizerParams;
-}
-
-export interface VisualizerParams {
-  tiles: TileSearchParam[];
-}
-
-const TEMPHistory: VisualizerHistoryEntry[] = [
-  {
-    id: "c9e6f2f4-5a7e-4e0a-a43c-6d59b88b2b7d",
-    name: "Test Strategy Run",
-    createdAt: 1773247200,
-    updatedAt: 1773247200,
-    params: {
-      tiles: [
-        {
-          symbol: "ABNB",
-          interval: "1m",
-          period1: "1773097200",
-          period2: "1773247200",
-          strategy: "Second dummy strategy",
-        },
-      ],
-    },
-  },
-];
-
-const formatStockSymbols = (tiles: TileSearchParam[]) => {
+const formatStockSymbols = (tiles: VisualizerParams["tiles"]) => {
   if (!tiles?.length) return "No stocks";
   const symbols = tiles.reduce<string[]>((acc, tile, index) => {
     if (index < 3) {
@@ -57,93 +28,159 @@ const formatStockSymbols = (tiles: TileSearchParam[]) => {
   return symbols.join(", ");
 };
 
-const rows = TEMPHistory.map((item) => ({
-  id: item.id,
-  name: item.name,
-  createdAt: formatLocalDateTime(item.createdAt),
-  updatedAt: formatLocalDateTime(item.updatedAt),
-  stocks: formatStockSymbols(item.params.tiles),
-}));
+const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
+  compact = false,
+  hasSheet = true,
+}) => {
+  const [history, setHistory] = React.useState<VisualizerHistoryEntry[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const router = useRouter();
 
-const VisualizerHistory: React.FC<VisualizerHistoryProps> = (props) => {
+  React.useEffect(() => {
+    let isActive = true;
+    const loadHistory = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch("/api/history", { cache: "no-store" });
+        if (!res.ok) {
+          return;
+        }
+        const data = await res.json();
+        if (isActive) {
+          setHistory(Array.isArray(data?.items) ? data.items : []);
+        }
+      } catch (error) {
+        console.error("Failed to load history", error);
+      } finally {
+        if (isActive) setIsLoading(false);
+      }
+    };
+    loadHistory();
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const rows = React.useMemo(
+    () =>
+      history.map((item) => ({
+        id: item.id,
+        name: item.name,
+        createdAt: formatLocalDateTime(item.createdAt),
+        updatedAt: formatLocalDateTime(item.updatedAt),
+        stocks: formatStockSymbols(item.params.tiles),
+      })),
+    [history],
+  );
+
   function handleHistoryClick(id: string) {
-    console.log("redirect", id);
+    router.push(`/visualize/${id}`);
   }
-  function handleHistoryDelete(id: string) {
-    console.log("delete", id);
+  async function handleHistoryDelete(id: string) {
+    try {
+      const res = await fetch(`/api/history?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) return;
+      setHistory((prev) => prev.filter((entry) => entry.id !== id));
+    } catch (error) {
+      console.error("Failed to delete history entry", error);
+    }
   }
   function handleHistoryEdit(id: string) {
     console.log("edit", id);
   }
 
+  const columns = [
+    {
+      id: "name",
+      cell: (row: { name: string }) => row.name,
+      header: "Name",
+      sortable: true,
+    },
+    ...(!compact
+      ? ([
+          {
+            id: "createdAt",
+            cell: (row: { createdAt: string }) => row.createdAt,
+            header: "Created At",
+            sortable: true,
+          },
+          {
+            id: "updatedAt",
+            cell: (row: { updatedAt: string }) => row.updatedAt,
+            header: "Updated At",
+            sortable: true,
+          },
+        ] as const)
+      : []),
+    {
+      id: "stocks",
+      cell: (row: { stocks: string }) => row.stocks,
+      header: "Stocks",
+    },
+    {
+      id: "actions",
+      cell: (row: { id: string }) => (
+        <Stack direction="row" justifyContent={"space-between"} paddingX={1}>
+          <EditIcon
+            sx={{
+              cursor: "pointer",
+              "&:hover": { color: "primary.main" },
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleHistoryEdit(row.id);
+            }}
+          />
+          <DeleteIcon
+            sx={{
+              cursor: "pointer",
+              color: "neutral.500",
+              transition: "color 0.15s",
+              "&:hover": {
+                color: "var(--joy-palette-danger-500)",
+              },
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleHistoryDelete(row.id);
+            }}
+          />
+        </Stack>
+      ),
+      header: "Actions",
+      minWidth: 100,
+      maxWidth: 100,
+    },
+  ];
+
+  const ConditionalSheet = ({ children }: { children: ReactNode }) => {
+    if (hasSheet) {
+      return (
+        <Sheet
+          sx={{
+            width: "70%",
+            marginTop: "5%",
+            padding: "3%",
+            borderRadius: 16,
+          }}
+        >
+          {children}
+        </Sheet>
+      );
+    }
+    return children;
+  };
+
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
-      <Sheet
-        sx={{ width: "70%", marginTop: "5%", padding: "3%", borderRadius: 16 }}
-      >
+      <ConditionalSheet>
         <Stack direction={"column"} gap={3}>
-          <Typography level="h2">History</Typography>
+          <Typography level="h2">Visualizations</Typography>
           <div style={{ width: "100%" }}>
             <Table
-              columns={[
-                {
-                  id: "name",
-                  cell: (row) => row.name,
-                  header: "Name",
-                  sortable: true,
-                },
-                {
-                  id: "createdAt",
-                  cell: (row) => row.createdAt,
-                  header: "Created At",
-                  sortable: true,
-                },
-                {
-                  id: "updatedAt",
-                  cell: (row) => row.updatedAt,
-                  header: "Updated At",
-                  sortable: true,
-                },
-                {
-                  id: "stocks",
-                  cell: (row) => row.stocks,
-                  header: "Stocks",
-                },
-                {
-                  id: "actions",
-                  cell: (row) => (
-                    <Stack direction="row" justifyContent={'space-between'} paddingX={1}>
-                      <EditIcon
-                        sx={{
-                          cursor: "pointer",
-                          "&:hover": { color: "primary.main" },
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleHistoryEdit(row.id);
-                        }}
-                      />
-                      <DeleteIcon
-                        sx={{
-                          cursor: "pointer",
-                          color: "neutral.500",
-                          transition: "color 0.15s",
-                          "&:hover": {
-                            color: "var(--joy-palette-danger-500)",
-                          },
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleHistoryDelete(row.id);
-                        }}
-                      />
-                    </Stack>
-                  ),
-                  header: "Actions",
-                  minWidth: 100,
-                  maxWidth: 100,
-                },
-              ]}
+              columns={columns}
               rows={rows}
               resizable
               slotProps={{
@@ -160,9 +197,28 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = (props) => {
                 vertical: "top",
               }}
             />
+            {!isLoading && rows.length === 0 && (
+              <Typography
+                level="body-sm"
+                textColor="neutral.500"
+                sx={{ marginTop: 2 }}
+              >
+                No history yet.
+              </Typography>
+            )}
+          </div>
+          <div>
+            <AddVisualization
+              params={{
+                name: "Untitled",
+                params: {
+                  tiles: [],
+                },
+              }}
+            />
           </div>
         </Stack>
-      </Sheet>
+      </ConditionalSheet>
     </div>
   );
 };

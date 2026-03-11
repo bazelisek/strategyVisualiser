@@ -1,12 +1,11 @@
 "use client";
-import { useSearchParams } from "next/navigation";
 import React, { ReactNode } from "react";
 import SymbolButton from "./SymbolButton";
 import StrategyButton from "./StrategyButton";
 import classes from "./QuickActions.module.css";
 import RemoveTileButton from "./RemoveTileButton";
 import { Stack } from "@mui/joy";
-import { readTilesFromSearchParams } from "@/util/tilesSearchParams";
+import { useTiles } from "@/hooks/useTiles";
 
 interface QuickActionsProps {
   children?: ReactNode;
@@ -14,8 +13,7 @@ interface QuickActionsProps {
 }
 
 const QuickActions: React.FC<QuickActionsProps> = ({ index }) => {
-  const params = useSearchParams();
-  const tiles = readTilesFromSearchParams(params);
+  const { tiles } = useTiles();
   const tile = tiles[index];
 
   return (

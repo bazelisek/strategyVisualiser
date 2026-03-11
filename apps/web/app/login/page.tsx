@@ -94,7 +94,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className={pageClasses.page}>
+    <div className={'page'}>
       <div className={pageClasses.card}>
         <h1 className={pageClasses.title}>Welcome back</h1>
         <p className={pageClasses.subtitle}>

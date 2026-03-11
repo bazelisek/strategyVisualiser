@@ -1,12 +1,11 @@
 "use client";
 import { useChartData } from "@/hooks/useChartData";
 import { getTradeMarkers } from "@/util/markers";
-import { useSearchParams } from "next/navigation";
 import React, { ReactNode } from "react";
 import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
 import classes from "./ChartSection.module.css";
 import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
-import { readTilesFromSearchParams } from "@/util/tilesSearchParams";
+import { useTiles } from "@/hooks/useTiles";
 
 interface ChartSectionProps {
   children?: ReactNode;
@@ -14,8 +13,7 @@ interface ChartSectionProps {
 }
 
 const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
-  const params = useSearchParams();
-  const tiles = readTilesFromSearchParams(params);
+  const { tiles } = useTiles();
   const tile = tiles[index];
   const symbol = tile?.symbol;
   const interval = tile?.interval;
@@ -23,15 +21,24 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   const period2 = tile?.period2;
   const strategy = tile?.strategy;
 
-  if (!symbol || !interval || !strategy || !Number(period1) || !Number(period2)) {
+  const period1Num = Number(period1);
+  const period2Num = Number(period2);
+
+  if (
+    !symbol ||
+    !interval ||
+    !strategy ||
+    !Number.isFinite(period1Num) ||
+    !Number.isFinite(period2Num)
+  ) {
     throw new Error("period is not a  number");
   }
   const { strategyData, loading, transformedData, error } = useChartData(
     {
       symbol,
       interval,
-      period1: Number(period1),
-      period2: Number(period2),
+      period1: period1Num,
+      period2: period2Num,
       strategy,
     },
     "/"

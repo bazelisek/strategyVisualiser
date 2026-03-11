@@ -1,27 +1,22 @@
 "use client";
-import classes from "./page.module.css";
-import { Suspense, useEffect, useState } from "react";
+
+import classes from "@/app/visualize/page.module.css";
+import { useState } from "react";
 import AddTile from "@/components/Tiling/AddTile";
 import Tile from "@/components/Tiling/Tile";
 import Modal from "@/components/Modal";
 import Form from "@/components/Input/Form/Form";
-import { useRouter, useSearchParams } from "next/navigation";
 import Preconfiguration from "@/components/Input/Preconfiguration";
-import { CircularProgress, Grid } from "@mui/joy";
+import { Grid } from "@mui/joy";
 import Sidebar from "@/components/Sidebar/Sidebar";
-import { useGetAuthStatus } from "@/auth/useGetAuthStatus";
-import {
-  readTilesFromSearchParams,
-  writeTilesToSearchParams,
-  TileSearchParam,
-} from "@/util/tilesSearchParams";
-import VerifyAuth from "@/auth/VerifyAuth";
+import { TileSearchParam } from "@/util/tilesSearchParams";
 
-function PageContent() {
-  const params = useSearchParams();
-  const tiles = readTilesFromSearchParams(params);
-  const router = useRouter();
+type VisualizeContentProps = {
+  tiles: TileSearchParam[];
+  onTilesChange: (nextTiles: TileSearchParam[]) => void;
+};
 
+const VisualizeContent = ({ tiles, onTilesChange }: VisualizeContentProps) => {
   const tileCount = tiles.length;
   const [isAddTileActive, setIsAddTileActive] = useState<boolean>(true);
   const tileArr: React.JSX.Element[] = [];
@@ -38,17 +33,9 @@ function PageContent() {
     setIsAddTileActive(true);
   }
 
-  function handleSubmit(submittedData: {
-    symbol: string;
-    interval: string;
-    period1: string;
-    period2: string;
-    strategy: string;
-  }) {
+  function handleSubmit(submittedData: TileSearchParam) {
     const nextTiles: TileSearchParam[] = [...tiles, submittedData];
-    router.replace("/visualize?" + writeTilesToSearchParams(nextTiles));
-
-    //dispatch(newChart(submittedData));
+    onTilesChange(nextTiles);
     handleClose();
   }
 
@@ -79,12 +66,6 @@ function PageContent() {
       </Grid>
     </Grid>
   );
-}
+};
 
-export default function VisualizePage() {
-  return (
-    <VerifyAuth>
-      <PageContent />
-    </VerifyAuth>
-  );
-}
+export default VisualizeContent;

@@ -93,3 +93,13 @@ button:hover {
   align-items: center;
   justify-content: center;
 }
+
+.page {
+  min-height: calc(100vh - 96px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem 3rem;
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 55%),
+    var(--background);
+}

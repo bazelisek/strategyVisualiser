@@ -11,9 +11,8 @@ import OnBalanceVolume from "./OBV/OnBalanceVolume";
 import Modal from "@/components/Modal";
 import GlobalizeButton from "../Buttons/GlobalizeButton";
 import NewIndicatorButton from "./NewIndicatorButton";
-import { useSearchParams } from "next/navigation";
 import useIndicators from "@/hooks/useIndicators";
-import { readTilesFromSearchParams } from "@/util/tilesSearchParams";
+import { useTiles } from "@/hooks/useTiles";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
@@ -25,8 +24,8 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
   index,
   globalButtonEnabled,
 }) => {
-  const params = useSearchParams();
-  const numberOfTiles = readTilesFromSearchParams(params).length;
+  const { tiles } = useTiles();
+  const numberOfTiles = tiles.length;
   const modalSlice = useSelector((state: RootState) => state.modals);
   const indicatorsState = useIndicators();
   const open = modalSlice[index]?.indicators || false;

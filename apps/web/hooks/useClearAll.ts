@@ -1,26 +1,15 @@
 import { clearReduxStorage } from "@/store/reduxStorage";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import {
-  readTilesFromSearchParams,
-  writeTilesToSearchParams,
-} from "@/util/tilesSearchParams";
+import { useTiles } from "@/hooks/useTiles";
 
 // Implementation
 export default function useClearState() {
-  // Always call the hook at the top level
-  const router = useRouter();
-  const path = usePathname();
-  const params = useSearchParams();
+  const { setTiles, removeTile } = useTiles();
   return (tileIndexToDelete?: number) => {
     if (tileIndexToDelete === undefined) {
-      // replace to the pathname (no query) using the app-router replace API
-      router.replace(path);
+      setTiles([]);
       clearReduxStorage();
       return;
     }
-    const tiles = readTilesFromSearchParams(params);
-    const nextTiles = tiles.filter((_, i) => i !== tileIndexToDelete);
-    const q = writeTilesToSearchParams(nextTiles);
-    router.replace(q ? `${path}?${q}` : path);
+    removeTile(tileIndexToDelete);
   };
 }

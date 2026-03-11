@@ -6,12 +6,8 @@ import QuickActionsModal from "./QuickActionsModal";
 import { RootState, setModal } from "@/store/reduxStore";
 import { motion } from "framer-motion";
 import { getAvailableStrategies } from "@/util/strategies";
-import { useSearchParams, useRouter } from "next/navigation";
 import { CircularProgress } from "@mui/joy";
-import {
-  readTilesFromSearchParams,
-  writeTilesToSearchParams,
-} from "@/util/tilesSearchParams";
+import { useTiles } from "@/hooks/useTiles";
 
 interface StrategyModalProps {
   children?: ReactNode;
@@ -22,19 +18,14 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ index }) => {
   const modals = useSelector((state: RootState) => state.modals);
   const open = modals[index]?.strategy || false;
   const dispatch = useDispatch();
-  const router = useRouter();
-  const params = useSearchParams();
+  const { updateTile } = useTiles();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [strategies, setStrategies] = useState<string[]>([]);
 
   function handleStrategyClick(strategy: string) {
-    const tiles = readTilesFromSearchParams(params);
-    const nextTiles = tiles.map((t, i) =>
-      i === index ? { ...t, strategy } : t,
-    );
-    router.replace(`/?${writeTilesToSearchParams(nextTiles)}`);
+    updateTile(index, { strategy });
     dispatch(setModal({ modal: { index, modal: "strategy" }, value: false }));
   }
 
