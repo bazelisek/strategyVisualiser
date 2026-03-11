@@ -90,37 +90,70 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = (props) => {
                   id: "name",
                   cell: (row) => row.name,
                   header: "Name",
-                  sortable: true
+                  sortable: true,
                 },
                 {
                   id: "createdAt",
                   cell: (row) => row.createdAt,
                   header: "Created At",
-                  sortable: true
+                  sortable: true,
                 },
                 {
                   id: "updatedAt",
                   cell: (row) => row.updatedAt,
                   header: "Updated At",
-                  sortable: true
+                  sortable: true,
                 },
                 {
                   id: "stocks",
                   cell: (row) => row.stocks,
                   header: "Stocks",
-                  
+                },
+                {
+                  id: "actions",
+                  cell: (row) => (
+                    <Stack direction="row" justifyContent={'space-between'} paddingX={1}>
+                      <EditIcon
+                        sx={{
+                          cursor: "pointer",
+                          "&:hover": { color: "primary.main" },
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleHistoryEdit(row.id);
+                        }}
+                      />
+                      <DeleteIcon
+                        sx={{
+                          cursor: "pointer",
+                          color: "neutral.500",
+                          transition: "color 0.15s",
+                          "&:hover": {
+                            color: "var(--joy-palette-danger-500)",
+                          },
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleHistoryDelete(row.id);
+                        }}
+                      />
+                    </Stack>
+                  ),
+                  header: "Actions",
+                  minWidth: 100,
+                  maxWidth: 100,
                 },
               ]}
               rows={rows}
               resizable
-              
               slotProps={{
                 bodyRow: ({ row }) => ({
                   onClick: () => handleHistoryClick(row.id),
-                  sx: { cursor: "pointer",  },
-                  hover: true
+                  sx: { cursor: "pointer" },
+                  hover: true,
                 }),
                 tableContainer: { sx: { width: "100%" } },
+                headerRow: { sx: { fontWeight: 800 } },
               }}
               resetSpacingButtonPosition={{
                 horizontal: "right",
