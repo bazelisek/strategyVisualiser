@@ -46,7 +46,6 @@ export default function LoginPage() {
       const { error } = await authClient.signIn.email({
         email: loginEmail,
         password: loginPassword,
-        callbackURL: "/visualize",
       });
       if (!error) {
         router.replace("/visualize");
@@ -73,7 +72,6 @@ export default function LoginPage() {
         email: signupEmail,
         password: signupPassword,
         name: signupName,
-        callbackURL: "/visualize",
       });
       if (!error) {
         router.replace("/visualize");
