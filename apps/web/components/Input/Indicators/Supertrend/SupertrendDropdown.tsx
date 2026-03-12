@@ -4,6 +4,9 @@ import { AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setIndicators } from "@/store/reduxStore";
 import ColorPicker from "../Utilities/ColorPicker";
+import { useTiles } from "@/hooks/useTiles";
+import { persistIndicatorEdit } from "@/util/indicators/persistence";
+import { toTileIndicator } from "@/util/indicators/serialization";
 
 interface SupertrendDropdownProps {
   children?: ReactNode;
@@ -18,51 +21,74 @@ const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({
   const indicator = useSelector(
     (state: RootState) => state.indicators[indicatorIndex]
   );
-  const color = indicator.indicator.value.color;
+  const rawColor = indicator.indicator.value.color;
+  const color = typeof rawColor === "string" ? rawColor : "#adff29";
   const dispatch = useDispatch();
+  const { visualizationId } = useTiles();
 
   function handlePeriodChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.value && Number(e.target.value) >= 1)
+    if (e.target.value && Number(e.target.value) >= 1) {
+      const nextValue = {
+        ...indicator.indicator.value,
+        period: Number(e.target.value),
+      };
       dispatch(
         setIndicators({
           indicatorIndex,
-          value: {
-            ...indicator.indicator.value,
-            period: Number(e.target.value),
-          },
+          value: nextValue,
         })
       );
+      const nextIndicator = {
+        ...indicator,
+        indicator: { ...indicator.indicator, value: nextValue },
+      };
+      void persistIndicatorEdit({
+        visualizationId,
+        tileIndex: nextIndicator.index,
+        indicator: toTileIndicator(nextIndicator),
+      });
+    }
   }
   function handleMultiplierChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.value && Number(e.target.value) >= 1)
+    if (e.target.value && Number(e.target.value) >= 1) {
+      const nextValue = {
+        ...indicator.indicator.value,
+        multiplier: Number(e.target.value),
+      };
       dispatch(
         setIndicators({
           indicatorIndex,
-          value: {
-            ...indicator.indicator.value,
-            multiplier: Number(e.target.value),
-          },
+          value: nextValue,
         })
       );
+      const nextIndicator = {
+        ...indicator,
+        indicator: { ...indicator.indicator, value: nextValue },
+      };
+      void persistIndicatorEdit({
+        visualizationId,
+        tileIndex: nextIndicator.index,
+        indicator: toTileIndicator(nextIndicator),
+      });
+    }
   }
   function handleSetColor(newColor: string) {
+    const nextValue = { ...indicator.indicator.value, color: newColor };
     dispatch(
       setIndicators({
         indicatorIndex,
-        value: { ...indicator.indicator.value, color: newColor },
+        value: nextValue,
       })
     );
-  }
-  function handleChartIndexChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const value = e.target.value;
-    if (value && parseInt(value, 10) >= 0) {
-      dispatch(
-        setIndicators({
-          indicatorIndex,
-          chartIndex: parseInt(value, 10),
-        })
-      );
-    }
+    const nextIndicator = {
+      ...indicator,
+      indicator: { ...indicator.indicator, value: nextValue },
+    };
+    void persistIndicatorEdit({
+      visualizationId,
+      tileIndex: nextIndicator.index,
+      indicator: toTileIndicator(nextIndicator),
+    });
   }
 
   return (
@@ -76,11 +102,7 @@ const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({
               id="supertrend-period"
               placeholder=" "
               onChange={handlePeriodChange}
-              defaultValue={
-                "period" in indicator.indicator.value
-                  ? indicator.indicator.value.period
-                  : 20
-              }
+              defaultValue={Number(indicator.indicator.value.period ?? 20)}
             />
           </div>
           <div>
@@ -90,11 +112,7 @@ const SupertrendDropdown: React.FC<SupertrendDropdownProps> = ({
               id="supertrend-multiplier"
               placeholder=" "
               onChange={handleMultiplierChange}
-              defaultValue={
-                "multiplier" in indicator.indicator.value
-                  ? indicator.indicator.value.multiplier
-                  : 20
-              }
+              defaultValue={Number(indicator.indicator.value.multiplier ?? 20)}
             />
           </div>
           {/*<label htmlFor="chart-index">Chart number</label>

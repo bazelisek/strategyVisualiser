@@ -1,10 +1,13 @@
-import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
+import { setIndicatorsVisibility } from "@/store/reduxStore";
 import React, { ReactNode, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import DropdownButton from "../../Buttons/DropdownButton";
 import Switch from "../../Buttons/Switch";
 import SupertrendDropdown from "./SupertrendDropdown";
 import useIndicators from "@/hooks/useIndicators";
+import { useTiles } from "@/hooks/useTiles";
+import { persistIndicatorEdit } from "@/util/indicators/persistence";
+import { toTileIndicator } from "@/util/indicators/serialization";
 
 interface SupertrendProps {
   children?: ReactNode;
@@ -14,6 +17,7 @@ interface SupertrendProps {
 const Supertrend: React.FC<SupertrendProps> = ({indicatorIndex}) => {
   const indicator = useIndicators((indicators) => indicators[indicatorIndex]);
   const dispatch = useDispatch();
+  const { visualizationId } = useTiles();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {
     dispatch(
@@ -21,6 +25,16 @@ const Supertrend: React.FC<SupertrendProps> = ({indicatorIndex}) => {
         value: value,
       })
     );
+    if (!indicator) return;
+    const nextIndicator = {
+      ...indicator,
+      indicator: { ...indicator.indicator, visible: value },
+    };
+    void persistIndicatorEdit({
+      visualizationId,
+      tileIndex: nextIndicator.index,
+      indicator: toTileIndicator(nextIndicator),
+    });
   }
 
   function toggleDropdown() {

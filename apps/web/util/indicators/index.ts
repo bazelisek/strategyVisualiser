@@ -9,16 +9,19 @@ import {
 import { calculateMovingAverageSeriesData, createMAGraph } from "./movingAverage";
 import { calculateSupertrendSeriesData, createSTGraph } from "./supertrend";
 
+export type IndicatorValue = Record<string, number | string>;
+
 type IndicatorParameters = Record<
   string,
   {
     displayName: string;
     type: "number" | "color";
     default: number | string;
+    min?: number;
   }
 >;
 
-export interface IndicatorGraphContext<Config = any> {
+export interface IndicatorGraphContext<Config = IndicatorValue> {
   mainChart: IChartApi;
   chart: IChartApi | null;
   candles: candleData;
@@ -27,11 +30,15 @@ export interface IndicatorGraphContext<Config = any> {
   chartsWithCCILines?: Set<number>;
 }
 
-export interface IndicatorDefinition<Config = any> {
+export interface IndicatorDefinition<Config = IndicatorValue> {
   key: string;
   displayName: string;
   parameters: IndicatorParameters;
-  calculateData: (candles: candleData, ...args: any[]) => any;
+  ui?: {
+    defaultChartIndex?: number;
+    supportsChartIndex?: boolean;
+  };
+  calculateData(candles: candleData, ...args: unknown[]): unknown;
   createGraph: (ctx: IndicatorGraphContext<Config>) => void;
 }
 
@@ -44,6 +51,7 @@ const indicators: IndicatorDefinition[] = [
         displayName: "MA Length",
         type: "number",
         default: 20,
+        min: 1,
       },
       color: {
         displayName: "Color",
@@ -51,10 +59,15 @@ const indicators: IndicatorDefinition[] = [
         default: "#2962FF",
       },
     },
+    ui: { defaultChartIndex: 0 },
     calculateData: calculateMovingAverageSeriesData,
     createGraph: ({ chart, candles, config }) => {
       if (!chart) return;
-      createMAGraph(chart, config, candles);
+      createMAGraph(
+        chart,
+        config as { maLength: number; color: string } | undefined,
+        candles
+      );
     },
   },
   {
@@ -65,11 +78,13 @@ const indicators: IndicatorDefinition[] = [
         displayName: "Period",
         type: "number",
         default: 10,
+        min: 1,
       },
       multiplier: {
         displayName: "Multiplier",
         type: "number",
         default: 3,
+        min: 1,
       },
       color: {
         displayName: "Color",
@@ -77,9 +92,14 @@ const indicators: IndicatorDefinition[] = [
         default: "#adff29",
       },
     },
+    ui: { defaultChartIndex: 0, supportsChartIndex: false },
     calculateData: calculateSupertrendSeriesData,
     createGraph: ({ mainChart, candles, config }) => {
-      createSTGraph(mainChart, config, candles);
+      createSTGraph(
+        mainChart,
+        config as { period: number; multiplier: number; color: string } | undefined,
+        candles
+      );
     },
   },
   {
@@ -90,6 +110,7 @@ const indicators: IndicatorDefinition[] = [
         displayName: "EMA Length",
         type: "number",
         default: 20,
+        min: 1,
       },
       color: {
         displayName: "Color",
@@ -97,10 +118,15 @@ const indicators: IndicatorDefinition[] = [
         default: "#29f8ff",
       },
     },
+    ui: { defaultChartIndex: 0 },
     calculateData: calculateExponentialMovingAverageSeriesData,
     createGraph: ({ chart, candles, config }) => {
       if (!chart) return;
-      createEMAGraph(chart, config, candles);
+      createEMAGraph(
+        chart,
+        config as { emaLength: number; color: string } | undefined,
+        candles
+      );
     },
   },
   {
@@ -111,6 +137,7 @@ const indicators: IndicatorDefinition[] = [
         displayName: "CCI Length",
         type: "number",
         default: 20,
+        min: 1,
       },
       color: {
         displayName: "Color",
@@ -118,12 +145,18 @@ const indicators: IndicatorDefinition[] = [
         default: "#f829ff",
       },
     },
+    ui: { defaultChartIndex: 1 },
     calculateData: calculateCCISeriesData,
     createGraph: ({ chart, candles, config, chartIndex, chartsWithCCILines }) => {
       if (!chart) return;
       const set = chartsWithCCILines;
       const addLines = !set?.has(chartIndex);
-      createCCIGraph(chart, config, candles, addLines);
+      createCCIGraph(
+        chart,
+        config as { cciLength: number; color: string } | undefined,
+        candles,
+        addLines
+      );
       if (set && addLines) {
         set.add(chartIndex);
       }
@@ -139,12 +172,43 @@ const indicators: IndicatorDefinition[] = [
         default: "#2962FF",
       },
     },
+    ui: { defaultChartIndex: 2 },
     calculateData: calculateOnBalanceVolumeData,
     createGraph: ({ chart, candles, config }) => {
       if (!chart) return;
-      createOBVGraph(chart, config, candles);
+      createOBVGraph(
+        chart,
+        config as { color: string } | undefined,
+        candles
+      );
     },
   },
-];
+] ;
 
-export default indicators;
+export type IndicatorKey = (typeof indicators)[number]["key"];
+
+export const indicatorDefinitions = indicators;
+
+export const indicatorDefinitionsByKey = indicatorDefinitions.reduce(
+  (acc, definition) => {
+    acc[definition.key as IndicatorKey] = definition;
+    return acc;
+  },
+  {} as Record<IndicatorKey, IndicatorDefinition>
+);
+
+export const indicatorKeys = indicatorDefinitions.map(
+  (definition) => definition.key as IndicatorKey
+);
+
+export const buildIndicatorDefaultValue = (
+  definition: IndicatorDefinition
+): IndicatorValue => {
+  const value: IndicatorValue = {};
+  Object.entries(definition.parameters).forEach(([key, param]) => {
+    value[key] = param.default;
+  });
+  return value;
+};
+
+export default indicatorDefinitions;

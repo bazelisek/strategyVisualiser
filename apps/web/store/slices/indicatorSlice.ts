@@ -1,97 +1,55 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import {
+  buildIndicatorDefaultValue,
+  IndicatorKey,
+  IndicatorValue,
+  indicatorDefinitions,
+} from "@/util/indicators";
+import { createIndicatorId } from "@/util/indicators/identity";
 
 export type stateType = {
-  key: string;
+  id: string;
+  key: IndicatorKey;
   index: number;
   chartIndex: number;
   indicator: {
     visible: boolean;
-    value:
-      | { maLength: number; color: string }
-      | { period: number; multiplier: number; color: string }
-      | { emaLength: number; color: string }
-      | { cciLength: number; color: string }
-      | { color: string };
+    value: IndicatorValue;
     displayName: string;
   };
   linkedGlobalStateIndex?: number;
 };
 
-export const initialState: {
-  key: string;
-  index: number;
-  chartIndex: number;
-  indicator: {
-    visible: boolean;
-    value:
-      | { maLength: number; color: string }
-      | { period: number; multiplier: number; color: string }
-      | { emaLength: number; color: string }
-      | { cciLength: number; color: string }
-      | { color: string };
-    displayName: string;
-  };
-  linkedGlobalStateIndex?: number;
-}[] = [];
+export const initialState: stateType[] = [];
 
-export const indicatorState = {
-  movingAverage: {
-    key: "movingAverage",
-    chartIndex: 0,
-    indicator: {
-      visible: true,
-      value: { maLength: 20, color: "#2962FF" },
-      displayName: "Moving Average",
-    },
-    linkedGlobalStateIndex: null,
+export const indicatorState = indicatorDefinitions.reduce(
+  (acc, definition) => {
+    acc[definition.key as IndicatorKey] = {
+      key: definition.key as IndicatorKey,
+      chartIndex: definition.ui?.defaultChartIndex ?? 0,
+      indicator: {
+        visible: true,
+        value: buildIndicatorDefaultValue(definition),
+        displayName: definition.displayName,
+      },
+      linkedGlobalStateIndex: null,
+    };
+    return acc;
   },
-  supertrend: {
-    key: "supertrend",
-    chartIndex: 0,
-    indicator: {
-      visible: true,
-      value: { period: 10, multiplier: 3, color: "#adff29" },
-      displayName: "Supertrend",
-    },
-    linkedGlobalStateIndex: null,
-  },
-  exponentialMovingAverage: {
-    key: "exponentialMovingAverage",
-    chartIndex: 0,
-    indicator: {
-      visible: true,
-      value: { emaLength: 20, color: "#29f8ff" },
-      displayName: "Exponenetial Moving Average",
-    },
-    linkedGlobalStateIndex: null,
-  },
-  commodityChannelIndex: {
-    key: "commodityChannelIndex",
-    chartIndex: 1,
-    indicator: {
-      visible: true,
-      value: { cciLength: 20, color: "#f829ff" },
-      displayName: "Commodity Channel Index",
-    },
-    linkedGlobalStateIndex: null,
-  },
-  onBalanceVolume: {
-    key: "onBalanceVolume",
-    chartIndex: 2,
-    indicator: {
-      visible: true,
-      value: { color: "#2962FF" },
-      displayName: "On Balance Volume",
-    },
-    linkedGlobalStateIndex: null,
-  },
-};
-export type IndicatorKey =
-  | "movingAverage"
-  | "supertrend"
-  | "exponentialMovingAverage"
-  | "commodityChannelIndex"
-  | "onBalanceVolume";
+  {} as Record<
+    IndicatorKey,
+    {
+      key: IndicatorKey;
+      chartIndex: number;
+      indicator: {
+        visible: boolean;
+        value: IndicatorValue;
+        displayName: string;
+      };
+      linkedGlobalStateIndex?: number | null;
+    }
+  >
+);
 
 export const indicatorSlice = createSlice({
   name: "indicators",
@@ -99,17 +57,18 @@ export const indicatorSlice = createSlice({
   initialState,
 
   reducers: {
+    setAllIndicators: (
+      _state,
+      action: PayloadAction<stateType[]>
+    ) => {
+      return action.payload;
+    },
     setIndicators: (
       state,
       action: PayloadAction<{
         indicatorIndex: number;
         chartIndex?: number;
-        value?:
-          | { maLength: number; color: string }
-          | { emaLength: number; color: string }
-          | { cciLength: number; color: string }
-          | { period: number; multiplier: number; color: string }
-          | { color: string };
+        value?: IndicatorValue;
       }>
     ) => {
       console.log(JSON.stringify(action.payload))
@@ -135,6 +94,14 @@ export const indicatorSlice = createSlice({
 
       state[indicatorIndex].indicator.visible = action.payload.value;
     },
+    removeIndicator: (
+      state,
+      action: PayloadAction<{ indicatorIndex: number }>
+    ) => {
+      const { indicatorIndex } = action.payload;
+      if (indicatorIndex < 0 || indicatorIndex >= state.length) return;
+      state.splice(indicatorIndex, 1);
+    },
 
     newIndicators: (
       state,
@@ -143,18 +110,22 @@ export const indicatorSlice = createSlice({
             tileIndex: number;
             indicatorKey: IndicatorKey;
             globalIndex?: number;
+            indicatorId?: string;
           }
         | { state: stateType }
       >
     ) => {
       if ("state" in action.payload) {
         const defaultState = action.payload.state;
-
-        state.push(defaultState);
+        state.push({
+          ...defaultState,
+          id: defaultState.id || createIndicatorId(),
+        });
         return;
       }
 
-      const { tileIndex, indicatorKey, globalIndex } = action.payload;
+      const { tileIndex, indicatorKey, globalIndex, indicatorId } =
+        action.payload;
 
       // If globalIndex is provided and exists, link to it
       if (typeof globalIndex === "number" && state[globalIndex]) {
@@ -163,10 +134,13 @@ export const indicatorSlice = createSlice({
           index: tileIndex,
           key: indicatorKey,
           linkedGlobalStateIndex: globalIndex,
+          id: indicatorId ?? createIndicatorId(),
         };
-        // Find by both index and indicatorKey
+        // Only replace indicators linked to the same global indicator
         const existing = state.find(
-          (ind) => ind.index === tileIndex && ind.key === indicatorKey
+          (ind) =>
+            ind.index === tileIndex &&
+            ind.linkedGlobalStateIndex === globalIndex
         );
         if (existing) {
           Object.assign(existing, newIndicator);
@@ -179,6 +153,7 @@ export const indicatorSlice = createSlice({
           ...indicatorState[indicatorKey],
           index: tileIndex,
           key: indicatorKey,
+          id: indicatorId ?? createIndicatorId(),
           linkedGlobalStateIndex: undefined,
         };
         state.push(baseIndicator);
@@ -226,6 +201,7 @@ export const indicatorSlice = createSlice({
           },
           linkedGlobalStateIndex: indicatorIndex,
           chartIndex: base.chartIndex,
+          id: createIndicatorId(),
         };
 
         // Add to the state (Redux Toolkit Immer allows direct mutation)

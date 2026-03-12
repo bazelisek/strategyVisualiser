@@ -85,6 +85,7 @@ button:hover {
 .alignmentDiv {
     display: flex;
     gap: 5px;
+    align-items: center;
 }
 
 .loading {

@@ -11,6 +11,7 @@ import {
 type TilesContextValue = {
   tiles: TileSearchParam[];
   setTiles: (nextTiles: TileSearchParam[]) => void;
+  visualizationId?: string;
 };
 
 const TilesContext = createContext<TilesContextValue | null>(null);
@@ -18,15 +19,17 @@ const TilesContext = createContext<TilesContextValue | null>(null);
 export const TilesProvider = ({
   tiles,
   onTilesChange,
+  visualizationId,
   children,
 }: {
   tiles: TileSearchParam[];
   onTilesChange: (nextTiles: TileSearchParam[]) => void;
+  visualizationId?: string;
   children: React.ReactNode;
 }) => {
   const value = useMemo(
-    () => ({ tiles, setTiles: onTilesChange }),
-    [tiles, onTilesChange]
+    () => ({ tiles, setTiles: onTilesChange, visualizationId }),
+    [tiles, onTilesChange, visualizationId]
   );
   return <TilesContext.Provider value={value}>{children}</TilesContext.Provider>;
 };
@@ -64,5 +67,5 @@ export const useTiles = () => {
     setTiles([...tiles, tile]);
   };
 
-  return { tiles, setTiles, updateTile, removeTile, addTile };
+  return { tiles, setTiles, updateTile, removeTile, addTile, visualizationId: ctx?.visualizationId };
 };

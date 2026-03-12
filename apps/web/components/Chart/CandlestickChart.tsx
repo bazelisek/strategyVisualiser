@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useSelector } from "react-redux";
 import {
   createChart,
   CrosshairMode,
@@ -15,16 +14,12 @@ import {
   createSeriesMarkers,
   ISeriesMarkersPluginApi,
 } from "lightweight-charts";
-import { RootState } from "@/store/reduxStore";
 import { candleData } from "@/util/serverFetch";
 import { createSecondaryChart } from "@/util/charts";
 import { centerToMarker, toUTCTimestamp } from "@/util/markers";
 import MarkerNavigation from "./MarkerNavigation";
 import useIndicators from "@/hooks/useIndicators";
-import indicators, {
-  IndicatorDefinition,
-  IndicatorGraphContext,
-} from "@/util/indicators";
+import { indicatorDefinitionsByKey, IndicatorGraphContext } from "@/util/indicators";
 
 interface CandlestickChartProps {
   width: number;
@@ -44,13 +39,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   chartContainer,
 }) => {
   const indicatorSlice = useIndicators();
-  const indicatorDefinitionsByKey = useMemo(() => {
-    const map: Record<string, IndicatorDefinition> = {};
-    indicators.forEach((def) => {
-      map[def.key] = def;
-    });
-    return map;
-  }, []);
+  const indicatorDefinitionMap = indicatorDefinitionsByKey;
   const indicatorsWithIndex = useMemo(
     () => indicatorSlice.filter((item) => item.index === index),
     [indicatorSlice, index]
@@ -189,7 +178,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
         if (!visible) return;
 
-        const definition = indicatorDefinitionsByKey[indicatorInstance.key];
+        const definition = indicatorDefinitionMap[indicatorInstance.key];
         if (!definition) return;
 
         const context: IndicatorGraphContext = {

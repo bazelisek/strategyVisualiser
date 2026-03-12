@@ -133,7 +133,7 @@ export function useColumnWidths<TData, TId extends string>(params: UseColumnWidt
         const targetIndex = columnOrder.indexOf(columnId);
         if (targetIndex === -1) return prev;
 
-        let next = applyCascadingResize(columnId, delta, prev, columnOrder, effectiveConstraintsById);
+        const next = applyCascadingResize(columnId, delta, prev, columnOrder, effectiveConstraintsById);
         const updatedValue = getEffectiveWidth(columnId, next, effectiveConstraintsById);
         const remaining = nextValue - updatedValue;
         if (remaining === 0) return next;

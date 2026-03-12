@@ -4,6 +4,9 @@ import { AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setIndicators } from "@/store/reduxStore";
 import ColorPicker from "../Utilities/ColorPicker";
+import { useTiles } from "@/hooks/useTiles";
+import { persistIndicatorEdit } from "@/util/indicators/persistence";
+import { toTileIndicator } from "@/util/indicators/serialization";
 
 interface OnBalanceVolumeDropdownProps {
   children?: ReactNode;
@@ -18,26 +21,48 @@ const OnBalanceVolumeDropdown: React.FC<OnBalanceVolumeDropdownProps> = ({
   const indicator = useSelector(
     (state: RootState) => state.indicators[indicatorIndex]
   );
-  const color = indicator.indicator.value.color;
+  const rawColor = indicator.indicator.value.color;
+  const color = typeof rawColor === "string" ? rawColor : "#2962FF";
   const dispatch = useDispatch();
+  const { visualizationId } = useTiles();
 
   function handleSetColor(newColor: string) {
+    const nextValue = { ...indicator.indicator.value, color: newColor };
     dispatch(
       setIndicators({
         indicatorIndex,
-        value: { ...indicator.indicator.value, color: newColor },
+        value: nextValue,
       })
     );
+    const nextIndicator = {
+      ...indicator,
+      indicator: { ...indicator.indicator, value: nextValue },
+    };
+    void persistIndicatorEdit({
+      visualizationId,
+      tileIndex: nextIndicator.index,
+      indicator: toTileIndicator(nextIndicator),
+    });
   }
   function handleChartIndexChange(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
     if (value && parseInt(value, 10) >= 0) {
+      const nextChartIndex = parseInt(value, 10);
       dispatch(
         setIndicators({
           indicatorIndex,
-          chartIndex: parseInt(value, 10),
+          chartIndex: nextChartIndex,
         })
       );
+      const nextIndicator = {
+        ...indicator,
+        chartIndex: nextChartIndex,
+      };
+      void persistIndicatorEdit({
+        visualizationId,
+        tileIndex: nextIndicator.index,
+        indicator: toTileIndicator(nextIndicator),
+      });
     }
   }
 

@@ -10,6 +10,9 @@ export function getStrategyPerformance(
   transformedData: { candles: candleData },
   strategyName: string
 ): {headers: string[], data: string[][]} {
+  void strategyData;
+  void transformedData;
+  void strategyName;
   //fetch('http://DUMMYURL/strategyPerformance')
   return {headers: ['Dummyone', 'Anothre'], data: [['Something', 'something']]}
 }

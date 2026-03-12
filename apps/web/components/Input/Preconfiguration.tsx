@@ -5,6 +5,8 @@ import PreconfigureForm from "./PreconfigureForm";
 import AnimationButton from "./Buttons/AnimationButton";
 import { useDispatch } from "react-redux";
 import { setConfigs } from "@/store/reduxStore";
+import type { ConfigState } from "@/store/slices/configSlice";
+import { useTiles } from "@/hooks/useTiles";
 
 interface PreconfigurationProps {
   children?: ReactNode;
@@ -13,17 +15,32 @@ interface PreconfigurationProps {
 const Preconfiguration: React.FC<PreconfigurationProps> = () => {
   const [open, setOpen] = useState(false);
   const dispatch = useDispatch();
+  const { visualizationId } = useTiles();
 
-  function handleClose(formData: {
-    symbol: { defaultValue: string };
-    interval: { defaultValue: string };
-    period1: { defaultValue: string };
-    period2: { defaultValue: string };
-    strategy: { defaultValue: string };
-  }) {
+  const persistDefaults = async (defaults: ConfigState) => {
+    if (!visualizationId) return;
+    try {
+      const res = await fetch("/api/history", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: visualizationId,
+          params: { defaults },
+        }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to update defaults");
+      }
+    } catch (error) {
+      console.error("Failed to persist defaults", error);
+    }
+  };
+
+  function handleClose(formData: ConfigState) {
     console.log(JSON.stringify(formData));
     setOpen(false);
     dispatch(setConfigs(formData));
+    void persistDefaults(formData);
   }
   function handleClick() {
     setOpen(true);

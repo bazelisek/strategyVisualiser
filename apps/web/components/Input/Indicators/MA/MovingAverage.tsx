@@ -4,6 +4,9 @@ import { RootState, setIndicatorsVisibility } from "@/store/reduxStore";
 import Switch from "../../Buttons/Switch";
 import MovingAverageDropdown from "./MovingAverageDropdown";
 import DropdownButton from "../../Buttons/DropdownButton";
+import { useTiles } from "@/hooks/useTiles";
+import { persistIndicatorEdit } from "@/util/indicators/persistence";
+import { toTileIndicator } from "@/util/indicators/serialization";
 
 interface MovingAverageProps {
   children?: ReactNode;
@@ -15,9 +18,20 @@ const MovingAverage: React.FC<MovingAverageProps> = ({ indicatorIndex }) => {
     (state: RootState) => state.indicators[indicatorIndex]
   );
   const dispatch = useDispatch();
+  const { visualizationId } = useTiles();
   const [open, setOpen] = useState(false);
   function handleMovingAverageToggle(value: boolean) {
     dispatch(setIndicatorsVisibility({ indicatorIndex, value: value }));
+    if (!indicator) return;
+    const nextIndicator = {
+      ...indicator,
+      indicator: { ...indicator.indicator, visible: value },
+    };
+    void persistIndicatorEdit({
+      visualizationId,
+      tileIndex: nextIndicator.index,
+      indicator: toTileIndicator(nextIndicator),
+    });
   }
 
   function toggleDropdown() {

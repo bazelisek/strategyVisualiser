@@ -1,18 +1,14 @@
 import React, { ReactNode } from "react";
-import MovingAverage from "./MA/MovingAverage";
 import classes from "./IndicatorsModal.module.css";
 import { motion } from "framer-motion";
-import ExponentialMovingAverage from "./EMA/ExponentialMovingAverage";
-import CommodityChannelIndex from "./CCI/CommodityChannelIndex";
 import { useDispatch, useSelector } from "react-redux";
 import { makeGlobal, RootState, setModal } from "@/store/reduxStore";
-import Supertrend from "./Supertrend/Supertrend";
-import OnBalanceVolume from "./OBV/OnBalanceVolume";
 import Modal from "@/components/Modal";
 import GlobalizeButton from "../Buttons/GlobalizeButton";
 import NewIndicatorButton from "./NewIndicatorButton";
 import useIndicators from "@/hooks/useIndicators";
 import { useTiles } from "@/hooks/useTiles";
+import IndicatorRow from "./IndicatorRow";
 
 interface IndicatorsModalProps {
   children?: ReactNode;
@@ -51,19 +47,19 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
       >
         <NewIndicatorButton index={index}></NewIndicatorButton>
         <motion.ul layout>
-          {indicatorsState.map((indicator, indexOfIndicator) => {
-            if (indicator.index != index) return;
-            return (
-              <motion.li key={indexOfIndicator}>
+          {indicatorsState
+            .map((indicator, indicatorIndex) => ({ indicator, indicatorIndex }))
+            .filter(({ indicator }) => indicator.index === index)
+            .map(({ indicatorIndex }) => (
+              <motion.li key={indicatorIndex}>
                 <div className={classes.left}>
-                  {designateJSXToIndicator(indicator.key, indexOfIndicator)}
+                  <IndicatorRow indicatorIndex={indicatorIndex} />
                 </div>
                 {globalButtonEnabled && (
-                  <GlobalizeButton onClick={() => handleClick(indexOfIndicator)} />
+                  <GlobalizeButton onClick={() => handleClick(indicatorIndex)} />
                 )}
               </motion.li>
-            );
-          })}
+            ))}
           {/*
           <motion.li layout>
             <div className={classes.left}>
@@ -113,25 +109,6 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
       </Modal>
     </>
   );
-  function designateJSXToIndicator(indicatorKey: string, index: number) {
-    if (indicatorKey == "movingAverage") {
-      return <MovingAverage  indicatorIndex={index} />;
-    }
-    if (indicatorKey == "exponentialMovingAverage") {
-      return <ExponentialMovingAverage  indicatorIndex={index} />;
-    }
-    if (indicatorKey == "commodityChannelIndex") {
-      return <CommodityChannelIndex  indicatorIndex={index} />;
-    }
-    if (indicatorKey == "supertrend") {
-      return <Supertrend  indicatorIndex={index} />;
-    }
-    if (indicatorKey == "onBalanceVolume") {
-      return <OnBalanceVolume  indicatorIndex={index} />;
-    }
-    console.log(indicatorKey);
-    throw new Error("Wrong indicatorKey");
-  }
 };
 
 export default IndicatorsModal;

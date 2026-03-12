@@ -1,0 +1,22 @@
+.button {
+  background: none;
+  padding: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+}
+.button:hover {
+  background: none;
+}
+
+.icon {
+  color: var(--foreground);
+  transition: color 0.15s;
+}
+
+.button:hover .icon {
+  color: var(--joy-palette-danger-500);
+}

@@ -1,14 +1,17 @@
 "use client";
 
-import { Sheet, Stack, Typography } from "@mui/joy";
+import { IconButton, Sheet, Stack, Typography } from "@mui/joy";
 import Table from "@/components/common/Table";
 import React, { type ReactNode } from "react";
 import { formatLocalDateTime } from "@/util/time";
-import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddVisualization from "./AddVisualization";
-import { VisualizerHistoryEntry, VisualizerParams } from "@/util/visualizerTypes";
+import {
+  VisualizerHistoryEntry,
+  VisualizerParams,
+} from "@/util/visualizerTypes";
 import { useRouter } from "next/navigation";
+import DeleteButton from "../Input/Buttons/DeleteButton";
 
 interface VisualizerHistoryProps {
   hasSheet?: boolean;
@@ -123,25 +126,20 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
       id: "actions",
       cell: (row: { id: string }) => (
         <Stack direction="row" justifyContent={"space-between"} paddingX={1}>
-          <EditIcon
-            sx={{
-              cursor: "pointer",
-              "&:hover": { color: "primary.main" },
-            }}
+          <IconButton
             onClick={(e) => {
               e.stopPropagation();
               handleHistoryEdit(row.id);
             }}
-          />
-          <DeleteIcon
-            sx={{
-              cursor: "pointer",
-              color: "neutral.500",
-              transition: "color 0.15s",
-              "&:hover": {
-                color: "var(--joy-palette-danger-500)",
-              },
-            }}
+          >
+            <EditIcon
+              sx={{
+                cursor: "pointer",
+                "&:hover": { color: "primary.main" },
+              }}
+            />
+          </IconButton>
+          <DeleteButton
             onClick={(e) => {
               e.stopPropagation();
               handleHistoryDelete(row.id);

@@ -1,4 +1,4 @@
-import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import { configureStore, combineReducers, type AnyAction } from "@reduxjs/toolkit";
 import { indicatorSlice } from "./slices/indicatorSlice";
 import { modalSlice } from "./slices/modalSlice";
 import { configSlice } from "./slices/configSlice";
@@ -12,6 +12,8 @@ export const {
   setIndicatorsVisibility,
   newIndicators,
   makeGlobal,
+  setAllIndicators,
+  removeIndicator,
 } = indicatorSlice.actions;
 export const { setModal } = modalSlice.actions;
 export const { setConfigs } = configSlice.actions;
@@ -23,7 +25,9 @@ const appReducer = combineReducers({
 });
 
 // Wrapper to handle the Clear Action
-const rootReducer = (state: any, action: any) => {
+type AppState = ReturnType<typeof appReducer>;
+
+const rootReducer = (state: AppState | undefined, action: AnyAction) => {
   if (action.type === 'RESET_APP') {
     // Reset state to undefined, so reducers return their initial state
     storage.removeItem('persist:root'); // Optional: explicitly clear storage too

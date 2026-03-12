@@ -29,6 +29,7 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const { userId: _userId, ...rest } = item;
+  const { userId: removedUserId, ...rest } = item;
+  void removedUserId;
   return NextResponse.json({ item: rest });
 }

@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect } from "react";
+import React, { ReactNode, useCallback, useEffect } from "react";
 import classes from "./MarkerNavigation.module.css";
 import { IChartApi, SeriesMarker, Time } from "lightweight-charts";
 import { centerToMarker } from "@/util/markers";
@@ -28,22 +28,22 @@ const MarkerNavigation: React.FC<MarkerNavigationProps> = ({
   const rightDisabled =
     selectedTime?.index === tradeMarkers.length - 1 || !selectedTime;
 
-  function handleLeft() {
+  const handleLeft = useCallback(() => {
     if (selectedTime?.index === 0 || !selectedTime) return;
     const newIndex = selectedTime.index - 1;
     const newMarker = { index: newIndex, time: tradeMarkers[newIndex].time };
     setSelectedTime(newMarker);
     centerToMarker(newMarker.time, chart);
-  }
+  }, [chart, selectedTime, setSelectedTime, tradeMarkers]);
 
-  function handleRight() {
+  const handleRight = useCallback(() => {
     if (selectedTime?.index === tradeMarkers.length - 1 || !selectedTime)
       return;
     const newIndex = selectedTime.index + 1;
     const newMarker = { index: newIndex, time: tradeMarkers[newIndex].time };
     setSelectedTime(newMarker);
     centerToMarker(newMarker.time, chart);
-  }
+  }, [chart, selectedTime, setSelectedTime, tradeMarkers]);
 
   // register a keydown listener that uses the latest disabled flags and chart reference
   useEffect(() => {
@@ -61,7 +61,15 @@ const MarkerNavigation: React.FC<MarkerNavigationProps> = ({
       chartContainer.removeEventListener("keydown", handleKeyDown);
     };
     // re-register whenever these values change so the handler has fresh closures
-  }, [leftDisabled, rightDisabled, selectedTime?.index, tradeMarkers.length, chart, chartContainer]);
+  }, [
+    leftDisabled,
+    rightDisabled,
+    selectedTime?.index,
+    tradeMarkers.length,
+    chartContainer,
+    handleLeft,
+    handleRight,
+  ]);
 
   return (
     <div className={classes.div}>

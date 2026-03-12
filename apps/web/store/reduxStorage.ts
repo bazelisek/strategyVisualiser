@@ -4,12 +4,15 @@ import { clearReduxData } from "./reduxStore";
 // 1. Create a fallback for environments without window (SSR/Testing)
 const createNoopStorage = () => ({
   getItem(_key: string) {
+    void _key;
     return Promise.resolve(null);
   },
   setItem(_key: string, value: string) {
+    void _key;
     return Promise.resolve(value);
   },
   removeItem(_key: string) {
+    void _key;
     return Promise.resolve();
   },
 });
@@ -31,7 +34,7 @@ export async function clearReduxStorage(keys?: string | string[]): Promise<void>
   const removeKey = async (k: string) => {
     try {
       await storage.removeItem(k);
-    } catch (e) {
+    } catch {
       if (typeof window !== "undefined" && window.localStorage) {
         try {
           window.localStorage.removeItem(k);
@@ -53,7 +56,7 @@ export async function clearReduxStorage(keys?: string | string[]): Promise<void>
         await Promise.all(toRemove.map((k) => removeKey(k)));
         return;
       }
-    } catch (e) {
+    } catch {
       // fallback: try common persist keys
     }
 

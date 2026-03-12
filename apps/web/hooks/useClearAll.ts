@@ -4,8 +4,8 @@ import { useTiles } from "@/hooks/useTiles";
 // Implementation
 export default function useClearState() {
   const { setTiles, removeTile } = useTiles();
-  return (tileIndexToDelete?: number) => {
-    if (tileIndexToDelete === undefined) {
+  return (tileIndexToDelete?: number | unknown) => {
+    if (typeof tileIndexToDelete !== "number") {
       setTiles([]);
       clearReduxStorage();
       return;

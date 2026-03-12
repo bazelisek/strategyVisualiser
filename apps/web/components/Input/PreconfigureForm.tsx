@@ -1,41 +1,37 @@
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import Modal from "../Modal";
 import { motion } from "framer-motion";
 import classes from "./PreconfigureForm.module.css";
 import GlobalizeButton from "./Buttons/GlobalizeButton";
-import { ConfigKey } from "@/store/slices/configSlice";
+import { ConfigKey, type ConfigState } from "@/store/slices/configSlice";
 import Symbol from "./Form/Symbol";
 import Time from "./Form/Time";
 import Interval from "./Form/Interval";
 import Strategy from "./Form/Strategy";
 import { addToArrayAndHandleEdgeCases, getValidIntervals } from "@/util/formCheck";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store/reduxStore";
 
 interface PreconfigureFormProps {
   children?: ReactNode;
   open: boolean;
-  onClose: (formData: {
-    symbol: { defaultValue: string };
-    interval: { defaultValue: string };
-    period1: { defaultValue: string };
-    period2: { defaultValue: string };
-    strategy: { defaultValue: string };
-  }) => void;
+  onClose: (formData: ConfigState) => void;
 }
 
 const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
   open,
   onClose,
 }) => {
-  const [formData, setFormData] = useState({
-    symbol: { defaultValue: "" },
-    interval: { defaultValue: "" },
-    period1: { defaultValue: "" },
-    period2: { defaultValue: "" },
-    strategy: { defaultValue: "" },
-  });
+  const config = useSelector((state: RootState) => state.config);
+  const [formData, setFormData] = useState<ConfigState>(config);
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!open) return;
+    setFormData(config);
+  }, [open, config]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>

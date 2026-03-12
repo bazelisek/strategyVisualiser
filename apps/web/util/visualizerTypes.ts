@@ -1,7 +1,9 @@
+import type { ConfigState } from "@/store/slices/configSlice";
 import { TileSearchParam } from "@/util/tilesSearchParams";
 
 export interface VisualizerParams {
   tiles: TileSearchParam[];
+  defaults?: ConfigState;
 }
 
 export interface VisualizerHistoryEntry {

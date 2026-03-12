@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-const initialState = {
+export const configInitialState = {
   symbol: {
     defaultValue: "",
   },
@@ -17,7 +17,9 @@ const initialState = {
     defaultValue: "",
   },
 };
-export type ConfigKey = keyof typeof initialState;
+export type ConfigState = typeof configInitialState;
+export type ConfigKey = keyof ConfigState;
+const initialState = configInitialState;
 
 export const configSlice = createSlice({
   name: "configs",
@@ -25,7 +27,7 @@ export const configSlice = createSlice({
   initialState,
 
   reducers: {
-    setConfigs: (state, action: PayloadAction<typeof initialState>) => {
+    setConfigs: (state, action: PayloadAction<ConfigState>) => {
       console.log(action.payload);
       return action.payload;
     },

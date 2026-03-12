@@ -22,7 +22,10 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const items = listHistoryEntries(userId);
-  const sanitized = items.map(({ userId: _userId, ...rest }) => rest);
+  const sanitized = items.map(({ userId, ...rest }) => {
+    void userId;
+    return rest;
+  });
   return NextResponse.json({ items: sanitized });
 }
 
@@ -46,7 +49,8 @@ export async function POST(req: NextRequest) {
   });
 
   revalidatePath("/history");
-  const { userId: _userId, ...rest } = item;
+  const { userId: removedUserId, ...rest } = item;
+  void removedUserId;
   return NextResponse.json({ item: rest }, { status: 201 });
 }
 
@@ -69,7 +73,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const { userId: _userId, ...rest } = updated;
+  const { userId: removedUserId, ...rest } = updated;
+  void removedUserId;
   return NextResponse.json({ item: rest });
 }
 

@@ -1,6 +1,7 @@
 "use client";
 import React, { ReactNode } from "react";
-import { IndicatorKey, indicatorState } from "@/store/slices/indicatorSlice";
+import type { IndicatorKey } from "@/util/indicators";
+import { indicatorDefinitions } from "@/util/indicators";
 import DropdownBox from "../Form/DropdownBox";
 
 interface NewIndicatorDropdownProps {
@@ -13,13 +14,12 @@ const NewIndicatorDropdown: React.FC<NewIndicatorDropdownProps> = ({
   onChange,
   setOpen,
 }) => {
-  const choices = Object.keys(indicatorState) as IndicatorKey[];
-  const displayChoices = choices.map((key) => indicatorState[key].indicator.displayName);
+  const displayChoices = indicatorDefinitions.map((def) => def.displayName);
 
   function handleChange(displayName: string) {
-    const key = choices.find(
-      (k) => indicatorState[k].indicator.displayName === displayName
-    );
+    const key = indicatorDefinitions.find(
+      (def) => def.displayName === displayName
+    )?.key as IndicatorKey | undefined;
     if (key) onChange(key);
   }
   return (

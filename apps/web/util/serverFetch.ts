@@ -108,6 +108,11 @@ export async function getTradeDataForStrategy({
   period2: number;
   strategy: string;
 }) {
+  void symbol;
+  void interval;
+  void period1;
+  void period2;
+  void strategy;
   /*
   data in format { time: number; amount: number }[]
   

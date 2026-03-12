@@ -1,12 +1,8 @@
-import React, { ReactNode } from "react";
+import React from "react";
 import ClearAllButton from "./ClearAllButton";
 import classes from "./SideActions.module.css";
 
-interface SideActionsProps {
-  children?: ReactNode;
-}
-
-const SideActions: React.FC<SideActionsProps> = (props) => {
+const SideActions: React.FC = () => {
   return (
     <div>
       <ul className={classes.ul}>

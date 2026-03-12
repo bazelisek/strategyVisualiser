@@ -1,6 +1,6 @@
 "use client";
 
-import classes from "@/app/visualize/page.module.css";
+import classes from "./VisualizeContent.module.css";
 import { useState } from "react";
 import AddTile from "@/components/Tiling/AddTile";
 import Tile from "@/components/Tiling/Tile";

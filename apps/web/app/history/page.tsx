@@ -1,12 +1,8 @@
 import VerifyAuth from "@/auth/VerifyAuth";
 import VisualizerHistory from "@/components/VisualizerHistory/VisualizerHistory";
-import React, { type ReactNode } from "react";
+import React from "react";
 
-interface PageProps {
-  children?: ReactNode;
-}
-
-const Page: React.FC<PageProps> = (props) => {
+const Page: React.FC = () => {
   return (
     <VerifyAuth>
       <div className="page" style={{ alignItems: "flex-start" }}>

@@ -34,7 +34,7 @@ export default function LoginPage() {
     }
 
     if (isAuthenticated) {
-      router.replace("/visualize");
+      router.replace("/history");
     }
   }, [isAuthenticated, isPending, router]);
 
@@ -48,7 +48,7 @@ export default function LoginPage() {
         password: loginPassword,
       });
       if (!error) {
-        router.replace("/visualize");
+        router.replace("/history");
       } else {
         setLoginError(error.message ?? "Login failed");
       }
@@ -74,7 +74,7 @@ export default function LoginPage() {
         name: signupName,
       });
       if (!error) {
-        router.replace("/visualize");
+        router.replace("/history");
       } else {
         setSignupError(error.message ?? "Sign up failed");
       }

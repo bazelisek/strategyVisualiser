@@ -3,7 +3,13 @@
 import React, { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, type JSX } from 'react';
 import TableMui from '@mui/material/Table';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import type { TableColumn, TableRef as TableHandle, TableProps, TableResetSpacingButtonPosition } from './Table.types';
+import type {
+  TableColumn,
+  TableRef as TableHandle,
+  TableProps,
+  TableResetSpacingButtonPosition,
+  TableSlotPropFactory,
+} from './Table.types';
 import { useColumnWidths } from './hooks/useColumnWidths';
 import { useTableSorting } from './hooks/useTableSorting';
 import TableSortLabel from '@mui/material/TableSortLabel';
@@ -16,7 +22,7 @@ import TableFooter from '@mui/material/TableFooter';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import TableContainer from '@mui/material/TableContainer';
-import { ThemeProvider as MaterialThemeProvider } from '@mui/material/styles';
+import { type Theme, type SxProps } from '@mui/material/styles';
 import materialTheme from '@/theme/materialTheme';
 
 function BaseTable<TData, TColumnId extends string = string>(props: TableProps<TData, TColumnId>, ref: React.Ref<TableHandle>) {
@@ -131,7 +137,7 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
     const propsForSlot = {
       ...mergedProps,
       'data-column-id': column.id,
-      sx: (theme: any) => ({
+      sx: (theme: Theme) => ({
         ...columnSizeStyles,
         overflow: 'hidden',
         position: 'relative',
@@ -219,7 +225,7 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
     const propsForSlot = {
       ...mergedProps,
       'data-column-id': column.id,
-      sx: (theme: any) => ({
+      sx: (theme: Theme) => ({
         ...columnSizeStyles,
         overflow: 'hidden',
         whiteSpace: 'normal',
@@ -248,7 +254,14 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
   const footerPropsForSlot = {
     ...resolveProps(slotProps?.footerRow),
     children: slots?.footerCell && (
-      <TableCell colSpan={columns.length} {...footerCellSlotProps} sx={{ whiteSpace: 'normal', ...(footerCellSlotProps.sx as object) }}>
+      <TableCell
+        colSpan={columns.length}
+        {...footerCellSlotProps}
+        sx={{
+          whiteSpace: 'normal',
+          ...resolveSxToObject(materialTheme, footerCellSlotProps.sx),
+        }}
+      >
         {renderFooter?.(sortedRows)}
       </TableCell>
     ),
@@ -259,7 +272,7 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
 
   const tablePropsForSlot = {
     ...tableSlotProps,
-    sx: (theme: any) => ({
+    sx: (theme: Theme) => ({
       tableLayout: 'fixed',
       width: allowHorizontalOverflow ? tableWidth : '100%',
       minWidth: tableWidth,
@@ -301,7 +314,7 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
 
   const containerPropsForSlot = {
     ...tableContainerSlotProps,
-    sx: (theme: any) => ({
+    sx: (theme: Theme) => ({
       width: '100%',
       overflow: 'hidden',
       borderRadius: theme.shape.borderRadius,
@@ -363,7 +376,7 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
     <TableContainer {...containerPropsForSlot} />
   );
 
-  return <MaterialThemeProvider theme={materialTheme}>{content}</MaterialThemeProvider>;
+  return content;
 }
 
 // Helper Utilities
@@ -395,14 +408,15 @@ function measureCellBreakSafeMinWidth(cell: HTMLElement, probe: HTMLSpanElement)
   return Math.max(0, Math.ceil(maxTokenWidth + horizontalPadding));
 }
 
-function resolveProps<T, C>(value: T | ((ctx: C) => T) | undefined, context?: C): any {
+function resolveProps<T, C = void>(value: TableSlotPropFactory<T, C> | undefined, context?: C): T {
   if (typeof value === 'function') {
-    return (value as Function)(context) || {};
+    const factory = value as (ctx: C) => T | undefined;
+    return factory(context as C) ?? ({} as T);
   }
-  return value || {};
+  return (value ?? ({} as T)) as T;
 }
 
-function resolveSxToObject(theme: any, sx: unknown): object {
+function resolveSxToObject(theme: Theme, sx: SxProps<Theme> | undefined): object {
   if (!sx) return {};
   const resolved = typeof sx === 'function' ? sx(theme) : sx;
   if (!resolved) return {};
@@ -410,7 +424,7 @@ function resolveSxToObject(theme: any, sx: unknown): object {
   return resolved as object;
 }
 
-function mergeSx(theme: any, ...sxs: unknown[]): object {
+function mergeSx(theme: Theme, ...sxs: Array<SxProps<Theme> | undefined>): object {
   return Object.assign({}, ...sxs.map((sx) => resolveSxToObject(theme, sx)));
 }
 

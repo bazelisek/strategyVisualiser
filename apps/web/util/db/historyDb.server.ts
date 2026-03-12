@@ -3,6 +3,7 @@ import Database from "better-sqlite3";
 import path from "path";
 import { randomUUID } from "crypto";
 import { VisualizerHistoryEntry, VisualizerParams } from "@/util/visualizerTypes";
+import type { TileIndicator } from "@/util/tilesSearchParams";
 
 export interface VisualizerHistoryRecord extends VisualizerHistoryEntry {
   userId: string;
@@ -25,7 +26,16 @@ const ensureHistoryTable = () => {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_visualizer_history_user_id ON visualizer_history(user_id);`);
 };
 
-const toEntry = (row: any): VisualizerHistoryRecord => {
+type HistoryRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: number;
+  updated_at: number;
+  params_json: string;
+};
+
+const toEntry = (row: HistoryRow): VisualizerHistoryRecord => {
   let params: VisualizerParams = { tiles: [] };
   try {
     params = JSON.parse(row.params_json);
@@ -51,8 +61,8 @@ export const listHistoryEntries = (userId: string): VisualizerHistoryRecord[] =>
        WHERE user_id = ?
        ORDER BY created_at DESC`
     )
-    .all(userId);
-  return rows.map(toEntry);
+    .all(userId) as HistoryRow[];
+  return rows.map((row) => toEntry(row));
 };
 
 export const getHistoryEntry = (
@@ -66,7 +76,7 @@ export const getHistoryEntry = (
        FROM visualizer_history
        WHERE id = ? AND user_id = ?`
     )
-    .get(id, userId);
+    .get(id, userId) as HistoryRow | undefined;
   if (!row) return null;
   return toEntry(row);
 };
@@ -106,7 +116,10 @@ export const addHistoryEntry = (input: {
 export const updateHistoryEntry = (
   userId: string,
   id: string,
-  updates: Partial<Pick<VisualizerHistoryEntry, "name" | "params">>
+  updates: {
+    name?: string;
+    params?: Partial<VisualizerParams>;
+  }
 ): VisualizerHistoryRecord | null => {
   ensureHistoryTable();
   const existingRow = db
@@ -115,14 +128,18 @@ export const updateHistoryEntry = (
        FROM visualizer_history
        WHERE id = ? AND user_id = ?`
     )
-    .get(id, userId);
+    .get(id, userId) as HistoryRow | undefined;
   if (!existingRow) return null;
 
   const existing = toEntry(existingRow);
+  const nextParams: VisualizerParams = {
+    tiles: updates.params?.tiles ?? existing.params.tiles,
+    defaults: updates.params?.defaults ?? existing.params.defaults,
+  };
   const next: VisualizerHistoryRecord = {
     ...existing,
     name: updates.name ?? existing.name,
-    params: updates.params ?? existing.params,
+    params: nextParams,
     updatedAt: Math.floor(Date.now() / 1000),
   };
 
@@ -155,4 +172,107 @@ export const deleteHistoryEntry = (userId: string, id: string): boolean => {
     .prepare(`DELETE FROM visualizer_history WHERE id = ? AND user_id = ?`)
     .run(id, userId);
   return result.changes > 0;
+};
+
+const resolveTileIndex = (tileIndex: number, tiles: VisualizerParams["tiles"]) => {
+  if (!Number.isFinite(tileIndex) || tileIndex < 1) return -1;
+  const index = tileIndex - 1;
+  if (index >= tiles.length) return -1;
+  return index;
+};
+
+export const addTileIndicator = (
+  userId: string,
+  id: string,
+  tileIndex: number,
+  indicator: TileIndicator
+): VisualizerHistoryRecord | null => {
+  const entry = getHistoryEntry(userId, id);
+  if (!entry) return null;
+  const normalizedIndicator = indicator.id
+    ? indicator
+    : { ...indicator, id: randomUUID() };
+  const tiles = [...entry.params.tiles];
+  const tileIdx = resolveTileIndex(tileIndex, tiles);
+  if (tileIdx < 0) return null;
+  const tile = { ...tiles[tileIdx] };
+  const indicators = [...(tile.indicators ?? [])];
+  const existingIndex = indicators.findIndex(
+    (item) => item.id === normalizedIndicator.id
+  );
+  if (existingIndex >= 0) indicators[existingIndex] = normalizedIndicator;
+  else indicators.push(normalizedIndicator);
+  tile.indicators = indicators;
+  tiles[tileIdx] = tile;
+  return updateHistoryParams(userId, id, { ...entry.params, tiles });
+};
+
+export const editTileIndicator = (
+  userId: string,
+  id: string,
+  tileIndex: number,
+  indicator: TileIndicator
+): VisualizerHistoryRecord | null => {
+  const entry = getHistoryEntry(userId, id);
+  if (!entry) return null;
+  const normalizedIndicator = indicator.id
+    ? indicator
+    : { ...indicator, id: randomUUID() };
+  const tiles = [...entry.params.tiles];
+  const tileIdx = resolveTileIndex(tileIndex, tiles);
+  if (tileIdx < 0) return null;
+  const tile = { ...tiles[tileIdx] };
+  const indicators = [...(tile.indicators ?? [])];
+  const existingIndex = indicators.findIndex(
+    (item) => item.id === normalizedIndicator.id
+  );
+  if (existingIndex >= 0) {
+    indicators[existingIndex] = normalizedIndicator;
+  } else {
+    const legacyIndex = indicators.findIndex(
+      (item) => !item.id && item.key === normalizedIndicator.key
+    );
+    if (legacyIndex >= 0) indicators[legacyIndex] = normalizedIndicator;
+    else indicators.push(normalizedIndicator);
+  }
+  tile.indicators = indicators;
+  tiles[tileIdx] = tile;
+  return updateHistoryParams(userId, id, { ...entry.params, tiles });
+};
+
+export const deleteTileIndicator = (
+  userId: string,
+  id: string,
+  tileIndex: number,
+  indicatorSelector: { indicatorId?: string; indicatorKey?: string }
+): VisualizerHistoryRecord | null => {
+  const entry = getHistoryEntry(userId, id);
+  if (!entry) return null;
+  const tiles = [...entry.params.tiles];
+  const tileIdx = resolveTileIndex(tileIndex, tiles);
+  if (tileIdx < 0) return null;
+  const tile = { ...tiles[tileIdx] };
+  const indicators = [...(tile.indicators ?? [])];
+  const { indicatorId, indicatorKey } = indicatorSelector;
+  let removedById = false;
+  let nextIndicators = indicators.filter((item) => {
+    if (indicatorId && item.id === indicatorId) {
+      removedById = true;
+      return false;
+    }
+    return true;
+  });
+  if (!removedById && indicatorKey) {
+    let removedByKey = false;
+    nextIndicators = nextIndicators.filter((item) => {
+      if (!removedByKey && item.key === indicatorKey) {
+        removedByKey = true;
+        return false;
+      }
+      return true;
+    });
+  }
+  tile.indicators = nextIndicators;
+  tiles[tileIdx] = tile;
+  return updateHistoryParams(userId, id, { ...entry.params, tiles });
 };

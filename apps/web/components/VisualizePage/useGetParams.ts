@@ -1,6 +1,6 @@
 import { VisualizerHistoryEntry } from "@/util/visualizerTypes";
 
-export async function useGetParams(
+export async function getVisualizationParams(
   id: string
 ): Promise<VisualizerHistoryEntry | null> {
   try {

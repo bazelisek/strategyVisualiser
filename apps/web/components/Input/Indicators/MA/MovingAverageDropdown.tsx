@@ -4,6 +4,9 @@ import { AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setIndicators } from "@/store/reduxStore";
 import ColorPicker from "../Utilities/ColorPicker";
+import { useTiles } from "@/hooks/useTiles";
+import { persistIndicatorEdit } from "@/util/indicators/persistence";
+import { toTileIndicator } from "@/util/indicators/serialization";
 
 interface MovingAverageDropdownProps {
   children?: ReactNode;
@@ -19,39 +22,76 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
     (state: RootState) => state.indicators[indicatorIndex]
   );
   const dispatch = useDispatch();
+  const { visualizationId } = useTiles();
 
   // Guard against indicators[index] being undefined
   if (!indicator) return null;
-  const { color } = indicator.indicator.value;
+  const rawColor = indicator.indicator.value.color;
+  const color = typeof rawColor === "string" ? rawColor : "#2962FF";
   
 
   function handleMaLengthChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.value && Number(e.target.value) >= 1)
+    if (e.target.value && Number(e.target.value) >= 1) {
+      const nextValue = {
+        ...indicator.indicator.value,
+        maLength: Number(e.target.value),
+        color,
+      };
       dispatch(
         setIndicators({
           indicatorIndex,
-          value: { maLength: Number(e.target.value), color },
+          value: nextValue,
         })
       );
+      const nextIndicator = {
+        ...indicator,
+        indicator: { ...indicator.indicator, value: nextValue },
+      };
+      void persistIndicatorEdit({
+        visualizationId,
+        tileIndex: nextIndicator.index,
+        indicator: toTileIndicator(nextIndicator),
+      });
+    }
   }
 
   function handleSetColor(newColor: string) {
+    const nextValue = { ...indicator.indicator.value, color: newColor };
     dispatch(
       setIndicators({
         indicatorIndex,
-        value: { ...indicator.indicator.value, color: newColor },
+        value: nextValue,
       })
     );
+    const nextIndicator = {
+      ...indicator,
+      indicator: { ...indicator.indicator, value: nextValue },
+    };
+    void persistIndicatorEdit({
+      visualizationId,
+      tileIndex: nextIndicator.index,
+      indicator: toTileIndicator(nextIndicator),
+    });
   }
   function handleChartIndexChange(e: React.ChangeEvent<HTMLInputElement>) {
       const value = e.target.value;
       if (value && parseInt(value, 10) >= 0) {
+        const nextChartIndex = parseInt(value, 10);
         dispatch(
           setIndicators({
             indicatorIndex,
-            chartIndex: parseInt(value, 10),
+            chartIndex: nextChartIndex,
           })
         );
+        const nextIndicator = {
+          ...indicator,
+          chartIndex: nextChartIndex,
+        };
+        void persistIndicatorEdit({
+          visualizationId,
+          tileIndex: nextIndicator.index,
+          indicator: toTileIndicator(nextIndicator),
+        });
       }
     }
 
@@ -66,7 +106,7 @@ const MovingAverageDropdown: React.FC<MovingAverageDropdownProps> = ({
               id="ma-length"
               placeholder=" "
               onChange={handleMaLengthChange}
-              defaultValue={"maLength" in indicator.indicator.value ? indicator.indicator.value.maLength : 20}
+              defaultValue={Number(indicator.indicator.value.maLength ?? 20)}
             />
             <label htmlFor="chart-index">Chart number</label>
             <input

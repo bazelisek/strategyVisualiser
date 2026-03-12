@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { newIndicators, RootState } from "@/store/reduxStore";
 import useIndicators from "@/hooks/useIndicators";
 import { useModalRef } from "../../Modal";
+import { createIndicatorId } from "@/util/indicators/identity";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -80,6 +81,7 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
         dispatch(
           newIndicators({
             state: {
+              id: createIndicatorId(),
               index,
               key: ic.key,
               linkedGlobalStateIndex: i,

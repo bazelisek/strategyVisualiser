@@ -1,4 +1,16 @@
 import { ReadonlyURLSearchParams } from "next/navigation";
+import type { IndicatorKey, IndicatorValue } from "@/util/indicators";
+
+export type TileIndicator = {
+  id: string;
+  key: IndicatorKey;
+  chartIndex: number;
+  indicator: {
+    visible: boolean;
+    value: IndicatorValue;
+    displayName: string;
+  };
+};
 
 export type TileSearchParam = {
   symbol: string;
@@ -6,6 +18,7 @@ export type TileSearchParam = {
   interval: string;
   period1: string;
   period2: string;
+  indicators?: TileIndicator[];
 };
 
 const TILE_FIELDS: (keyof TileSearchParam)[] = [
@@ -89,4 +102,3 @@ export function writeTilesToSearchParams(tiles: TileSearchParam[]): string {
   sp.set("tiles", encodeURIComponent(JSON.stringify(tiles)));
   return sp.toString();
 }
-

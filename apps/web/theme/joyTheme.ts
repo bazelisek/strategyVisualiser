@@ -1,5 +1,3 @@
-import { extendTheme } from '@mui/joy/styles';
-
 const joyThemeConfig = {
   colorSchemes: {
     dark: {
