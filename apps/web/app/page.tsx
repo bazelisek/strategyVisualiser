@@ -14,7 +14,7 @@ export default function Home() {
       return;
     }
 
-    router.replace(isAuthenticated ? "/visualize" : "/login");
+    router.replace(isAuthenticated ? "/history" : "/login");
   }, [isAuthenticated, isPending, router]);
 
   return (
