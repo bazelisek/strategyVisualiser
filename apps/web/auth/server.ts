@@ -38,7 +38,7 @@ export async function signUpWithEmail(
   email: string,
   password: string,
   name: string,
-  callbackURL = "/visualize",
+  callbackURL = "/history",
 ): Promise<ServerAuthResult> {
   const response = await auth.api.signUpEmail({
     body: {
