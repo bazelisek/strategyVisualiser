@@ -68,7 +68,7 @@ export const listHistoryEntries = (userId: string): VisualizerHistoryRecord[] =>
 export const getHistoryEntry = (
   userId: string,
   id: string
-): VisualizerHistoryEntry | null => {
+): VisualizerHistoryRecord | null => {
   ensureHistoryTable();
   const row = db
     .prepare(
