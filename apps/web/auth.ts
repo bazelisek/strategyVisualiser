@@ -2,8 +2,13 @@ import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import Database from "better-sqlite3";
 
+const baseURL =
+  process.env.BETTER_AUTH_URL ??
+  process.env.NEXT_PUBLIC_APP_URL ??
+  "http://localhost:3000";
+
 export const auth = betterAuth({
-  baseUrl: '/',
+  baseURL,
   database: new Database("./sqlite.db"),
   emailAndPassword: {
     enabled: true,

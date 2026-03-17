@@ -56,6 +56,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
       {!error && (
         <CandlestickChartWrapper
           index={index + 1}
+          tileIndex={index}
           loading={loading}
           transformedData={transformedData}
           tradeMarkers={tradeMarkers}

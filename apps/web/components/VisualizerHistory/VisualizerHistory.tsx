@@ -12,6 +12,7 @@ import {
 } from "@/util/visualizerTypes";
 import { useRouter } from "next/navigation";
 import DeleteButton from "../Input/Buttons/DeleteButton";
+import { CircularProgress } from "@mui/material";
 
 interface VisualizerHistoryProps {
   hasSheet?: boolean;
@@ -175,8 +176,9 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
     <div style={{ display: "flex", justifyContent: "center" }}>
       <ConditionalSheet>
         <Stack direction={"column"} gap={3}>
-          <Typography level="h2">Visualizations</Typography>
+          <Typography level="h2" textAlign={'center'}>Visualizations</Typography>
           <div style={{ width: "100%" }}>
+            {isLoading ? <CircularProgress/> :
             <Table
               columns={columns}
               rows={rows}
@@ -194,7 +196,7 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
                 horizontal: "right",
                 vertical: "top",
               }}
-            />
+            />}
             {!isLoading && rows.length === 0 && (
               <Typography
                 level="body-sm"

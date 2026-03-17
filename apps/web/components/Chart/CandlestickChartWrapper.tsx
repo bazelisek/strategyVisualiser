@@ -6,7 +6,8 @@ import classes from "./CandlestickChartWrapper.module.css";
 import { SeriesMarker, Time } from "lightweight-charts";
 import ShowModalButton from "../Input/Indicators/ShowModalButton";
 import { candleData } from "@/util/serverFetch";
-import { CircularProgress } from "@mui/joy";
+import { CircularProgress, Stack } from "@mui/joy";
+import SymbolButton from "../Input/QuickActions/SymbolButton";
 
 interface CandlestickChartWrapperProps {
   //searchParams: Promise<{ [key: string]: string | undefined }>;
@@ -19,6 +20,7 @@ interface CandlestickChartWrapperProps {
     candles: candleData;
   };
   index: number;
+  tileIndex: number;
 }
 
 const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
@@ -26,6 +28,7 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
   loading,
   transformedData,
   index,
+  tileIndex,
 }) => {
   // místo useRef:
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
@@ -76,8 +79,12 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
           className={classes.div}
         >
           <ShowModalButton index={index} className={classes.button} />
-          <h2>{transformedData.longName}</h2>
-          <h3>{transformedData.symbol}</h3>
+          <Stack width={"100%"} gap={2} direction={'row'} justifyContent={'flex-start'} alignItems={'center'}>
+            <SymbolButton index={tileIndex}>
+              {transformedData.symbol}
+            </SymbolButton>
+            <h2 className={classes.title}>{transformedData.longName}</h2>
+          </Stack>
           <CandlestickChart
             chartContainer={containerEl}
             width={chartWidth}

@@ -29,7 +29,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {/* Wrap everything in StoreProvider. 
+        {/* 
+          Wrap everything in StoreProvider. 
           This ensures the Theme and Header (which cause the hydration mismatch)
           wait for the client to load before rendering.
         */}

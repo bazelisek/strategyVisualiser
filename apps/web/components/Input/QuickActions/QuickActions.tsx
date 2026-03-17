@@ -1,6 +1,5 @@
 "use client";
 import React, { ReactNode } from "react";
-import SymbolButton from "./SymbolButton";
 import StrategyButton from "./StrategyButton";
 import classes from "./QuickActions.module.css";
 import RemoveTileButton from "./RemoveTileButton";
@@ -20,7 +19,6 @@ const QuickActions: React.FC<QuickActionsProps> = ({ index }) => {
     <div className={classes.quickActions}>
       <Stack sx={{ flexDirection: "row", justifyContent: "space-between" }}>
         <div>
-          <SymbolButton index={index}>{tile?.symbol}</SymbolButton>
           <StrategyButton index={index}>{tile?.strategy}</StrategyButton>
         </div>
         <div>

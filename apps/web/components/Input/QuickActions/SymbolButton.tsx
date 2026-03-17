@@ -3,6 +3,7 @@ import AnimationButton from "../Buttons/AnimationButton";
 import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, setModal } from "@/store/reduxStore";
+import classes from "./SymbolButton.module.css";
 
 interface SymbolButtonProps {
   children?: ReactNode;
@@ -17,7 +18,7 @@ const SymbolButton: React.FC<SymbolButtonProps> = ({ index, children }) => {
     dispatch(setModal({modal: {index, modal: 'symbol'}, value: !open}))
   }
   return (
-    <AnimationButton onClick={handleClick}>
+    <AnimationButton className={classes.button} onClick={handleClick}>
       {children}{" "}
       <motion.span animate={{ rotate: open ? 180 : 0 }}>&#x25BC;</motion.span>
     </AnimationButton>
