@@ -2,8 +2,7 @@ import React from "react";
 import IndicatorsModal from "./IndicatorsModal";
 import classes from "./ShowModalButton.module.css";
 import AnimationButton from "../Buttons/AnimationButton";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState, setModal } from "@/store/reduxStore";
+import { useModalController } from "@/components/ModalController";
 
 interface ShowModalButtonProps {
   index: number;
@@ -16,17 +15,10 @@ const ShowModalButton: React.FC<ShowModalButtonProps> = ({
   className,
   globalButtonEnabled = false,
 }) => {
-  const dispatch = useDispatch();
-  const modals = useSelector((state: RootState) => state.modals);
+  const { isOpen, toggle } = useModalController();
+  const open = isOpen("indicators", index);
   function handleClick() {
-    console.log("E");
-    console.log(index);
-    dispatch(
-      setModal({
-        modal: { modal: "indicators", index: index },
-        value: !modals[index]?.indicators || false,
-      })
-    );
+    toggle("indicators", index);
   }
   return (
     <>
@@ -36,7 +28,11 @@ const ShowModalButton: React.FC<ShowModalButtonProps> = ({
       >
         Indicators
       </AnimationButton>
-      <IndicatorsModal index={index} globalButtonEnabled={globalButtonEnabled}/>
+      <IndicatorsModal
+        index={index}
+        globalButtonEnabled={globalButtonEnabled}
+        open={open}
+      />
     </>
   );
 };

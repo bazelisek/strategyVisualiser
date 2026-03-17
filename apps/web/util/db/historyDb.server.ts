@@ -135,6 +135,8 @@ export const updateHistoryEntry = (
   const nextParams: VisualizerParams = {
     tiles: updates.params?.tiles ?? existing.params.tiles,
     defaults: updates.params?.defaults ?? existing.params.defaults,
+    defaultsIndicators:
+      updates.params?.defaultsIndicators ?? existing.params.defaultsIndicators,
   };
   const next: VisualizerHistoryRecord = {
     ...existing,
@@ -156,6 +158,86 @@ export const updateHistoryEntry = (
   );
 
   return next;
+};
+
+const normalizeIndicator = (indicator: TileIndicator): TileIndicator => {
+  return indicator.id ? indicator : { ...indicator, id: randomUUID() };
+};
+
+export const addDefaultIndicator = (
+  userId: string,
+  id: string,
+  indicator: TileIndicator
+): VisualizerHistoryRecord | null => {
+  const entry = getHistoryEntry(userId, id);
+  if (!entry) return null;
+  const normalized = normalizeIndicator(indicator);
+  const defaults = [...(entry.params.defaultsIndicators ?? [])];
+  const existingIndex = defaults.findIndex((item) => item.id === normalized.id);
+  if (existingIndex >= 0) defaults[existingIndex] = normalized;
+  else defaults.push(normalized);
+  return updateHistoryParams(userId, id, {
+    ...entry.params,
+    defaultsIndicators: defaults,
+  });
+};
+
+export const editDefaultIndicator = (
+  userId: string,
+  id: string,
+  indicator: TileIndicator
+): VisualizerHistoryRecord | null => {
+  const entry = getHistoryEntry(userId, id);
+  if (!entry) return null;
+  const normalized = normalizeIndicator(indicator);
+  const defaults = [...(entry.params.defaultsIndicators ?? [])];
+  const existingIndex = defaults.findIndex((item) => item.id === normalized.id);
+  if (existingIndex >= 0) {
+    defaults[existingIndex] = normalized;
+  } else {
+    const legacyIndex = defaults.findIndex(
+      (item) => !item.id && item.key === normalized.key
+    );
+    if (legacyIndex >= 0) defaults[legacyIndex] = normalized;
+    else defaults.push(normalized);
+  }
+  return updateHistoryParams(userId, id, {
+    ...entry.params,
+    defaultsIndicators: defaults,
+  });
+};
+
+export const deleteDefaultIndicator = (
+  userId: string,
+  id: string,
+  indicatorSelector: { indicatorId?: string; indicatorKey?: string }
+): VisualizerHistoryRecord | null => {
+  const entry = getHistoryEntry(userId, id);
+  if (!entry) return null;
+  const defaults = [...(entry.params.defaultsIndicators ?? [])];
+  const { indicatorId, indicatorKey } = indicatorSelector;
+  let removedById = false;
+  let nextDefaults = defaults.filter((item) => {
+    if (indicatorId && item.id === indicatorId) {
+      removedById = true;
+      return false;
+    }
+    return true;
+  });
+  if (!removedById && indicatorKey) {
+    let removedByKey = false;
+    nextDefaults = nextDefaults.filter((item) => {
+      if (!removedByKey && item.key === indicatorKey) {
+        removedByKey = true;
+        return false;
+      }
+      return true;
+    });
+  }
+  return updateHistoryParams(userId, id, {
+    ...entry.params,
+    defaultsIndicators: nextDefaults,
+  });
 };
 
 export const updateHistoryParams = (

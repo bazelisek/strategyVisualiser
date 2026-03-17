@@ -13,7 +13,16 @@ const request = async (
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      throw new Error(`Failed to persist indicator (${method})`);
+      let details = "";
+      try {
+        const text = await res.text();
+        details = text ? `: ${text}` : "";
+      } catch {
+        // Ignore body parse errors.
+      }
+      throw new Error(
+        `Failed to persist indicator (${method}) [${res.status}]${details}`
+      );
     }
   } catch (error) {
     console.error(error);
@@ -26,6 +35,7 @@ export const persistIndicatorAdd = async (params: {
   indicator: TileIndicator;
 }) => {
   if (!params.visualizationId) return;
+  if (!Number.isFinite(params.tileIndex) || params.tileIndex < 0) return;
   await request("POST", {
     id: params.visualizationId,
     tileIndex: params.tileIndex,
@@ -39,6 +49,7 @@ export const persistIndicatorEdit = async (params: {
   indicator: TileIndicator;
 }) => {
   if (!params.visualizationId) return;
+  if (!Number.isFinite(params.tileIndex) || params.tileIndex < 0) return;
   await request("PATCH", {
     id: params.visualizationId,
     tileIndex: params.tileIndex,
@@ -53,6 +64,7 @@ export const persistIndicatorDelete = async (params: {
   indicatorKey?: string;
 }) => {
   if (!params.visualizationId) return;
+  if (!Number.isFinite(params.tileIndex) || params.tileIndex < 0) return;
   await request("DELETE", {
     id: params.visualizationId,
     tileIndex: params.tileIndex,

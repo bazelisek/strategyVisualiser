@@ -1,7 +1,19 @@
-import { AnimatePresence, motion } from "framer-motion";
-import React, { ReactNode, useEffect, useRef, useState, createContext, useContext } from "react";
-import { createPortal } from "react-dom";
-import classes from "./Modal.module.css";
+"use client";
+import React, {
+  ReactNode,
+  useEffect,
+  useRef,
+  useState,
+  createContext,
+  useContext,
+} from "react";
+import JoyModal from "@mui/joy/Modal";
+import ModalDialog from "@mui/joy/ModalDialog";
+import DialogTitle from "@mui/joy/DialogTitle";
+import DialogContent from "@mui/joy/DialogContent";
+import ModalClose from "@mui/joy/ModalClose";
+import type { SxProps } from "@mui/joy/styles";
+import type { Theme } from "@mui/joy/styles";
 
 const ModalContext = createContext<React.RefObject<HTMLElement | null> | null>(null);
 
@@ -12,7 +24,10 @@ interface ModalProps {
   open?: boolean;
   onClose?: () => void;
   title: string;
-  className?: string;
+  dialogSx?: SxProps<Theme>;
+  contentSx?: SxProps<Theme>;
+  contentClassName?: string;
+  size?: "sm" | "md" | "lg";
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -20,66 +35,46 @@ const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
-  className,
+  dialogSx,
+  contentSx,
+  contentClassName,
+  size = "md",
 }) => {
   const [isMounted, setIsMounted] = useState(false);
-  const modalContentRef = useRef<HTMLDialogElement | null>(null);
+  const modalContentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
-    // Optional: Add and remove a class on the body to prevent scrolling when modal is open
-    if (open) {
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [open]);
-
-  const modalContent = (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className={classes.modal} // This will be the backdrop now
-          onClick={onClose} // Close when clicking the backdrop
-        >
-          <motion.dialog
-            layout
-            initial={{ opacity: 0, y: -300 }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              transition: { type: "spring", stiffness: 300, damping: 30 },
-            }}
-            exit={{ opacity: 0, y: -300, transition: { duration: 0.2 } }}
-            open
-            className={`${classes.modalContent} ${className}`} // Renamed for clarity
-            ref={modalContentRef}
-            onClick={(e) => e.stopPropagation()} // Prevent clicks inside the modal from closing it
-            onClose={onClose}
-          >
-            <div className={classes.header}>
-              <h2>{title}</h2>
-              <button onClick={onClose}>&#10005;</button>
-            </div>
-            {/* Pass the ref down to children that need it */}
-            <ModalContext.Provider value={modalContentRef}>
-              {children}
-            </ModalContext.Provider>
-          </motion.dialog>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+  }, []);
 
   if (!isMounted) {
     return null;
   }
 
-  return createPortal(modalContent, document.body);
+  const handleClose = () => {
+    onClose?.();
+  };
+
+  return (
+    <JoyModal
+      open={open}
+      onClose={() => {
+        handleClose();
+      }}
+    >
+      <ModalDialog size={size} sx={dialogSx}>
+        <DialogTitle>{title}</DialogTitle>
+        {onClose && <ModalClose onClick={handleClose} />}
+        <DialogContent sx={contentSx}>
+          <div ref={modalContentRef} className={contentClassName}>
+            <ModalContext.Provider value={modalContentRef}>
+              {children}
+            </ModalContext.Provider>
+          </div>
+        </DialogContent>
+      </ModalDialog>
+    </JoyModal>
+  );
 };
 
 export default Modal;

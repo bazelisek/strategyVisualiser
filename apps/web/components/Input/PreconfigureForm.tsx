@@ -9,9 +9,9 @@ import Time from "./Form/Time";
 import Interval from "./Form/Interval";
 import Strategy from "./Form/Strategy";
 import { addToArrayAndHandleEdgeCases, getValidIntervals } from "@/util/formCheck";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/reduxStore";
+import { useTiles } from "@/hooks/useTiles";
 
 interface PreconfigureFormProps {
   children?: ReactNode;
@@ -25,8 +25,7 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
 }) => {
   const config = useSelector((state: RootState) => state.config);
   const [formData, setFormData] = useState<ConfigState>(config);
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const { tiles, setTiles } = useTiles();
 
   useEffect(() => {
     if (!open) return;
@@ -44,9 +43,9 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
   };
 
   function handleGlobalize(field: ConfigKey) {
-    const params = addToArrayAndHandleEdgeCases(searchParams, field, formData);
-
-    router.replace("/?" + params);
+    if (tiles.length === 0) return;
+    const nextTiles = addToArrayAndHandleEdgeCases(tiles, field, formData);
+    setTiles(nextTiles);
   }
 
   const availableIntervals =
@@ -74,7 +73,6 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
     <>
       <Modal
         title="Indicators"
-        className={classes.modal}
         onClose={() => onClose(formData)}
         open={open}
       >

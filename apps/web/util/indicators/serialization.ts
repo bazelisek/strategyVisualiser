@@ -21,8 +21,21 @@ export const groupIndicatorsByTile = (
   return grouped;
 };
 
-export const expandTileIndicators = (tiles: TileSearchParam[]): stateType[] => {
+export const expandTileIndicators = (
+  tiles: TileSearchParam[],
+  defaultsIndicators: TileIndicator[] = []
+): stateType[] => {
   const expanded: stateType[] = [];
+  defaultsIndicators.forEach((indicator) => {
+    expanded.push({
+      id: indicator.id ?? createIndicatorId(),
+      key: indicator.key,
+      index: 0,
+      chartIndex: indicator.chartIndex,
+      indicator: indicator.indicator,
+      linkedGlobalStateIndex: undefined,
+    });
+  });
   tiles.forEach((tile, idx) => {
     const tileIndex = idx + 1;
     const indicators = tile.indicators ?? [];

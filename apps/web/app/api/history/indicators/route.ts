@@ -4,8 +4,11 @@ import { auth } from "@/auth";
 import type { TileIndicator } from "@/util/tilesSearchParams";
 import {
   addTileIndicator,
+  addDefaultIndicator,
   editTileIndicator,
+  editDefaultIndicator,
   deleteTileIndicator,
+  deleteDefaultIndicator,
 } from "@/util/db/historyDb.server";
 
 const getUserId = async () => {
@@ -27,11 +30,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = (await req.json().catch(() => null)) as IndicatorPayload | null;
-  if (!body?.id || !body?.indicator || !body?.tileIndex) {
+  if (!body?.id || !body?.indicator || body?.tileIndex === undefined) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const updated = addTileIndicator(userId, body.id, body.tileIndex, body.indicator);
+  const updated =
+    body.tileIndex === 0
+      ? addDefaultIndicator(userId, body.id, body.indicator)
+      : addTileIndicator(userId, body.id, body.tileIndex, body.indicator);
   if (!updated) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -46,11 +52,14 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = (await req.json().catch(() => null)) as IndicatorPayload | null;
-  if (!body?.id || !body?.indicator || !body?.tileIndex) {
+  if (!body?.id || !body?.indicator || body?.tileIndex === undefined) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const updated = editTileIndicator(userId, body.id, body.tileIndex, body.indicator);
+  const updated =
+    body.tileIndex === 0
+      ? editDefaultIndicator(userId, body.id, body.indicator)
+      : editTileIndicator(userId, body.id, body.tileIndex, body.indicator);
   if (!updated) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -69,14 +78,17 @@ export async function DELETE(req: NextRequest) {
   const tileIndex = body?.tileIndex as number | undefined;
   const indicatorId = body?.indicatorId as string | undefined;
   const indicatorKey = body?.indicatorKey as string | undefined;
-  if (!id || !tileIndex || (!indicatorId && !indicatorKey)) {
+  if (!id || tileIndex === undefined || (!indicatorId && !indicatorKey)) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const updated = deleteTileIndicator(userId, id, tileIndex, {
-    indicatorId,
-    indicatorKey,
-  });
+  const updated =
+    tileIndex === 0
+      ? deleteDefaultIndicator(userId, id, { indicatorId, indicatorKey })
+      : deleteTileIndicator(userId, id, tileIndex, {
+          indicatorId,
+          indicatorKey,
+        });
   if (!updated) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

@@ -1,23 +1,20 @@
 "use client";
 
-import React, { ReactNode, useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useEffect, useState } from "react";
 import QuickActionsModal from "./QuickActionsModal";
-import { RootState, setModal } from "@/store/reduxStore";
 import { motion } from "framer-motion";
 import { getAvailableStrategies } from "@/util/strategies";
 import { CircularProgress } from "@mui/joy";
 import { useTiles } from "@/hooks/useTiles";
+import { useModalController } from "@/components/ModalController";
 
 interface StrategyModalProps {
-  children?: ReactNode;
   index: number;
 }
 
 const StrategyModal: React.FC<StrategyModalProps> = ({ index }) => {
-  const modals = useSelector((state: RootState) => state.modals);
-  const open = modals[index]?.strategy || false;
-  const dispatch = useDispatch();
+  const { isOpen, close } = useModalController();
+  const open = isOpen("strategy", index);
   const { updateTile } = useTiles();
 
   const [search, setSearch] = useState("");
@@ -26,7 +23,7 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ index }) => {
 
   function handleStrategyClick(strategy: string) {
     updateTile(index, { strategy });
-    dispatch(setModal({ modal: { index, modal: "strategy" }, value: false }));
+    close();
   }
 
   useEffect(() => {
@@ -51,7 +48,7 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ index }) => {
   );
 
   return (
-    <QuickActionsModal index={index} open={open} heading="Strategy">
+    <QuickActionsModal open={open} heading="Strategy" onClose={close}>
       <label htmlFor="strategySearch">Search</label>
       <input
         id="strategySearch"

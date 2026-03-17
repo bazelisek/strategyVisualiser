@@ -1,32 +1,33 @@
-'use client';
-import React, { ReactNode } from 'react';
-import classes from './Header.module.css';
-import Link from 'next/link';
-import Typography from '@mui/joy/Typography';
-import Button from '@mui/joy/Button';
-import { useLogout } from '@/auth/logout';
-import { useGetAuthStatus } from '@/auth/useGetAuthStatus';
-import { usePathname } from 'next/navigation';
-import { Stack, Link as JoyUILink } from '@mui/joy';
-import { link } from 'node:fs/promises';
+"use client";
+import React, { ReactNode } from "react";
+import classes from "./Header.module.css";
+import Link from "next/link";
+import Typography from "@mui/joy/Typography";
+import Button from "@mui/joy/Button";
+import { useLogout } from "@/auth/logout";
+import { useGetAuthStatus } from "@/auth/useGetAuthStatus";
+import { usePathname } from "next/navigation";
+import { Stack, Link as JoyUILink } from "@mui/joy";
+import { link } from "node:fs/promises";
+import User from "./User/User";
 
 interface HeaderProps {
   children?: ReactNode;
 }
 
-const pageLinks: {path: string, name: string}[] = [
+const pageLinks: { path: string; name: string }[] = [
   {
-    path: '/history',
-    name: 'Visualizations'
-  }
+    path: "/history",
+    name: "Visualizations",
+  },
 ];
 
 const Header: React.FC<HeaderProps> = () => {
   const logout = useLogout();
-  const { isAuthenticated, isPending } = useGetAuthStatus();
+  const { isAuthenticated, isPending, session } = useGetAuthStatus();
   const currentPath = usePathname();
 
-  const newPageLinks = pageLinks.filter(({path}) => path !== currentPath );
+  const newPageLinks = pageLinks.filter(({ path }) => path !== currentPath);
 
   const handleLogout = async () => {
     try {
@@ -39,17 +40,20 @@ const Header: React.FC<HeaderProps> = () => {
   return (
     <>
       <header className={classes.header}>
-        <Link className={classes.brand} href={'/'}>
+        <Link className={classes.brand} href={"/"}>
           <Typography level="h2" sx={{ m: 0, lineHeight: 1.15 }}>
             React Strategy Visualiser
           </Typography>
         </Link>
-        <Stack className={classes.nav} direction={'row'} sx={{marginX: 5}} gap={2}>
-          {newPageLinks.map(({path, name}) => (
+        <Stack
+          className={classes.nav}
+          direction={"row"}
+          sx={{ marginX: 5 }}
+          gap={2}
+        >
+          {newPageLinks.map(({ path, name }) => (
             <JoyUILink component={Link} key={path} href={path}>
-              <Typography textAlign={'center'}>
-                {name}
-              </Typography>
+              <Typography textAlign={"center"}>{name}</Typography>
             </JoyUILink>
           ))}
         </Stack>
@@ -59,10 +63,18 @@ const Header: React.FC<HeaderProps> = () => {
               Login / Sign up
             </Button>
           )}
-          {!isPending && isAuthenticated && (
-            <Button variant="solid" size="sm" color="danger" onClick={handleLogout}>
-              Logout
-            </Button>
+          {!isPending && isAuthenticated && session?.user && (
+            <Stack direction={'row'} gap={1}>
+              <User user={session.user} />
+              <Button
+                variant="solid"
+                size="sm"
+                color="danger"
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
+            </Stack>
           )}
         </div>
       </header>

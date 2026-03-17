@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import '@fontsource/inter';
 import ThemeProvider from '@/theme/ThemeProvider';
 import StoreProvider from "@/app/StoreProvider"; // Import the new component
+import { ModalProvider } from "@/components/ModalController";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,8 +37,10 @@ export default function RootLayout({
         */}
         <StoreProvider>
           <ThemeProvider>
-            <Header />
-            {children}
+            <ModalProvider>
+              <Header />
+              {children}
+            </ModalProvider>
           </ThemeProvider>
         </StoreProvider>
       </body>

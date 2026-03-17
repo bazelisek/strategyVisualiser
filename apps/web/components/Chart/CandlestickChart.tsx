@@ -86,6 +86,24 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       crosshair: { mode: CrosshairMode.MagnetOHLC },
       rightPriceScale: { borderVisible: false },
       timeScale: { borderColor: "#2b2b43", timeVisible: true },
+      handleScroll: {
+        mouseWheel: false,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: false,
+      },
+      handleScale: {
+        mouseWheel: false,
+        pinch: true,
+        axisPressedMouseMove: {
+          time: true,
+          price: true,
+        },
+        axisDoubleClickReset: {
+          time: true,
+          price: true,
+        },
+      },
     });
 
     mainChartRef.current = mainChart;

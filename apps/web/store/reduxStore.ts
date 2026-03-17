@@ -1,6 +1,5 @@
 import { configureStore, combineReducers, type AnyAction } from "@reduxjs/toolkit";
 import { indicatorSlice } from "./slices/indicatorSlice";
-import { modalSlice } from "./slices/modalSlice";
 import { configSlice } from "./slices/configSlice";
 
 import storage from "./reduxStorage";
@@ -15,12 +14,10 @@ export const {
   setAllIndicators,
   removeIndicator,
 } = indicatorSlice.actions;
-export const { setModal } = modalSlice.actions;
 export const { setConfigs } = configSlice.actions;
 
 const appReducer = combineReducers({
   indicators: indicatorSlice.reducer,
-  modals: modalSlice.reducer,
   config: configSlice.reducer,
 });
 

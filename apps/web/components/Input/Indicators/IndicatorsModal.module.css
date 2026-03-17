@@ -1,8 +1,8 @@
-.modal ul {
+.content ul {
   list-style-type: none;
   padding: 0;
 }
-.modal input {
+.content input {
   appearance: textfield;
   background-color: var(--background-light);
   border: 1px solid var(--accent);
@@ -12,24 +12,29 @@
   width: 100%;
   padding: 15px;
 }
-.modal input::-webkit-outer-spin-button,
-.modal input::-webkit-inner-spin-button {
+.content input::-webkit-outer-spin-button,
+.content input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-.modal input:focus {
+.content input:focus {
   outline: none;
   box-shadow: 1px 1px 4px var(--accent);
 }
-.modal label {
+.content label {
   font-size: 0.9rem;
   color: var(--accent);
 }
-.modal li {
+.content li {
   display: flex;
   justify-content: space-between; /* items spread across */
   align-items: center;
 }
 .left {
   flex: 1;
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }

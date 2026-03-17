@@ -1,34 +1,35 @@
-import React, { ReactNode } from "react";
+import React from "react";
 import classes from "./IndicatorsModal.module.css";
 import { motion } from "framer-motion";
-import { useDispatch, useSelector } from "react-redux";
-import { makeGlobal, RootState, setModal } from "@/store/reduxStore";
+import { useDispatch } from "react-redux";
+import { makeGlobal } from "@/store/reduxStore";
 import Modal from "@/components/Modal";
 import GlobalizeButton from "../Buttons/GlobalizeButton";
 import NewIndicatorButton from "./NewIndicatorButton";
 import useIndicators from "@/hooks/useIndicators";
 import { useTiles } from "@/hooks/useTiles";
 import IndicatorRow from "./IndicatorRow";
+import { useModalController } from "@/components/ModalController";
 
 interface IndicatorsModalProps {
-  children?: ReactNode;
   index: number;
   globalButtonEnabled?: boolean;
+  open: boolean;
 }
 
 const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
   index,
   globalButtonEnabled,
+  open,
 }) => {
   const { tiles } = useTiles();
   const numberOfTiles = tiles.length;
-  const modalSlice = useSelector((state: RootState) => state.modals);
   const indicatorsState = useIndicators();
-  const open = modalSlice[index]?.indicators || false;
   const dispatch = useDispatch();
+  const { close } = useModalController();
 
   function handleClose() {
-    dispatch(setModal({ modal: { index, modal: "indicators" }, value: false }));
+    close();
   }
 
   function handleClick(indicatorIndex: number) {
@@ -41,9 +42,10 @@ const IndicatorsModal: React.FC<IndicatorsModalProps> = ({
     <>
       <Modal
         title="Indicators"
-        className={classes.modal}
         onClose={handleClose}
         open={open}
+        dialogSx={{ width: "min(760px, 92vw)" }}
+        contentClassName={classes.content}
       >
         <NewIndicatorButton index={index}></NewIndicatorButton>
         <motion.ul layout>

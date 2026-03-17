@@ -10,6 +10,13 @@ import Preconfiguration from "@/components/Input/Preconfiguration";
 import { Grid } from "@mui/joy";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import { TileSearchParam } from "@/util/tilesSearchParams";
+import useIndicators from "@/hooks/useIndicators";
+import { useDispatch } from "react-redux";
+import { newIndicators } from "@/store/reduxStore";
+import { createIndicatorId } from "@/util/indicators/identity";
+import { toTileIndicator } from "@/util/indicators/serialization";
+import { persistIndicatorAdd } from "@/util/indicators/persistence";
+import { useTiles } from "@/hooks/useTiles";
 
 type VisualizeContentProps = {
   tiles: TileSearchParam[];
@@ -20,6 +27,11 @@ const VisualizeContent = ({ tiles, onTilesChange }: VisualizeContentProps) => {
   const tileCount = tiles.length;
   const [isAddTileActive, setIsAddTileActive] = useState<boolean>(true);
   const tileArr: React.JSX.Element[] = [];
+  const defaultsIndicators = useIndicators((indicators) =>
+    indicators.filter((indicator) => indicator.index === 0)
+  );
+  const dispatch = useDispatch();
+  const { visualizationId } = useTiles();
 
   for (let i = 0; i < tileCount; i++) {
     tileArr.push(<Tile index={i} key={i} />);
@@ -36,6 +48,27 @@ const VisualizeContent = ({ tiles, onTilesChange }: VisualizeContentProps) => {
   function handleSubmit(submittedData: TileSearchParam) {
     const nextTiles: TileSearchParam[] = [...tiles, submittedData];
     onTilesChange(nextTiles);
+    if (defaultsIndicators.length > 0) {
+      const newTileIndex = nextTiles.length;
+      defaultsIndicators.forEach((indicator) => {
+        const nextIndicator = {
+          ...indicator,
+          id: createIndicatorId(),
+          index: newTileIndex,
+          linkedGlobalStateIndex: undefined,
+          indicator: {
+            ...indicator.indicator,
+            value: JSON.parse(JSON.stringify(indicator.indicator.value)),
+          },
+        };
+        dispatch(newIndicators({ state: nextIndicator }));
+        void persistIndicatorAdd({
+          visualizationId,
+          tileIndex: newTileIndex,
+          indicator: toTileIndicator(nextIndicator),
+        });
+      });
+    }
     handleClose();
   }
 
@@ -53,7 +86,7 @@ const VisualizeContent = ({ tiles, onTilesChange }: VisualizeContentProps) => {
               title="New Tile"
               onClose={handleClose}
               open={!isAddTileActive}
-              className={classes.modal}
+              dialogSx={{ width: "min(800px, 90vw)" }}
             >
               <Form onClose={handleSubmit} index={tileCount + 1} />
             </Modal>

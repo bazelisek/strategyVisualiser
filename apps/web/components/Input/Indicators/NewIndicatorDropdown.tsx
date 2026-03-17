@@ -27,6 +27,7 @@ const NewIndicatorDropdown: React.FC<NewIndicatorDropdownProps> = ({
       options={displayChoices}
       onChange={handleChange}
       setOpen={setOpen}
+      inline
     />
   );
 };

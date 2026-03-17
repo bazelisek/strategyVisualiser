@@ -1,5 +1,6 @@
 .header {
   width: 100%;
+  min-height: var(--header-height);
   padding: 0.45rem 1.5rem;
   background: var(--background-light);
   display: grid;
@@ -8,9 +9,12 @@
   column-gap: 1rem;
   border-bottom: 2px solid var(--accent);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 1000;
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  box-sizing: border-box;
 }
 
 .header h1 {

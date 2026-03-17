@@ -71,12 +71,16 @@ const VisualizePage = ({ id }: { id: string }) => {
       if (isActive) {
         setItem(data);
         const initialTiles = data?.params?.tiles ?? [];
+        const defaultsIndicators = data?.params?.defaultsIndicators ?? [];
         const normalizedDefaults = normalizeDefaults(data?.params?.defaults);
         if (normalizedDefaults) {
           dispatch(setConfigs(normalizedDefaults));
         }
         setTiles(initialTiles);
-        const initialIndicators = expandTileIndicators(initialTiles);
+        const initialIndicators = expandTileIndicators(
+          initialTiles,
+          defaultsIndicators
+        );
         dispatch(setAllIndicators(initialIndicators));
         setIsLoading(false);
       }

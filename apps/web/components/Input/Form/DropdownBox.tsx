@@ -7,9 +7,15 @@ interface DropdownBoxProps {
   options: string[];
   onChange: (value: string) => void;
   setOpen: (value: React.SetStateAction<boolean>) => void;
+  inline?: boolean;
 }
 
-const DropdownBox: React.FC<DropdownBoxProps> = ({options, onChange, setOpen}) => {
+const DropdownBox: React.FC<DropdownBoxProps> = ({
+  options,
+  onChange,
+  setOpen,
+  inline = false,
+}) => {
     const [search, setSearch] = useState("");
 
   // Filtered options based on search text
@@ -34,7 +40,9 @@ const DropdownBox: React.FC<DropdownBoxProps> = ({options, onChange, setOpen}) =
       };
   return (
     <motion.div
-            className={classes.optionsListWrapper}
+            className={`${classes.optionsListWrapper} ${
+              inline ? classes.inline : ""
+            }`}
             initial="hidden"
             animate="visible"
             exit="exit"

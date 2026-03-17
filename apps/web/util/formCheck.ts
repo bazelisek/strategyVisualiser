@@ -1,8 +1,5 @@
-import { ReadonlyURLSearchParams } from "next/navigation";
 import { ConfigKey } from "@/store/slices/configSlice";
 import {
-  readTilesFromSearchParams,
-  writeTilesToSearchParams,
   TileSearchParam,
 } from "@/util/tilesSearchParams";
 
@@ -58,7 +55,7 @@ export function getValidIntervals(from: Date, to: Date): string[] {
 }
 
 export function addToArrayAndHandleEdgeCases(
-  searchParams: ReadonlyURLSearchParams,
+  tiles: TileSearchParam[],
   field: ConfigKey,
   formData: {
     symbol: {
@@ -78,7 +75,6 @@ export function addToArrayAndHandleEdgeCases(
     };
   }
 ) {
-  const tiles = readTilesFromSearchParams(searchParams);
   const newParamsArray: TileSearchParam[] = [];
   const tileCount = tiles.length;
 
@@ -161,5 +157,5 @@ export function addToArrayAndHandleEdgeCases(
     });
   }
 
-  return writeTilesToSearchParams(newParamsArray);
+  return newParamsArray;
 }

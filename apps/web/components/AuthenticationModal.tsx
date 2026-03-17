@@ -98,7 +98,7 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({
       open={open}
       onClose={handleClose}
       title="Login / Sign up"
-      className={classes.modal}
+      dialogSx={{ width: "min(520px, 92vw)" }}
     >
       <div className={classes.authModal}>
         <Tabs

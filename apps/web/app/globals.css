@@ -12,6 +12,7 @@
   --font-mono: "Geist Mono", monospace;
   --border-radius: 8px;
   --spacing: 0.8rem;
+  --header-height: 96px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -26,6 +27,7 @@ body {
   overflow-x: hidden;
   margin: 0;
   padding: 0;
+  padding-top: calc(var(--header-height)/2);
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-base);
@@ -96,7 +98,7 @@ button:hover {
 }
 
 .page {
-  min-height: calc(100vh - 96px);
+  min-height: calc(100vh - var(--header-height));
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,8 +1,7 @@
 import { motion } from "framer-motion";
 import React, { ReactNode } from "react";
 import AnimationButton from "../Buttons/AnimationButton";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState, setModal } from "@/store/reduxStore";
+import { useModalController } from "@/components/ModalController";
 
 interface StrategyButtonProps {
   children?: ReactNode;
@@ -10,12 +9,11 @@ interface StrategyButtonProps {
 }
 
 const StrategyButton: React.FC<StrategyButtonProps> = ({ children, index }) => {
-  const modals = useSelector((state: RootState) => state.modals);
-  const open = modals[index]?.strategy || false;
-  const dispatch = useDispatch();
+  const { isOpen, toggle } = useModalController();
+  const open = isOpen("strategy", index);
 
   function handleClick() {
-    dispatch(setModal({modal: {index, modal: "strategy"}, value: !open}))
+    toggle("strategy", index);
   }
 
   return (
