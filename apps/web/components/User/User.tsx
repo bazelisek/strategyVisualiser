@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import React, { useRef, useState, type ReactNode } from "react";
 import UserPopoverContent from "./UserPopoverContent";
 import UserAvatar from "./UserAvatar";
+import UploadImage from "../Input/File/UploadImage";
+import classes from "./User.module.css";
 
 interface UserProps {
   user: BAUser;

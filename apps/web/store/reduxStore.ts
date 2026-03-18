@@ -39,7 +39,7 @@ const rootReducer = (state: AppState | undefined, action: AnyAction) => {
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["indicators", "config"],
+  whitelist: ["indicators"],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
