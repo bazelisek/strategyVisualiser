@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from "react";
+﻿import React, { ReactNode, useEffect, useState } from "react";
 import Modal from "../Modal";
 import { motion } from "framer-motion";
 import classes from "./PreconfigureForm.module.css";
@@ -73,6 +73,7 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
     <>
       <Modal
         title="Indicators"
+        className={classes.modal}
         onClose={() => onClose(formData)}
         open={open}
       >

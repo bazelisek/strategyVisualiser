@@ -1,8 +1,9 @@
-import React, { ReactNode } from "react";
+﻿import React, { ReactNode } from "react";
 import AnimationButton from "../Buttons/AnimationButton";
 import { motion } from "framer-motion";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, setModal } from "@/store/reduxStore";
 import classes from "./SymbolButton.module.css";
-import { useModalController } from "@/components/ModalController";
 
 interface SymbolButtonProps {
   children?: ReactNode;
@@ -10,10 +11,11 @@ interface SymbolButtonProps {
 }
 
 const SymbolButton: React.FC<SymbolButtonProps> = ({ index, children }) => {
-  const { isOpen, toggle } = useModalController();
-  const open = isOpen("symbol", index);
+  const dispatch = useDispatch();
+  const modals = useSelector((state: RootState) => state.modals);
+  const open = modals[index]?.symbol || false;
   function handleClick() {
-    toggle("symbol", index);
+    dispatch(setModal({modal: {index, modal: 'symbol'}, value: !open}))
   }
   return (
     <AnimationButton className={classes.button} onClick={handleClick}>

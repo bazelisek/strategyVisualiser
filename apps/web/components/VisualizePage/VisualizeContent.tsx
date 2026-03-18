@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import classes from "./VisualizeContent.module.css";
 import { useState } from "react";
@@ -86,7 +86,7 @@ const VisualizeContent = ({ tiles, onTilesChange }: VisualizeContentProps) => {
               title="New Tile"
               onClose={handleClose}
               open={!isAddTileActive}
-              dialogSx={{ width: "min(800px, 90vw)" }}
+              className={classes.modal}
             >
               <Form onClose={handleSubmit} index={tileCount + 1} />
             </Modal>

@@ -1,21 +1,35 @@
-.content {
+.modal {
+  min-width: 500px;
+  border-radius: 35px;
+  border-color: var(--accent);
+  background-color: var(--background);
+  color: var(--foreground);
+  box-shadow: 1px 1px 10px var(--accent);
+  padding: 30px;
+  position: fixed;
+  z-index: 100;
+  max-height: 700px;
+
+  /* remove scrolling here */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  gap: 0.75rem;
 }
 
-.content ul {
+.modal ul {
   list-style-type: none;
   padding: 0;
   margin: 0;
 
   /* make only the list scrollable */
-  max-height: min(600px, 60vh); /* adjust so it fits within modal */
+  max-height: 600px; /* adjust so it fits within modal */
   overflow-y: auto;
   padding-right: 0.5rem;
 }
-.content input {
+.modal h2 {
+  color: var(--accent);
+}
+.modal input {
   appearance: textfield;
   background-color: var(--background-light);
   border: 1px solid var(--accent);
@@ -26,20 +40,28 @@
   padding: 15px;
   margin-bottom: 10px;
 }
-.content input::-webkit-outer-spin-button,
-.content input::-webkit-inner-spin-button {
+.modal input::-webkit-outer-spin-button,
+.modal input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-.content input:focus {
+.modal input:focus {
   outline: none;
   box-shadow: 1px 1px 4px var(--accent);
 }
-.content label {
+.modal label {
   font-size: 0.9rem;
   color: var(--accent);
 }
-.content li {
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header button {
+  background-color: var(--accent);
+}
+.modal li {
   margin: 5px;
   border-style: solid;
   border-width: 1px;

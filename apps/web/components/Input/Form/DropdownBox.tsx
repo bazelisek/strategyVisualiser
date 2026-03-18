@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import React, { ReactNode, useMemo, useState } from 'react';
 import classes from './DropdownBox.module.css';
 
@@ -7,15 +7,9 @@ interface DropdownBoxProps {
   options: string[];
   onChange: (value: string) => void;
   setOpen: (value: React.SetStateAction<boolean>) => void;
-  inline?: boolean;
 }
 
-const DropdownBox: React.FC<DropdownBoxProps> = ({
-  options,
-  onChange,
-  setOpen,
-  inline = false,
-}) => {
+const DropdownBox: React.FC<DropdownBoxProps> = ({options, onChange, setOpen}) => {
     const [search, setSearch] = useState("");
 
   // Filtered options based on search text
@@ -40,9 +34,7 @@ const DropdownBox: React.FC<DropdownBoxProps> = ({
       };
   return (
     <motion.div
-            className={`${classes.optionsListWrapper} ${
-              inline ? classes.inline : ""
-            }`}
+            className={classes.optionsListWrapper}
             initial="hidden"
             animate="visible"
             exit="exit"

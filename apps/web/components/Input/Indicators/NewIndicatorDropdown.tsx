@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { ReactNode } from "react";
 import type { IndicatorKey } from "@/util/indicators";
 import { indicatorDefinitions } from "@/util/indicators";
@@ -27,7 +27,6 @@ const NewIndicatorDropdown: React.FC<NewIndicatorDropdownProps> = ({
       options={displayChoices}
       onChange={handleChange}
       setOpen={setOpen}
-      inline
     />
   );
 };

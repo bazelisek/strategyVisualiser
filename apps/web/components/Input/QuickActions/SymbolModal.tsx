@@ -1,18 +1,21 @@
-"use client";
-import React, { useState, useEffect } from "react";
+﻿"use client";
+import React, { useState, useEffect, ReactNode } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import QuickActionsModal from "./QuickActionsModal";
 import { symbols } from "@/util/symbols";
 import { motion } from "framer-motion";
+import { RootState, setModal } from "@/store/reduxStore";
 import { useTiles } from "@/hooks/useTiles";
-import { useModalController } from "@/components/ModalController";
 
 interface SymbolModalProps {
+  children?: ReactNode;
   index: number;
 }
 
-const SymbolModal: React.FC<SymbolModalProps> = ({ index }) => {
-  const { isOpen, close } = useModalController();
-  const open = isOpen("symbol", index);
+const SymbolModal: React.FC<SymbolModalProps> = ({index}) => {
+  const modals = useSelector((state: RootState) => state.modals);
+  const open = modals[index]?.symbol || false;
+  const dispatch = useDispatch();
   const { updateTile } = useTiles();
 
   const [search, setSearch] = useState("");
@@ -20,7 +23,7 @@ const SymbolModal: React.FC<SymbolModalProps> = ({ index }) => {
 
   function handleSymbolClick(symbol: string) {
     updateTile(index, { symbol });
-    close();
+    dispatch(setModal({ modal: {index, modal:"symbol"}, value: false }));
   }
 
   // debounce search
@@ -38,7 +41,7 @@ const SymbolModal: React.FC<SymbolModalProps> = ({ index }) => {
   );
 
   return (
-    <QuickActionsModal open={open} heading="Symbol" onClose={close}>
+    <QuickActionsModal index={index} open={open} heading="Symbol">
       <label htmlFor="symbolSearch">Search</label>
       <input
         id="symbolSearch"

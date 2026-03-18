@@ -1,30 +1,35 @@
-"use client";
+﻿"use client";
 import React, { ReactNode } from "react";
 import classes from "./QuickActionsModal.module.css";
+import { useDispatch } from "react-redux";
+import { setModal } from "@/store/reduxStore";
 import Modal from "@/components/Modal";
 
 interface QuickActionsModalProps {
   children?: ReactNode;
   heading: string;
   open: boolean;
-  onClose: () => void;
+  index: number;
 }
 
 const QuickActionsModal: React.FC<QuickActionsModalProps> = ({
   children,
   open,
   heading,
-  onClose,
+  index,
 }) => {
+  const dispatch = useDispatch();
+  function handleClose() {
+    dispatch(setModal({ modal: { modal: "symbol", index }, value: false }));
+  }
+
   return (
     <>
       <Modal
         title={heading}
-        onClose={onClose}
+        className={classes.modal}
+        onClose={handleClose}
         open={open}
-        dialogSx={{ width: "min(560px, 92vw)", maxHeight: "80vh" }}
-        contentSx={{ overflow: "hidden" }}
-        contentClassName={classes.content}
       >
         {children}
       </Modal>

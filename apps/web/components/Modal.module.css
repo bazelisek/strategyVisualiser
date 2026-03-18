@@ -1,0 +1,41 @@
+.modal {
+  /* Backdrop */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* semi-transparent backdrop */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; /* Backdrop z-index */
+}
+
+.modalContent {
+  /* Modal window */
+  min-width: 500px;
+  width: 800px;
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 35px;
+  border-color: var(--accent);
+  background-color: var(--background);
+  color: var(--foreground);
+  box-shadow: 1px 1px 10px var(--accent);
+  padding: 30px;
+  overflow: visible; /* instead of hidden */
+  position: relative; /* needed for absolute children */
+}
+
+.modalContent h2 {
+  color: var(--accent);
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header button {
+  background-color: var(--accent);
+}

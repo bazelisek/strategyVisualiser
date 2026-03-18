@@ -1,3 +1,8 @@
+.modal {
+  width: min(520px, 92vw);
+  padding: 28px;
+}
+
 .authModal {
   display: flex;
   flex-direction: column;

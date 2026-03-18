@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useEffect, useState } from "react";
 import Tabs from "@mui/joy/Tabs";
 import TabList from "@mui/joy/TabList";
@@ -98,7 +98,7 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({
       open={open}
       onClose={handleClose}
       title="Login / Sign up"
-      dialogSx={{ width: "min(520px, 92vw)" }}
+      className={classes.modal}
     >
       <div className={classes.authModal}>
         <Tabs
