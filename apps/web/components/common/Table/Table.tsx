@@ -94,8 +94,9 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
     [explicitMinWidthById]
   );
 
-  const { widths, tableWidth, handleResizeMouseDown, resetAllWidths, resetColumnWidth } = useColumnWidths<TData, TColumnId>({
+  const { widths, tableWidth, minTableWidth, handleResizeMouseDown, resetAllWidths, resetColumnWidth } = useColumnWidths<TData, TColumnId>({
     columns,
+    rows,
     storageKey,
     allowHorizontalOverflow,
     getColumnMinWidth,
@@ -275,7 +276,8 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
     sx: (theme: Theme) => ({
       tableLayout: 'fixed',
       width: allowHorizontalOverflow ? tableWidth : '100%',
-      minWidth: tableWidth,
+      minWidth: allowHorizontalOverflow ? tableWidth : minTableWidth,
+      maxWidth: '100%',
       backgroundColor: theme.palette.background.paper,
       borderRadius: theme.shape.borderRadius,
       borderCollapse: 'separate',
@@ -316,6 +318,8 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
     ...tableContainerSlotProps,
     sx: (theme: Theme) => ({
       width: '100%',
+      minWidth: 0,
+      maxWidth: '100%',
       overflow: 'hidden',
       borderRadius: theme.shape.borderRadius,
       position: 'relative',
@@ -329,6 +333,7 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
           backgroundColor: theme.palette.background.paper,
           position: 'relative',
           width: '100%',
+          minWidth: 0,
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
@@ -357,9 +362,10 @@ function BaseTable<TData, TColumnId extends string = string>(props: TableProps<T
         <div
           ref={scrollViewportRef}
           style={{
-            overflowX: allowHorizontalOverflow ? 'auto' : 'clip',
+            overflowX: 'auto',
             overflowY: 'auto',
             width: '100%',
+            minWidth: 0,
             height: '100%',
             minHeight: 0,
           }}

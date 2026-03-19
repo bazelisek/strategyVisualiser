@@ -8,49 +8,55 @@ import { TileSearchParam } from "@/util/tilesSearchParams";
 import { TilesProvider } from "@/hooks/useTiles";
 import useIndicators from "@/hooks/useIndicators";
 import { useDispatch, useSelector } from "react-redux";
-import { setAllIndicators, setConfigs, type RootState } from "@/store/reduxStore";
+import {
+  setAllIndicators,
+  setConfigs,
+  type RootState,
+} from "@/store/reduxStore";
 import {
   expandTileIndicators,
   groupIndicatorsByTile,
 } from "@/util/indicators/serialization";
-import { configInitialState, type ConfigState } from "@/store/slices/configSlice";
+import {
+  configInitialState,
+  type ConfigState,
+} from "@/store/slices/configSlice";
+import { CircularProgress, Stack } from "@mui/joy";
 
 const normalizeDefaults = (
-  defaults?: Partial<ConfigState>
-): ConfigState | null => {
-  if (!defaults) return null;
+  defaults?: Partial<ConfigState>,
+): ConfigState => {
   return {
     symbol: {
       defaultValue:
-        defaults.symbol?.defaultValue ?? configInitialState.symbol.defaultValue,
+        defaults?.symbol?.defaultValue ?? configInitialState.symbol.defaultValue,
     },
     interval: {
       defaultValue:
-        defaults.interval?.defaultValue ??
+        defaults?.interval?.defaultValue ??
         configInitialState.interval.defaultValue,
     },
     period1: {
       defaultValue:
-        defaults.period1?.defaultValue ??
+        defaults?.period1?.defaultValue ??
         configInitialState.period1.defaultValue,
     },
     period2: {
       defaultValue:
-        defaults.period2?.defaultValue ??
+        defaults?.period2?.defaultValue ??
         configInitialState.period2.defaultValue,
     },
     strategy: {
       defaultValue:
-        defaults.strategy?.defaultValue ??
+        defaults?.strategy?.defaultValue ??
         configInitialState.strategy.defaultValue,
     },
   };
 };
 
 const VisualizePage = ({ id }: { id: string }) => {
-  const [item, setItem] = useState<Awaited<
-    ReturnType<typeof getVisualizationParams>
-  >>(null);
+  const [item, setItem] =
+    useState<Awaited<ReturnType<typeof getVisualizationParams>>>(null);
   const [tiles, setTiles] = useState<TileSearchParam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const tilesRef = useRef<TileSearchParam[]>([]);
@@ -73,13 +79,11 @@ const VisualizePage = ({ id }: { id: string }) => {
         const initialTiles = data?.params?.tiles ?? [];
         const defaultsIndicators = data?.params?.defaultsIndicators ?? [];
         const normalizedDefaults = normalizeDefaults(data?.params?.defaults);
-        if (normalizedDefaults) {
-          dispatch(setConfigs(normalizedDefaults));
-        }
+        dispatch(setConfigs(normalizedDefaults));
         setTiles(initialTiles);
         const initialIndicators = expandTileIndicators(
           initialTiles,
-          defaultsIndicators
+          defaultsIndicators,
         );
         dispatch(setAllIndicators(initialIndicators));
         setIsLoading(false);
@@ -92,7 +96,16 @@ const VisualizePage = ({ id }: { id: string }) => {
   }, [id, dispatch]);
 
   if (isLoading) {
-    return <Typography>Loading...</Typography>;
+    return (
+      <Stack
+        alignItems={"center"}
+        justifyContent={"center"}
+        width={"100%"}
+        height={"100%"}
+      >
+        <CircularProgress />
+      </Stack>
+    );
   }
 
   if (!item) {
@@ -127,16 +140,21 @@ const VisualizePage = ({ id }: { id: string }) => {
       if (requestId !== updateSeq.current) return;
 
       const serverParams = data?.item?.params;
-      const serverTiles: TileSearchParam[] = serverParams?.tiles ?? tilesWithIndicators;
-      const serverDefaults = serverParams?.defaults ?? config;
+      const serverTiles: TileSearchParam[] =
+        serverParams?.tiles ?? tilesWithIndicators;
+      const serverDefaults = normalizeDefaults(serverParams?.defaults ?? config);
       setItem((prev) =>
         prev
           ? {
               ...prev,
-              params: { ...prev.params, tiles: serverTiles, defaults: serverDefaults },
+              params: {
+                ...prev.params,
+                tiles: serverTiles,
+                defaults: serverDefaults,
+              },
               updatedAt: data?.item?.updatedAt ?? prev.updatedAt,
             }
-          : prev
+          : prev,
       );
       setTiles(serverTiles);
     } catch (error) {
@@ -152,7 +170,11 @@ const VisualizePage = ({ id }: { id: string }) => {
       onTilesChange={handleTilesChange}
       visualizationId={id}
     >
-      <VisualizeContent tiles={tiles} onTilesChange={handleTilesChange} />
+      <VisualizeContent
+        id={id}
+        tiles={tiles}
+        onTilesChange={handleTilesChange}
+      />
     </TilesProvider>
   );
 };

@@ -3,8 +3,7 @@ import { useGetAuthStatus } from "@/auth/useGetAuthStatus";
 import { VisualizerParams } from "@/util/visualizerTypes";
 import { Button } from "@mui/joy";
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store/reduxStore";
+import { configInitialState } from "@/store/slices/configSlice";
 
 const AddVisualization = ({
   params,
@@ -19,7 +18,6 @@ const AddVisualization = ({
 }) => {
   const { isAuthenticated } = useGetAuthStatus();
   const router = useRouter();
-  const config = useSelector((state: RootState) => state.config);
 
   async function handleClick() {
     if (!isAuthenticated) {
@@ -36,7 +34,7 @@ const AddVisualization = ({
           name: params.name,
           params: {
             ...params.params,
-            defaults: params.params.defaults ?? config,
+            defaults: params.params.defaults ?? configInitialState,
           },
           createdAt: params.createdAt,
           updatedAt: params.updatedAt,

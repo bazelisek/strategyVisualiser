@@ -6,6 +6,7 @@ type ColumnWidthMap<TId extends string> = Record<TId, number>;
 
 interface UseColumnWidthsParams<TData, TId extends string> {
   columns: TableColumn<TData, TId>[];
+  rows: TData[];
   storageKey: string;
   allowHorizontalOverflow: boolean;
   getColumnMinWidth?: (columnId: TId) => number | undefined;
@@ -21,6 +22,7 @@ interface ColumnConstraints {
 interface UseColumnWidthsResult<TId extends string> {
   widths: ColumnWidthMap<TId>;
   tableWidth: number;
+  minTableWidth: number;
   handleResizeMouseDown: (columnId: TId) => (event: React.MouseEvent<HTMLDivElement>) => void;
   resetAllWidths: () => void;
   resetColumnWidth: (columnId: TId) => void;
@@ -36,7 +38,7 @@ interface PersistedWidths<TId extends string> {
 }
 
 export function useColumnWidths<TData, TId extends string>(params: UseColumnWidthsParams<TData, TId>): UseColumnWidthsResult<TId> {
-  const { columns, storageKey, allowHorizontalOverflow, getColumnMinWidth, resizeSensitivity } = params;
+  const { columns, rows, storageKey, allowHorizontalOverflow, getColumnMinWidth, resizeSensitivity } = params;
   RESIZE_SENSITIVITY = resizeSensitivity ?? RESIZE_SENSITIVITY
 
   const constraintsById = useMemo<Record<TId, ColumnConstraints>>(
@@ -76,6 +78,9 @@ export function useColumnWidths<TData, TId extends string>(params: UseColumnWidt
     }
     return initial;
   });
+  const [minTableWidth, setMinTableWidth] = useState(() =>
+    columnOrder.reduce((sum, id) => sum + (constraintsById[id]?.minWidth ?? DEFAULT_MIN_WIDTH), 0)
+  );
 
   useEffect(() => {
     setWidths((prev) => {
@@ -102,7 +107,16 @@ export function useColumnWidths<TData, TId extends string>(params: UseColumnWidt
         Object.entries(normalized).every(([key, value]) => prev[key as TId] === value);
       return same ? prev : normalized;
     });
-  }, [columnOrder, columns, constraintsById, getColumnMinWidth]);
+  }, [columnOrder, columns, constraintsById, getColumnMinWidth, rows]);
+
+  useEffect(() => {
+    const effectiveConstraintsById = buildEffectiveConstraintsById(columnOrder, constraintsById, getColumnMinWidth);
+    const nextMinTableWidth = columnOrder.reduce(
+      (sum, id) => sum + (effectiveConstraintsById[id]?.minWidth ?? DEFAULT_MIN_WIDTH),
+      0
+    );
+    setMinTableWidth(nextMinTableWidth);
+  }, [columnOrder, constraintsById, getColumnMinWidth, rows]);
 
   const resetAllWidths = useCallback(() => {
     const effectiveConstraintsById = buildEffectiveConstraintsById(columnOrder, constraintsById, getColumnMinWidth);
@@ -302,6 +316,7 @@ export function useColumnWidths<TData, TId extends string>(params: UseColumnWidt
   return {
     widths,
     tableWidth,
+    minTableWidth,
     handleResizeMouseDown,
     resetAllWidths,
     resetColumnWidth,

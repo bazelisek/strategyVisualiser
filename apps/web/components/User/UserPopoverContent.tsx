@@ -23,7 +23,7 @@ const fileToDataUrl = (file: File) =>
 
 const UserPopoverContent: React.FC<UserPopoverContentProps> = ({ user }) => {
   const { refetch } = useGetAuthStatus();
-  console.log(user);
+  const displayName = user.name?.trim() || user.email?.trim() || "User";
 
   async function handleAvatarFile(file: File) {
     const dataUrl = await fileToDataUrl(file);
@@ -47,7 +47,7 @@ const UserPopoverContent: React.FC<UserPopoverContentProps> = ({ user }) => {
           <UploadIcon className={classes["file-icon"]} />
           <UserAvatar sx={{ width: 96, height: 96 }} user={user} hover />
         </div>
-        <Typography level="h4">{user.name}</Typography>
+        <Typography level="h4">{displayName}</Typography>
       </Stack>
     </div>
   );

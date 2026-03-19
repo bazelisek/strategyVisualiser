@@ -6,13 +6,11 @@ import React, { type ReactNode } from "react";
 import { formatLocalDateTime } from "@/util/time";
 import EditIcon from "@mui/icons-material/Edit";
 import AddVisualization from "./AddVisualization";
-import {
-  VisualizerHistoryEntry,
-  VisualizerParams,
-} from "@/util/visualizerTypes";
+import { VisualizerParams } from "@/util/visualizerTypes";
 import { useRouter } from "next/navigation";
 import DeleteButton from "../Input/Buttons/DeleteButton";
 import { CircularProgress } from "@mui/material";
+import { useHistory } from "@/hooks/useHistory";
 
 interface VisualizerHistoryProps {
   hasSheet?: boolean;
@@ -36,45 +34,25 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
   compact = false,
   hasSheet = true,
 }) => {
-  const [history, setHistory] = React.useState<VisualizerHistoryEntry[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { history, isLoading, error } = useHistory();
+  const [deletedIds, setDeletedIds] = React.useState<Set<string>>(new Set());
   const router = useRouter();
 
-  React.useEffect(() => {
-    let isActive = true;
-    const loadHistory = async () => {
-      try {
-        setIsLoading(true);
-        const res = await fetch("/api/history", { cache: "no-store" });
-        if (!res.ok) {
-          return;
-        }
-        const data = await res.json();
-        if (isActive) {
-          setHistory(Array.isArray(data?.items) ? data.items : []);
-        }
-      } catch (error) {
-        console.error("Failed to load history", error);
-      } finally {
-        if (isActive) setIsLoading(false);
-      }
-    };
-    loadHistory();
-    return () => {
-      isActive = false;
-    };
-  }, []);
+  const visibleHistory = React.useMemo(
+    () => history.filter((entry) => !deletedIds.has(entry.id)),
+    [history, deletedIds],
+  );
 
   const rows = React.useMemo(
     () =>
-      history.map((item) => ({
+      visibleHistory.map((item) => ({
         id: item.id,
         name: item.name,
         createdAt: formatLocalDateTime(item.createdAt),
         updatedAt: formatLocalDateTime(item.updatedAt),
         stocks: formatStockSymbols(item.params.tiles),
       })),
-    [history],
+    [visibleHistory],
   );
 
   function handleHistoryClick(id: string) {
@@ -86,7 +64,7 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
         method: "DELETE",
       });
       if (!res.ok) return;
-      setHistory((prev) => prev.filter((entry) => entry.id !== id));
+      setDeletedIds((prev) => new Set(prev).add(id));
     } catch (error) {
       console.error("Failed to delete history entry", error);
     }
@@ -126,8 +104,16 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
     {
       id: "actions",
       cell: (row: { id: string }) => (
-        <Stack direction="row" justifyContent={"space-between"} paddingX={1}>
+        <Stack
+          direction="row"
+          justifyContent={"center"}
+          alignItems={"center"}
+          gap={0.5}
+          width={"100%"}
+          flexWrap="nowrap"
+        >
           <IconButton
+            size="sm"
             onClick={(e) => {
               e.stopPropagation();
               handleHistoryEdit(row.id);
@@ -149,8 +135,9 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
         </Stack>
       ),
       header: "Actions",
-      minWidth: 100,
-      maxWidth: 100,
+      minWidth: 120,
+      defaultWidth: 120,
+      maxWidth: 120,
     },
   ];
 
@@ -175,29 +162,38 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
       <ConditionalSheet>
-        <Stack direction={"column"} gap={3}>
-          <Typography level="h2" textAlign={'center'}>Visualizations</Typography>
+        <Stack direction={"column"} gap={3} width={"100%"}>
+          <Typography level="h2" textAlign={"center"}>
+            Visualizations
+          </Typography>
           <div style={{ width: "100%" }}>
-            {isLoading ? <CircularProgress/> :
-            <Table
-              columns={columns}
-              rows={rows}
-              resizable
-              slotProps={{
-                bodyRow: ({ row }) => ({
-                  onClick: () => handleHistoryClick(row.id),
-                  sx: { cursor: "pointer" },
-                  hover: true,
-                }),
-                tableContainer: { sx: { width: "100%" } },
-                headerRow: { sx: { fontWeight: 800 } },
-              }}
-              resetSpacingButtonPosition={{
-                horizontal: "right",
-                vertical: "top",
-              }}
-            />}
-            {!isLoading && rows.length === 0 && (
+            {isLoading && <CircularProgress />}
+            {!isLoading && error && (
+              <Typography level="body-sm" textColor="danger.500">
+                {error}
+              </Typography>
+            )}
+            {!isLoading && !error && (
+              <Table
+                columns={columns}
+                rows={rows}
+                resizable
+                slotProps={{
+                  bodyRow: ({ row }) => ({
+                    onClick: () => handleHistoryClick(row.id),
+                    sx: { cursor: "pointer" },
+                    hover: true,
+                  }),
+                  tableContainer: { sx: { width: "100%" } },
+                  headerRow: { sx: { fontWeight: 800 } },
+                }}
+                resetSpacingButtonPosition={{
+                  horizontal: "right",
+                  vertical: "top",
+                }}
+              />
+            )}
+            {!isLoading && !error && rows.length === 0 && (
               <Typography
                 level="body-sm"
                 textColor="neutral.500"

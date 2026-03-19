@@ -17,9 +17,11 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   motionDivProps,
   ...props
 }) => {
+  const displayName = user.name?.trim() || user.email?.trim() || "User";
+  const fallbackInitial = displayName.charAt(0).toUpperCase();
   const children: ReactNode = (
-    <Avatar alt={user.name} src={user.image ?? undefined} {...props}>
-      {user.name[0].toUpperCase()}
+    <Avatar alt={displayName} src={user.image ?? undefined} {...props}>
+      {fallbackInitial}
     </Avatar>
   );
 

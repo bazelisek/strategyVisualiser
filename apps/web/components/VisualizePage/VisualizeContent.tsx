@@ -17,18 +17,24 @@ import { createIndicatorId } from "@/util/indicators/identity";
 import { toTileIndicator } from "@/util/indicators/serialization";
 import { persistIndicatorAdd } from "@/util/indicators/persistence";
 import { useTiles } from "@/hooks/useTiles";
+import VisualizationName from "./VisualizationName";
 
 type VisualizeContentProps = {
   tiles: TileSearchParam[];
   onTilesChange: (nextTiles: TileSearchParam[]) => void;
+  id: string;
 };
 
-const VisualizeContent = ({ tiles, onTilesChange }: VisualizeContentProps) => {
+const VisualizeContent = ({
+  tiles,
+  onTilesChange,
+  id,
+}: VisualizeContentProps) => {
   const tileCount = tiles.length;
   const [isAddTileActive, setIsAddTileActive] = useState<boolean>(true);
   const tileArr: React.JSX.Element[] = [];
   const defaultsIndicators = useIndicators((indicators) =>
-    indicators.filter((indicator) => indicator.index === 0)
+    indicators.filter((indicator) => indicator.index === 0),
   );
   const dispatch = useDispatch();
   const { visualizationId } = useTiles();
@@ -80,6 +86,7 @@ const VisualizeContent = ({ tiles, onTilesChange }: VisualizeContentProps) => {
       <Grid xs={8}>
         <div className={classes.centerContainer}>
           <main id="main" className={classes.main}>
+            <VisualizationName id={id} />
             <Preconfiguration />
             <AddTile onClick={handleAddTile} active={isAddTileActive} />
             <Modal
