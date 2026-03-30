@@ -8,5 +8,8 @@
       "name": "Java Backend",
       "path": "apps/backend"
     }
-  ]
+  ],
+  "settings": {
+    "java.compile.nullAnalysis.mode": "automatic"
+  }
 }

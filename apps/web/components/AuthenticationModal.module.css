@@ -13,31 +13,54 @@
 .tabList {
   display: flex;
   gap: 0.5rem;
-  background: var(--background-light);
-  border: 1px solid var(--accent);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(96, 186, 255, 0.45);
   padding: 0.35rem;
   border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .tab {
   flex: 1;
   border-radius: 999px;
-  color: var(--foreground);
+  color: rgba(255, 255, 255, 0.78) !important;
   font-weight: 600;
   padding: 0.45rem 0.9rem;
   cursor: pointer;
-  border: none;
-  background: transparent;
+  border: 1px solid transparent;
+  background: transparent !important;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.tab:hover {
+  background: rgba(96, 186, 255, 0.1) !important;
+  color: var(--foreground) !important;
+}
+
+.tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(96, 186, 255, 0.3);
 }
 
 .tab[aria-selected='true'] {
-  background: var(--accent);
-  color: var(--background-dark);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(135deg, rgba(96, 186, 255, 0.96), rgba(72, 165, 240, 0.92)) !important;
+  color: #06131f !important;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 18px rgba(96, 186, 255, 0.22);
 }
 
 .tabPanel {
   padding-top: 1rem;
+}
+
+.panelViewport {
+  position: relative;
+  overflow: clip;
+}
+
+.animatedPanel {
+  width: 100%;
 }
 
 .heading {

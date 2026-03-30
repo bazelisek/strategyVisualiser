@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import Tabs from "@mui/joy/Tabs";
 import TabList from "@mui/joy/TabList";
 import Tab from "@mui/joy/Tab";
-import TabPanel from "@mui/joy/TabPanel";
 import { CircularProgress } from "@mui/joy";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/auth-client";
 import { useGetAuthStatus } from "@/auth/useGetAuthStatus";
+import AuthPanelTransition from "@/components/AuthPanelTransition";
 import pageClasses from "./page.module.css";
 import authClasses from "@/components/AuthenticationModal.module.css";
 
@@ -101,7 +101,7 @@ export default function LoginPage() {
           Log in to your strategy workspace or create an account.
         </p>
         <div className={authClasses.authModal}>
-          <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value as number)}>
+          <Tabs sx={{padding: 2, borderRadius: 24}} value={activeTab} onChange={(_, value) => setActiveTab(value as number)}>
             <TabList className={authClasses.tabList}>
               <Tab className={authClasses.tab} value={0}>
                 Login
@@ -110,84 +110,89 @@ export default function LoginPage() {
                 Sign up
               </Tab>
             </TabList>
-            <TabPanel className={authClasses.tabPanel} value={0}>
-              <h3 className={authClasses.heading}>Login</h3>
-              <form className={authClasses.form} onSubmit={handleLoginSubmit}>
-                <div className={authClasses.field}>
-                  <label htmlFor="login-email">Email</label>
-                  <input
-                    id="login-email"
-                    type="email"
-                    value={loginEmail}
-                    onChange={(event) => setLoginEmail(event.target.value)}
-                    required
-                  />
+            <AuthPanelTransition activeTab={activeTab}>
+              {activeTab === 0 ? (
+                <div className={authClasses.tabPanel}>
+                  <h3 className={authClasses.heading}>Login</h3>
+                  <form className={authClasses.form} onSubmit={handleLoginSubmit}>
+                    <div className={authClasses.field}>
+                      <label htmlFor="login-email">Email</label>
+                      <input
+                        id="login-email"
+                        type="email"
+                        value={loginEmail}
+                        onChange={(event) => setLoginEmail(event.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className={authClasses.field}>
+                      <label htmlFor="login-password">Password</label>
+                      <input
+                        id="login-password"
+                        type="password"
+                        value={loginPassword}
+                        onChange={(event) => setLoginPassword(event.target.value)}
+                        required
+                      />
+                    </div>
+                    {loginError && <p className={authClasses.error}>{loginError}</p>}
+                    <button type="submit" className={authClasses.primaryButton}>
+                      Continue to login
+                    </button>
+                  </form>
                 </div>
-                <div className={authClasses.field}>
-                  <label htmlFor="login-password">Password</label>
-                  <input
-                    id="login-password"
-                    type="password"
-                    value={loginPassword}
-                    onChange={(event) => setLoginPassword(event.target.value)}
-                    required
-                  />
+              ) : (
+                <div className={authClasses.tabPanel}>
+                  <h3 className={authClasses.heading}>Sign up</h3>
+                  <form className={authClasses.form} onSubmit={handleSignupSubmit}>
+                    <div className={authClasses.field}>
+                      <label htmlFor="signup-email">Email</label>
+                      <input
+                        id="signup-email"
+                        type="email"
+                        value={signupEmail}
+                        onChange={(event) => setSignupEmail(event.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className={authClasses.field}>
+                      <label htmlFor="signup-name">Name</label>
+                      <input
+                        id="signup-name"
+                        type="text"
+                        value={signupName}
+                        onChange={(event) => setSignupName(event.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className={authClasses.field}>
+                      <label htmlFor="signup-password">Password</label>
+                      <input
+                        id="signup-password"
+                        type="password"
+                        value={signupPassword}
+                        onChange={(event) => setSignupPassword(event.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className={authClasses.field}>
+                      <label htmlFor="signup-confirm-password">Confirm password</label>
+                      <input
+                        id="signup-confirm-password"
+                        type="password"
+                        value={signupConfirmPassword}
+                        onChange={(event) => setSignupConfirmPassword(event.target.value)}
+                        required
+                      />
+                    </div>
+                    {signupError && <p className={authClasses.error}>{signupError}</p>}
+                    <button type="submit" className={authClasses.primaryButton}>
+                      {signupLoading ? <CircularProgress /> : "Continue to sign up"}
+                    </button>
+                  </form>
                 </div>
-                {loginError && <p className={authClasses.error}>{loginError}</p>}
-                <button type="submit" className={authClasses.primaryButton}>
-                  Continue to login
-                </button>
-              </form>
-            </TabPanel>
-            <TabPanel className={authClasses.tabPanel} value={1}>
-              <h3 className={authClasses.heading}>Sign up</h3>
-              <form className={authClasses.form} onSubmit={handleSignupSubmit}>
-                <div className={authClasses.field}>
-                  <label htmlFor="signup-email">Email</label>
-                  <input
-                    id="signup-email"
-                    type="email"
-                    value={signupEmail}
-                    onChange={(event) => setSignupEmail(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className={authClasses.field}>
-                  <label htmlFor="signup-name">Name</label>
-                  <input
-                    id="signup-name"
-                    type="text"
-                    value={signupName}
-                    onChange={(event) => setSignupName(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className={authClasses.field}>
-                  <label htmlFor="signup-password">Password</label>
-                  <input
-                    id="signup-password"
-                    type="password"
-                    value={signupPassword}
-                    onChange={(event) => setSignupPassword(event.target.value)}
-                    required
-                  />
-                </div>
-                <div className={authClasses.field}>
-                  <label htmlFor="signup-confirm-password">Confirm password</label>
-                  <input
-                    id="signup-confirm-password"
-                    type="password"
-                    value={signupConfirmPassword}
-                    onChange={(event) => setSignupConfirmPassword(event.target.value)}
-                    required
-                  />
-                </div>
-                {signupError && <p className={authClasses.error}>{signupError}</p>}
-                <button type="submit" className={authClasses.primaryButton}>
-                  {signupLoading ? <CircularProgress /> : "Continue to sign up"}
-                </button>
-              </form>
-            </TabPanel>
+              )}
+            </AuthPanelTransition>
           </Tabs>
         </div>
       </div>
