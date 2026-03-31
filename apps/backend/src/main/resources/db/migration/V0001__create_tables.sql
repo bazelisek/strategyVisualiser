@@ -13,3 +13,24 @@ CREATE TABLE stock_data (
                             CONSTRAINT uq_stock_data UNIQUE (ticker, trade_date, trade_time)
 );
 
+CREATE TABLE strategies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    code TEXT NOT NULL,
+    configuration TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE analysis_jobs (
+    id SERIAL PRIMARY KEY,
+    strategy_id BIGINT NOT NULL REFERENCES strategies(id) ON DELETE CASCADE,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    result TEXT,
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
