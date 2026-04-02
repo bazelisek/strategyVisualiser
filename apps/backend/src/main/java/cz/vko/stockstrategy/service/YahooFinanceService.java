@@ -11,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
 import java.time.*;
@@ -33,12 +34,8 @@ public class YahooFinanceService {
         this.objectMapper = objectMapper;
     }
 
-    public List<StockData> getStockDataDaily(String symbol, LocalDate dateFrom, LocalDate dateTo) {
-        String interval = "1d";
-
-        LocalTime timeFrom = LocalTime.of(9, 30);
-        LocalTime timeTo = LocalTime.of(9, 30);
-
+    public List<StockData> getStockData(String symbol, String interval, LocalDate dateFrom, LocalDate dateTo) {
+        String requestedInterval = (interval == null || interval.isBlank()) ? "1d" : interval;
         LocalDateTime dateTimeFrom = dateFrom.atTime(LocalTime.of(9, 30));
         LocalDateTime dateTimeTo = dateTo.atTime(LocalTime.of(22, 0));
 
@@ -46,13 +43,20 @@ public class YahooFinanceService {
 
         long periodFrom = dateTimeFrom.atZone(zone).toEpochSecond();
         long periodTo = dateTimeTo.atZone(zone).toEpochSecond();
-        log.info("periodFrom:{}, periodTo:{}", periodFrom, periodTo);
+        log.info("Fetching Yahoo data for symbol={}, interval={}, periodFrom={}, periodTo={}",
+                symbol, requestedInterval, periodFrom, periodTo);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "Mozilla/5.0");
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        String url = String.format("https://query1.finance.yahoo.com/v8/finance/chart/%s?interval=%s&period1=%d&period2=%d",symbol, interval, periodFrom, periodTo);
+        String url = UriComponentsBuilder
+                .fromHttpUrl("https://query1.finance.yahoo.com/v8/finance/chart/{symbol}")
+                .queryParam("interval", requestedInterval)
+                .queryParam("period1", periodFrom)
+                .queryParam("period2", periodTo)
+                .buildAndExpand(symbol)
+                .toUriString();
         ResponseEntity<String> response = restTemplate.exchange(
                 url,
                 HttpMethod.GET,

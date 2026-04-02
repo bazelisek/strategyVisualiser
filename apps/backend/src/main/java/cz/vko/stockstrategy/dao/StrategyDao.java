@@ -10,9 +10,9 @@ import org.springframework.stereotype.Repository;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -66,7 +66,7 @@ public class StrategyDao {
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
             ps.setString(1, strategy.getName());
             ps.setString(2, strategy.getDescription());
             ps.setString(3, strategy.getCode());
@@ -74,10 +74,14 @@ public class StrategyDao {
             return ps;
         }, keyHolder);
 
-        strategy.setId(keyHolder.getKey().longValue());
-        strategy.setCreatedAt(LocalDateTime.now());
-        strategy.setUpdatedAt(LocalDateTime.now());
-        return strategy;
+        Map<String, Object> generatedKeys = keyHolder.getKeys();
+        Number generatedId = generatedKeys != null ? (Number) generatedKeys.get("id") : null;
+        if (generatedId == null) {
+            throw new IllegalStateException("Insert strategy did not return a generated id.");
+        }
+
+        return findById(generatedId.longValue())
+                .orElseThrow(() -> new IllegalStateException("Inserted strategy could not be loaded."));
     }
 
     private Strategy update(Strategy strategy) {

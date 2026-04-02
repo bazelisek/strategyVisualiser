@@ -20,6 +20,10 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
 loader:
   symbolXlsxPath: ${LOADER_SYMBOL_XLSX_PATH:${user.dir}/data/Nasdaq100.xlsx}
   symbolTxtPath: ${LOADER_SYMBOL_TXT_PATH:${user.dir}/data/nasdaq100.txt}

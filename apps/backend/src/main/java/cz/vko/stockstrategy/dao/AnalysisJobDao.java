@@ -10,9 +10,8 @@ import org.springframework.stereotype.Repository;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -68,7 +67,7 @@ public class AnalysisJobDao {
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
             ps.setLong(1, job.getStrategyId());
             ps.setString(2, job.getStatus());
             ps.setString(3, job.getResult());
@@ -86,9 +85,14 @@ public class AnalysisJobDao {
             return ps;
         }, keyHolder);
 
-        job.setId(keyHolder.getKey().longValue());
-        job.setCreatedAt(LocalDateTime.now());
-        return job;
+        Map<String, Object> generatedKeys = keyHolder.getKeys();
+        Number generatedId = generatedKeys != null ? (Number) generatedKeys.get("id") : null;
+        if (generatedId == null) {
+            throw new IllegalStateException("Insert analysis job did not return a generated id.");
+        }
+
+        return findById(generatedId.longValue())
+                .orElseThrow(() -> new IllegalStateException("Inserted analysis job could not be loaded."));
     }
 
     private AnalysisJob update(AnalysisJob job) {
