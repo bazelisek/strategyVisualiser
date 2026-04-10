@@ -2,6 +2,21 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Fix backend:
+```bash
+cd /home/bazelisek/DEV/websites/strategyVisualiser/apps/backend
+podman run -d --name strategy-visualiser-postgres \
+  -e POSTGRES_USER=strategyuser \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=postgres \
+  -p 5433:5432 docker.io/library/postgres:16
+
+SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5433/postgres \
+SPRING_DATASOURCE_USERNAME=strategyuser \
+SPRING_DATASOURCE_PASSWORD=password \
+bash ./mvnw spring-boot:run
+```
+
 First, run the development server:
 
 ```bash
