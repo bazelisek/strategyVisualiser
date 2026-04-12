@@ -33,6 +33,8 @@ public class StrategyDao {
             s.setDescription(rs.getString("description"));
             s.setCode(rs.getString("code"));
             s.setConfiguration(rs.getString("configuration"));
+            s.setOwnerEmail(rs.getString("owner_email"));
+            s.setIsPublic(rs.getBoolean("is_public"));
             s.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
             s.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
             return s;
@@ -42,6 +44,32 @@ public class StrategyDao {
     public List<Strategy> findAll() {
         String sql = "SELECT * FROM strategies ORDER BY created_at DESC";
         return jdbcTemplate.query(sql, STRATEGY_MAPPER);
+    }
+
+    public List<Strategy> findAllPublic() {
+        String sql = "SELECT * FROM strategies WHERE is_public = true ORDER BY created_at DESC";
+        return jdbcTemplate.query(sql, STRATEGY_MAPPER);
+    }
+
+    public List<Strategy> findByOwnerEmail(String ownerEmail) {
+        String sql = "SELECT * FROM strategies WHERE owner_email = ? ORDER BY created_at DESC";
+        return jdbcTemplate.query(sql, STRATEGY_MAPPER, ownerEmail);
+    }
+
+    public List<Strategy> findPrivateByOwnerEmail(String ownerEmail) {
+        String sql = "SELECT * FROM strategies WHERE owner_email = ? AND is_public = false ORDER BY created_at DESC";
+        return jdbcTemplate.query(sql, STRATEGY_MAPPER, ownerEmail);
+    }
+
+    public List<Strategy> findPrivateAndSharedWithUser(String userEmail) {
+        String sql = """
+            SELECT DISTINCT s.* FROM strategies s
+            LEFT JOIN strategy_sharing ss ON s.id = ss.strategy_id
+            WHERE (s.owner_email = ? AND s.is_public = false)
+               OR (ss.shared_with_email = ? AND s.is_public = false)
+            ORDER BY s.created_at DESC
+            """;
+        return jdbcTemplate.query(sql, STRATEGY_MAPPER, userEmail, userEmail);
     }
 
     public Optional<Strategy> findById(Long id) {
@@ -60,8 +88,8 @@ public class StrategyDao {
 
     private Strategy insert(Strategy strategy) {
         String sql = """
-            INSERT INTO strategies (name, description, code, configuration, created_at, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO strategies (name, description, code, configuration, owner_email, is_public, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -71,6 +99,8 @@ public class StrategyDao {
             ps.setString(2, strategy.getDescription());
             ps.setString(3, strategy.getCode());
             ps.setString(4, strategy.getConfiguration());
+            ps.setString(5, strategy.getOwnerEmail());
+            ps.setBoolean(6, strategy.getIsPublic() != null ? strategy.getIsPublic() : true);
             return ps;
         }, keyHolder);
 
@@ -87,7 +117,7 @@ public class StrategyDao {
     private Strategy update(Strategy strategy) {
         String sql = """
             UPDATE strategies
-            SET name = ?, description = ?, code = ?, configuration = ?, updated_at = CURRENT_TIMESTAMP
+            SET name = ?, description = ?, code = ?, configuration = ?, owner_email = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """;
 
@@ -96,6 +126,8 @@ public class StrategyDao {
                 strategy.getDescription(),
                 strategy.getCode(),
                 strategy.getConfiguration(),
+                strategy.getOwnerEmail(),
+                strategy.getIsPublic() != null ? strategy.getIsPublic() : true,
                 strategy.getId());
 
         strategy.setUpdatedAt(LocalDateTime.now());

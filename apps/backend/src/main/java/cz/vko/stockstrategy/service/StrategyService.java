@@ -17,8 +17,47 @@ public class StrategyService {
 
     private final StrategyDao strategyDao;
 
+    /**
+     * Get all public strategies - used for /strategies endpoint
+     */
+    public List<StrategyDTO> getPublicStrategies() {
+        return strategyDao.findAllPublic().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all strategies (legacy method, kept for backward compatibility)
+     */
     public List<StrategyDTO> getAllStrategies() {
         return strategyDao.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all strategies owned by a user (both public and private)
+     */
+    public List<StrategyDTO> getOwnershipList(String ownerEmail) {
+        return strategyDao.findByOwnerEmail(ownerEmail).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get user's private strategies + strategies shared with them
+     */
+    public List<StrategyDTO> getPrivateStrategies(String userEmail) {
+        return strategyDao.findPrivateAndSharedWithUser(userEmail).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get only user's private strategies (not shared ones)
+     */
+    public List<StrategyDTO> getPrivateStrategiesByOwner(String ownerEmail) {
+        return strategyDao.findPrivateByOwnerEmail(ownerEmail).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -33,6 +72,8 @@ public class StrategyService {
         strategy.setDescription(dto.getDescription());
         strategy.setCode(dto.getCode());
         strategy.setConfiguration(dto.getConfiguration());
+        strategy.setOwnerEmail(dto.getOwnerEmail());
+        strategy.setIsPublic(dto.getIsPublic() != null ? dto.getIsPublic() : true);
 
         return strategyDao.save(strategy);
     }
@@ -46,6 +87,8 @@ public class StrategyService {
         dto.setId(strategy.getId());
         dto.setName(strategy.getName());
         dto.setDescription(strategy.getDescription());
+        dto.setOwnerEmail(strategy.getOwnerEmail());
+        dto.setIsPublic(strategy.getIsPublic());
         dto.setCreatedAt(strategy.getCreatedAt());
         dto.setUpdatedAt(strategy.getUpdatedAt());
         return dto;

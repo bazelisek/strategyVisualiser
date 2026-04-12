@@ -11,5 +11,7 @@ public class StrategyCreateDTO {
     private String description;
     private String code;
     private String configuration;
+    private String ownerEmail;
+    private Boolean isPublic;
 
 }

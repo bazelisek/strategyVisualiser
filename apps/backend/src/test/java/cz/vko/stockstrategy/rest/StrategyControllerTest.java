@@ -61,7 +61,7 @@ class StrategyControllerTest {
         second.setCreatedAt(LocalDateTime.of(2026, 4, 2, 18, 10));
         second.setUpdatedAt(LocalDateTime.of(2026, 4, 2, 18, 15));
 
-        when(strategyService.getAllStrategies()).thenReturn(List.of(first, second));
+        when(strategyService.getPublicStrategies()).thenReturn(List.of(first, second));
 
         mockMvc.perform(get("/api/strategies"))
                 .andExpect(status().isOk())

@@ -16,6 +16,8 @@ public class Strategy {
     private String description;
     private String code;
     private String configuration;
+    private String ownerEmail;
+    private Boolean isPublic;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

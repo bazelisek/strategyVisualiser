@@ -2,6 +2,7 @@ package cz.vko.stockstrategy.rest;
 
 import cz.vko.stockstrategy.dto.StrategyCreateDTO;
 import cz.vko.stockstrategy.dto.StrategyDTO;
+import cz.vko.stockstrategy.dto.UserStrategiesDTO;
 import cz.vko.stockstrategy.model.Strategy;
 import cz.vko.stockstrategy.service.AnalysisJobService;
 import cz.vko.stockstrategy.service.StrategyService;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/strategies")
@@ -31,14 +33,38 @@ public class StrategyController {
     private final AnalysisJobService analysisJobService;
 
     @GetMapping
-    @Operation(summary = "List strategies", description = "Returns all saved trading strategies.")
-    public List<StrategyDTO> getAllStrategies() {
-        return strategyService.getAllStrategies();
+    @Operation(summary = "List public strategies", description = "Returns all public trading strategies.")
+    public List<StrategyDTO> getPublicStrategies() {
+        return strategyService.getPublicStrategies();
+    }
+
+    @GetMapping("/users/{email}")
+    @Operation(summary = "Get strategies for user", description = "Returns private and public strategies for a specific user email. Returns private strategies owned by the user, shared private strategies, and all public strategies in separate arrays.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User strategies retrieved"),
+    })
+    public ResponseEntity<UserStrategiesDTO> getUserStrategies(
+            @Parameter(description = "User email") @PathVariable String email) {
+        List<StrategyDTO> privateStrategies = strategyService.getPrivateStrategies(email);
+        List<StrategyDTO> publicStrategies = strategyService.getPublicStrategies();
+
+        UserStrategiesDTO result = new UserStrategiesDTO(privateStrategies, publicStrategies);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/users/{email}/ownership")
+    @Operation(summary = "Get ownership list for user", description = "Returns all strategies owned by the user (both public and private).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User ownership list retrieved"),
+    })
+    public List<StrategyDTO> getUserOwnershipList(
+            @Parameter(description = "User email") @PathVariable String email) {
+        return strategyService.getOwnershipList(email);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create strategy", description = "Creates a new trading strategy.")
+    @Operation(summary = "Create strategy", description = "Creates a new trading strategy with user ownership.")
     @ApiResponse(responseCode = "201", description = "Strategy created")
     public Strategy createStrategy(@RequestBody StrategyCreateDTO dto) {
         return strategyService.createStrategy(dto);
