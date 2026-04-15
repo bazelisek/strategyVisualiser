@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -137,6 +138,53 @@ class StrategyControllerTest {
         when(strategyService.getStrategyById(9L)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/strategies/9"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void patchStrategyReturnsUpdatedStrategyWhenPresent() throws Exception {
+        Strategy updated = new Strategy();
+        updated.setId(10L);
+        updated.setName("Updated name");
+        updated.setDescription("Updated description");
+        updated.setCode("return updated;");
+        updated.setConfiguration("{\"window\":30}");
+
+        when(strategyService.updateStrategy(any(Long.class), any(StrategyCreateDTO.class)))
+                .thenReturn(Optional.of(updated));
+
+        String payload = """
+                {
+                  "name": "Updated name",
+                  "description": "Updated description",
+                  "code": "return updated;",
+                  "configuration": "{\\"window\\":30}"
+                }
+                """;
+
+        mockMvc.perform(patch("/api/strategies/10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.name").value("Updated name"))
+                .andExpect(jsonPath("$.description").value("Updated description"));
+    }
+
+    @Test
+    void patchStrategyReturnsNotFoundWhenMissing() throws Exception {
+        when(strategyService.updateStrategy(any(Long.class), any(StrategyCreateDTO.class)))
+                .thenReturn(Optional.empty());
+
+        String payload = """
+                {
+                  "name": "Updated name"
+                }
+                """;
+
+        mockMvc.perform(patch("/api/strategies/999")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
                 .andExpect(status().isNotFound());
     }
 

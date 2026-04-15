@@ -82,6 +82,20 @@ public class StrategyController {
                       .orElse(ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("/{id}")
+    @Operation(summary = "Update strategy", description = "Updates a strategy by its id.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Strategy updated"),
+            @ApiResponse(responseCode = "404", description = "Strategy not found")
+    })
+    public ResponseEntity<Strategy> updateStrategy(
+            @Parameter(description = "Strategy id") @PathVariable Long id,
+            @RequestBody StrategyCreateDTO dto) {
+        Optional<Strategy> updatedStrategy = strategyService.updateStrategy(id, dto);
+        return updatedStrategy.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete strategy", description = "Deletes a strategy by its id.")
     @ApiResponses({

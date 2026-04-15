@@ -78,6 +78,35 @@ public class StrategyService {
         return strategyDao.save(strategy);
     }
 
+    public Optional<Strategy> updateStrategy(Long id, StrategyCreateDTO dto) {
+        Optional<Strategy> existingStrategy = strategyDao.findById(id);
+        if (existingStrategy.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Strategy strategy = existingStrategy.get();
+        if (dto.getName() != null) {
+            strategy.setName(dto.getName());
+        }
+        if (dto.getDescription() != null) {
+            strategy.setDescription(dto.getDescription());
+        }
+        if (dto.getCode() != null) {
+            strategy.setCode(dto.getCode());
+        }
+        if (dto.getConfiguration() != null) {
+            strategy.setConfiguration(dto.getConfiguration());
+        }
+        if (dto.getOwnerEmail() != null) {
+            strategy.setOwnerEmail(dto.getOwnerEmail());
+        }
+        if (dto.getIsPublic() != null) {
+            strategy.setIsPublic(dto.getIsPublic());
+        }
+
+        return Optional.of(strategyDao.save(strategy));
+    }
+
     public void deleteStrategy(Long id) {
         strategyDao.deleteById(id);
     }
