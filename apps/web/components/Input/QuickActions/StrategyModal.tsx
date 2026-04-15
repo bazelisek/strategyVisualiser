@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import QuickActionsModal from "./QuickActionsModal";
 import { RootState, setModal } from "@/store/reduxStore";
 import { motion } from "framer-motion";
-import { getAvailableStrategies } from "@/util/strategies";
+import { getAvailableStrategies } from "@/util/strategies/strategies";
 import { CircularProgress } from "@mui/joy";
 import { useTiles } from "@/hooks/useTiles";
 

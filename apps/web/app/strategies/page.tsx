@@ -1,21 +1,34 @@
-import { List, Sheet } from "@mui/joy";
+'use server';
+import VerifyAuth from "@/auth/VerifyAuth";
+import StrategyList from "@/components/Strategies/StrategyList";
+import { Sheet } from "@mui/joy";
+import { Suspense } from "react";
 
-export default function Page() {
+export default async function Page() {
   return (
-    <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
-      <Sheet
-        variant="soft"
-        sx={{
-          borderRadius: "1rem",
-          padding: "2rem",
-          width: { sm: "90%", md: "50%" },
-        }}
+    <VerifyAuth>
+      <div
+        style={{ display: "flex", justifyContent: "center", padding: "2rem" }}
       >
-        <h1 style={{ textAlign: "center" }}>Strategies</h1>
-        <Sheet variant="outlined" sx={{ borderRadius: "0.5rem", padding: "1rem", marginTop: "1rem" }}>
-          <List></List>
+        <Sheet
+          variant="soft"
+          sx={{
+            borderRadius: "1rem",
+            padding: "2rem",
+            width: { sm: "90%", md: "50%" },
+          }}
+        >
+          <h1 style={{ textAlign: "center" }}>Strategies</h1>
+          <Sheet
+            variant="outlined"
+            sx={{ borderRadius: "0.5rem", padding: "1rem", marginTop: "1rem" }}
+          >
+            <Suspense fallback={<div>Loading strategies...</div>}>
+              <StrategyList />
+            </Suspense>
+          </Sheet>
         </Sheet>
-      </Sheet>
-    </div>
+      </div>
+    </VerifyAuth>
   );
 }

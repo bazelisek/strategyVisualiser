@@ -2,7 +2,7 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import AnimationWrapper from "./AnimationWrapper";
 import CustomSelect from "./CustomSelect";
-import { getAvailableStrategies } from "@/util/strategies";
+import { getAvailableStrategies } from "@/util/strategies/strategies";
 import { CircularProgress } from "@mui/joy";
 
 interface StrategyProps {
