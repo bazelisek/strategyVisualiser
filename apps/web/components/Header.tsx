@@ -20,6 +20,10 @@ const pageLinks: { path: string; name: string }[] = [
     path: "/history",
     name: "Visualizations",
   },
+  {
+    path: "/strategies",
+    name: 'Strategies'
+  }
 ];
 
 const Header: React.FC<HeaderProps> = () => {

@@ -2,7 +2,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-Fix backend:
+Run backend:
 ```bash
 cd /home/bazelisek/DEV/websites/strategyVisualiser/apps/backend
 podman run -d --name strategy-visualiser-postgres \

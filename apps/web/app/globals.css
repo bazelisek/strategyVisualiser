@@ -3,6 +3,7 @@
   --background-light: #1e1e2a;
   --background: var(--background-dark);
   --foreground: #e0e0e0;
+  --primary: #4cafef;
   --accent: #4cafef;
   --accent-rgb: 76, 175, 239;
   --accent-dark: #3a91c8;

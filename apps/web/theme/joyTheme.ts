@@ -25,6 +25,20 @@ const joyThemeConfig = {
       },
     },
   },
+  components: {
+    JoyIconButton: {
+      styleOverrides: {
+        root: {
+          "&:hover": {
+            color: "var(--primary, var(--accent))",
+          },
+          "&:hover svg": {
+            color: "var(--primary, var(--accent))",
+          },
+        },
+      },
+    },
+  },
   fontFamily: {
     body: 'var(--font-base)',
     display: 'var(--font-base)',

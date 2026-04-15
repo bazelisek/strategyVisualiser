@@ -1,7 +1,9 @@
-'use server';
+"use server";
 import VerifyAuth from "@/auth/VerifyAuth";
+import AddStrategyButton from "@/components/Strategies/AddStrategyButton";
 import StrategyList from "@/components/Strategies/StrategyList";
 import { Sheet } from "@mui/joy";
+
 import { Suspense } from "react";
 
 export default async function Page() {
@@ -18,6 +20,7 @@ export default async function Page() {
             width: { sm: "90%", md: "50%" },
           }}
         >
+          <AddStrategyButton />
           <h1 style={{ textAlign: "center" }}>Strategies</h1>
           <Sheet
             variant="outlined"

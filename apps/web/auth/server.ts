@@ -2,11 +2,51 @@
 
 import { cookies, headers } from "next/headers";
 import { auth } from "@/auth";
+import Database from "better-sqlite3";
+import path from "path";
+import { User } from "better-auth";
 
 export async function getServerSession() {
   return auth.api.getSession({
     headers: await headers(),
   });
+}
+
+type BetterAuthUserRow = {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: number;
+  image: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const dbPath = path.join(process.cwd(), "sqlite.db");
+const db = new Database(dbPath, { readonly: true });
+
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const row = db
+    .prepare(
+      `SELECT id, name, email, emailVerified, image, createdAt, updatedAt
+       FROM user
+       WHERE email = ?`
+    )
+    .get(email) as BetterAuthUserRow | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    emailVerified: Boolean(row.emailVerified),
+    image: row.image,
+    createdAt: new Date(row.createdAt),
+    updatedAt: new Date(row.updatedAt),
+  };
 }
 
 export type ServerAuthResult = {
