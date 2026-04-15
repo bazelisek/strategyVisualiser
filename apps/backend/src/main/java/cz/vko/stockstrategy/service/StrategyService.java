@@ -1,5 +1,6 @@
 package cz.vko.stockstrategy.service;
 
+import cz.vko.stockstrategy.dao.AnalysisJobDao;
 import cz.vko.stockstrategy.dao.StrategyDao;
 import cz.vko.stockstrategy.dto.StrategyCreateDTO;
 import cz.vko.stockstrategy.dto.StrategyDTO;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 public class StrategyService {
 
     private final StrategyDao strategyDao;
+    private final AnalysisJobDao analysisJobDao;
 
     /**
      * Get all public strategies - used for /strategies endpoint
@@ -104,7 +106,9 @@ public class StrategyService {
             strategy.setIsPublic(dto.getIsPublic());
         }
 
-        return Optional.of(strategyDao.save(strategy));
+        Strategy saved = strategyDao.save(strategy);
+        analysisJobDao.deleteByStrategyId(id);
+        return Optional.of(saved);
     }
 
     public void deleteStrategy(Long id) {

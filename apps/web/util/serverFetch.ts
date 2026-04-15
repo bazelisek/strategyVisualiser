@@ -1,5 +1,4 @@
 // serverFetch.ts
-import { fetchDataFromUrl } from "@/util/fetch";
 import { UTCTimestamp } from "lightweight-charts";
 import { parseStrategyId } from "./strategies/strategyId";
 
@@ -24,17 +23,33 @@ export async function getCandlestickChartData({
   period2: number;
   strategy: string;
 }) {
-  const { data: yahooData, error: yahooError } = await fetchDataFromUrl(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&period1=${period1}&period2=${period2}`
-  );
-
-  if (!yahooError && yahooData) {
-    const transformedData = transformYahooToCandles(yahooData);
-    return { data: transformedData, error: null };
-  }
-
   const fromIso = new Date(period1 * 1000).toISOString().slice(0, 10);
   const toIso = new Date(period2 * 1000).toISOString().slice(0, 10);
+
+  try {
+    const yahooRes = await fetch(
+      `/api/yahoo/${encodeURIComponent(symbol)}?interval=${encodeURIComponent(interval)}&from=${fromIso}&to=${toIso}`
+    );
+    if (yahooRes.ok) {
+      const yahooRows = (await yahooRes.json()) as Array<{
+        ticker: string;
+        tradeDate: string;
+        tradeTime?: string;
+        open: number;
+        high: number;
+        low: number;
+        close: number;
+        volume: number;
+      }>;
+      const transformedData = transformRowsToCandles(yahooRows);
+      if (transformedData.candles.length > 0) {
+        return { data: transformedData, error: null };
+      }
+    }
+  } catch {
+    // Fall back to imported backend data below.
+  }
+
   try {
     const backendRes = await fetch(
       `/api/stocks/${encodeURIComponent(symbol)}?period=D&from=${fromIso}&to=${toIso}`
@@ -45,62 +60,32 @@ export async function getCandlestickChartData({
         error: yahooError ?? "Unable to fetch candlestick data.",
       };
     }
-    const backendRows = (await backendRes.json()) as Array<{
-      ticker: string;
-      tradeDate: string;
+      const backendRows = (await backendRes.json()) as Array<{
+        ticker: string;
+        tradeDate: string;
       tradeTime?: string;
       open: number;
       high: number;
       low: number;
-      close: number;
-      volume: number;
-    }>;
-    const transformedData = transformBackendRowsToCandles(backendRows);
+        close: number;
+        volume: number;
+      }>;
+      const transformedData = transformRowsToCandles(backendRows);
     if (transformedData.candles.length === 0) {
       return {
         data: transformedData,
-        error: yahooError ?? "No candlestick data available.",
+        error: "No candlestick data available.",
       };
     }
     return { data: transformedData, error: null };
   } catch {
     return {
       data: { symbol: "", longName: "", candles: [] },
-      error: yahooError ?? "Unable to fetch candlestick data.",
+      error: "Unable to fetch candlestick data.",
     };
   }
 
-  function transformYahooToCandles(raw: any): {
-    symbol: string;
-    longName: string;
-    candles: candleData;
-  } {
-    const result = raw.chart.result[0];
-    const ts = result.timestamp;
-    const quote = result.indicators.quote[0];
-    const longName = result.meta.longName;
-    const symbol = result.meta.symbol;
-    return {
-      symbol,
-      longName,
-      candles: filterOutInvalidCandles(
-        ts.map((t: number, i: number) => {
-          return {
-            time: t as UTCTimestamp,
-            open: quote.open[i],
-            high: quote.high[i],
-            low: quote.low[i],
-            close: quote.close[i],
-            volume: quote.volume[i]
-          };
-        }),
-        period1,
-        period2
-      ),
-    };
-  }
-
-  function transformBackendRowsToCandles(
+  function transformRowsToCandles(
     rows: Array<{
       ticker: string;
       tradeDate: string;
@@ -137,30 +122,6 @@ export async function getCandlestickChartData({
       longName: symbol,
       candles: candles.filter((candle) => candle.time >= period1 && candle.time <= period2),
     };
-  }
-  function filterOutInvalidCandles(
-    candleData: candleData,
-    period1: number,
-    period2: number
-  ) {
-    return candleData.filter((candle) => {
-      const unixTime: number = candle.time;
-      return (
-        Number.isFinite(candle.time) &&
-        Number.isFinite(candle.open) &&
-        Number.isFinite(candle.high) &&
-        Number.isFinite(candle.low) &&
-        Number.isFinite(candle.close) &&
-        Number.isFinite(candle.volume) &&
-        candle.open > 0 &&
-        candle.high > 0 &&
-        candle.low > 0 &&
-        candle.close > 0 &&
-        candle.volume >= 0 &&
-        unixTime >= period1 &&
-        unixTime <= period2
-      );
-    });
   }
 }
 
@@ -242,7 +203,8 @@ export function extractTradeMarkersFromJobResult(
       }
       return { time, amount };
     })
-    .filter((entry): entry is { time: number; amount: number } => entry !== null);
+    .filter((entry): entry is { time: number; amount: number } => entry !== null)
+    .sort((a, b) => a.time - b.time);
 }
 
 export type searchParamsType = {

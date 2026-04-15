@@ -68,7 +68,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     "/"
   );
   const tradeMarkers = getTradeMarkers(strategyData);
-  console.log("Trade markers " + tradeMarkers);
+  console.log("Trade markers " + JSON.stringify(tradeMarkers));
 
   useEffect(() => {
     let isActive = true;

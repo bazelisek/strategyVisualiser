@@ -1,5 +1,6 @@
 package cz.vko.stockstrategy.service;
 
+import cz.vko.stockstrategy.dao.AnalysisJobDao;
 import cz.vko.stockstrategy.dao.StrategyDao;
 import cz.vko.stockstrategy.dto.StrategyDTO;
 import cz.vko.stockstrategy.model.Strategy;
@@ -21,6 +22,9 @@ class StrategyServicePrivacyTests {
 
     @Mock
     private StrategyDao strategyDao;
+
+    @Mock
+    private AnalysisJobDao analysisJobDao;
 
     @InjectMocks
     private StrategyService strategyService;
@@ -154,6 +158,23 @@ class StrategyServicePrivacyTests {
         assertThat(dto.getIsPublic()).isFalse();
         assertThat(dto.getId()).isEqualTo(3L);
         assertThat(dto.getName()).isEqualTo("Private Strategy");
+    }
+
+    @Test
+    void updateStrategyInvalidatesExistingAnalysisJobs() {
+        Strategy existing = createStrategy(7L, "Existing Strategy", "owner@example.com", true);
+        when(strategyDao.findById(7L)).thenReturn(java.util.Optional.of(existing));
+        when(strategyDao.save(org.mockito.ArgumentMatchers.any(Strategy.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        cz.vko.stockstrategy.dto.StrategyCreateDTO dto = new cz.vko.stockstrategy.dto.StrategyCreateDTO();
+        dto.setCode("updated code");
+
+        java.util.Optional<Strategy> updated = strategyService.updateStrategy(7L, dto);
+
+        assertThat(updated).isPresent();
+        assertThat(updated.get().getCode()).isEqualTo("updated code");
+        org.mockito.Mockito.verify(analysisJobDao).deleteByStrategyId(7L);
     }
 
     // Helper method

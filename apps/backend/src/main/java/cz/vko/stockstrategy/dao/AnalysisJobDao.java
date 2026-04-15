@@ -109,6 +109,16 @@ public class AnalysisJobDao {
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }
 
+    public int deleteByStrategyId(Long strategyId) {
+        String sql = "DELETE FROM analysis_jobs WHERE strategy_id = ?";
+        return jdbcTemplate.update(sql, strategyId);
+    }
+
+    public int deleteAll() {
+        String sql = "DELETE FROM analysis_jobs";
+        return jdbcTemplate.update(sql);
+    }
+
     private AnalysisJob insert(AnalysisJob job) {
         String sql = """
             INSERT INTO analysis_jobs (

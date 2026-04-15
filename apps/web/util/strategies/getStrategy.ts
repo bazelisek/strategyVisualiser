@@ -5,6 +5,7 @@ import { fetchDataFromUrl } from "@/util/fetch";
 import { Strategy } from "@/util/strategies/strategies";
 import { getBaseUrl } from "../baseURL";
 import { getUserByEmail } from "@/auth/server";
+import { User } from "better-auth";
 
 const BASE_URL = getBaseUrl();
 
@@ -25,8 +26,17 @@ export default async function getStrategy(
   if (error) {
     return null;
   }
-  const ownerUser = await getUserByEmail(data.ownerEmail);
-  if (!ownerUser) return null;
+  const ownerUser =
+    (await getUserByEmail(data.ownerEmail)) ??
+    ({
+      id: `builtin-${data.id}`,
+      name: data.ownerEmail?.split("@")[0] ?? "System",
+      email: data.ownerEmail ?? "system@strategy.local",
+      emailVerified: false,
+      image: null,
+      createdAt: new Date(data.createdAt),
+      updatedAt: new Date(data.updatedAt),
+    } satisfies User);
   console.log(data);
 
   const strategy: Strategy = {

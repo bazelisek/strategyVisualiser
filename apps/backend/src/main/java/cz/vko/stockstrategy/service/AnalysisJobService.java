@@ -224,6 +224,12 @@ public class AnalysisJobService {
             }
         }
 
+        if (universe.isEmpty() && safeOverrides.containsKey("universe")) {
+            JsonNode universeOverride = objectMapper.valueToTree(safeOverrides.get("universe"));
+            executionConfiguration.set("universe", universeOverride);
+            universe = extractUniverse(universeOverride);
+        }
+
         return new ResolvedStrategyConfiguration(
                 objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(executionConfiguration),
                 universe

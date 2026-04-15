@@ -78,6 +78,12 @@ public class StrategyDao {
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }
 
+    public Optional<Strategy> findByName(String name) {
+        String sql = "SELECT * FROM strategies WHERE name = ? ORDER BY created_at DESC";
+        List<Strategy> results = jdbcTemplate.query(sql, STRATEGY_MAPPER, name);
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
+
     public Strategy save(Strategy strategy) {
         if (strategy.getId() == null) {
             return insert(strategy);

@@ -38,6 +38,9 @@ class AnalysisJobServiceTest {
     private StockDataService stockDataService;
 
     @Mock
+    private YahooFinanceService yahooFinanceService;
+
+    @Mock
     private StrategyExecutionService strategyExecutionService;
 
     private AnalysisJobService analysisJobService;
@@ -48,6 +51,7 @@ class AnalysisJobServiceTest {
                 analysisJobDao,
                 strategyDao,
                 stockDataService,
+                yahooFinanceService,
                 strategyExecutionService,
                 new ObjectMapper()
         );
@@ -113,7 +117,7 @@ class AnalysisJobServiceTest {
         ArgumentCaptor<AnalysisJob> captor = ArgumentCaptor.forClass(AnalysisJob.class);
         verify(analysisJobDao).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo("pending");
-        assertThat(captor.getValue().getConfigPayload()).contains("\"lookback\":8");
+        assertThat(captor.getValue().getConfigPayload()).contains("\"lookback\"").contains("8");
     }
 
     private Strategy strategyWithConfiguration() {

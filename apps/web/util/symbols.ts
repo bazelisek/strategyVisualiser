@@ -10,7 +10,6 @@ export const symbols = [
   "AMD",
   "AMGN",
   "AMZN",
-  "ANSS",
   "APP",
   "ARM",
   "ASML",

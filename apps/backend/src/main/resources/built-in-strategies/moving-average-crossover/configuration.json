@@ -1,0 +1,16 @@
+[
+  {
+    "id": "maRange1",
+    "label": "MA Range 1",
+    "type": "number",
+    "defaultValue": 10,
+    "required": true
+  },
+  {
+    "id": "maRange2",
+    "label": "MA Range 2",
+    "type": "number",
+    "defaultValue": 30,
+    "required": true
+  }
+]
