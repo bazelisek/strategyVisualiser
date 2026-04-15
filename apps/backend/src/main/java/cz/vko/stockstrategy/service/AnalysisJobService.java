@@ -2,6 +2,8 @@ package cz.vko.stockstrategy.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import cz.vko.stockstrategy.dao.AnalysisJobDao;
 import cz.vko.stockstrategy.dao.StrategyDao;
 import cz.vko.stockstrategy.dto.AnalysisJobDTO;
@@ -16,12 +18,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -29,7 +33,7 @@ public class AnalysisJobService {
 
     private final AnalysisJobDao analysisJobDao;
     private final StrategyDao strategyDao;
-    private final YahooFinanceService yahooFinanceService;
+    private final StockDataService stockDataService;
     private final StrategyExecutionService strategyExecutionService;
     private final ObjectMapper objectMapper;
 
@@ -81,14 +85,12 @@ public class AnalysisJobService {
             Path stockDataFile = workspaceDir.resolve("stock-data.csv");
             Path jobContextFile = workspaceDir.resolve("job-context.json");
 
-            String rawConfiguration = strategy.getConfiguration();
-            String configurationJson = normalizeConfiguration(rawConfiguration);
-            Files.writeString(configFile, configurationJson);
+            ResolvedStrategyConfiguration resolvedConfiguration = resolveConfiguration(strategy.getConfiguration());
+            Files.writeString(configFile, resolvedConfiguration.executionConfigurationJson());
 
-            StockDataRequest stockDataRequest = extractStockDataRequest(configurationJson);
-            List<StockData> stockData = loadStockData(stockDataRequest);
+            List<StockData> stockData = loadStockData(resolvedConfiguration.universe());
             writeStockDataCsv(stockDataFile, stockData);
-            writeJobContext(jobContextFile, job, strategy, stockDataRequest, stockDataFile, configFile, stockData.size());
+            writeJobContext(jobContextFile, job, strategy, resolvedConfiguration, stockDataFile, configFile, stockData);
 
             String output = strategyExecutionService.execute(new StrategyExecutionRequest(
                     workspaceDir,
@@ -127,35 +129,109 @@ public class AnalysisJobService {
         return dto;
     }
 
-    private String normalizeConfiguration(String rawConfiguration) {
+    private ResolvedStrategyConfiguration resolveConfiguration(String rawConfiguration) throws IOException {
         if (rawConfiguration == null || rawConfiguration.isBlank()) {
-            return "{}";
+            return new ResolvedStrategyConfiguration("{}", List.of());
         }
-        return rawConfiguration;
+
+        JsonNode root = objectMapper.readTree(rawConfiguration);
+        if (root.isArray()) {
+            return resolveConfigurationOptions((ArrayNode) root);
+        }
+        if (root.isObject()) {
+            return resolveLegacyConfiguration((ObjectNode) root);
+        }
+        throw new IllegalArgumentException("Strategy configuration must be a JSON object or array.");
     }
 
-    private StockDataRequest extractStockDataRequest(String configurationJson) throws IOException {
-        JsonNode root = objectMapper.readTree(configurationJson);
-        JsonNode marketDataNode = root.path("marketData").isMissingNode() ? root : root.path("marketData");
+    private ResolvedStrategyConfiguration resolveConfigurationOptions(ArrayNode options) throws IOException {
+        ObjectNode executionConfiguration = objectMapper.createObjectNode();
+        List<String> universe = List.of();
 
-        String symbol = textOrNull(marketDataNode, "symbol");
-        String period = textOrDefault(marketDataNode, "period", "1d");
-        LocalDate from = parseDate(textOrNull(marketDataNode, "from"));
-        LocalDate to = parseDate(textOrNull(marketDataNode, "to"));
+        for (JsonNode optionNode : options) {
+            if (!optionNode.isObject()) {
+                continue;
+            }
 
-        return new StockDataRequest(symbol, period, from, to);
+            String id = textOrNull(optionNode, "id");
+            if (id == null) {
+                continue;
+            }
+
+            JsonNode defaultValue = optionNode.get("defaultValue");
+            if (defaultValue == null || defaultValue.isNull()) {
+                executionConfiguration.putNull(id);
+            } else {
+                executionConfiguration.set(id, defaultValue.deepCopy());
+            }
+
+            if ("universe".equals(id)) {
+                universe = extractUniverse(defaultValue);
+            }
+        }
+
+        return new ResolvedStrategyConfiguration(
+                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(executionConfiguration),
+                universe
+        );
     }
 
-    private List<StockData> loadStockData(StockDataRequest request) {
-        if (request.symbol() == null || request.from() == null || request.to() == null) {
+    private ResolvedStrategyConfiguration resolveLegacyConfiguration(ObjectNode root) throws IOException {
+        List<String> universe = extractUniverse(root.get("universe"));
+        if (universe.isEmpty()) {
+            JsonNode marketDataNode = root.path("marketData").isMissingNode() ? root : root.path("marketData");
+            universe = extractUniverse(marketDataNode.get("universe"));
+            if (universe.isEmpty()) {
+                String symbol = textOrNull(marketDataNode, "symbol");
+                universe = symbol == null ? List.of() : List.of(symbol);
+            }
+        }
+
+        return new ResolvedStrategyConfiguration(
+                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(root),
+                universe
+        );
+    }
+
+    private List<String> loadUniverse(List<String> rawUniverse) {
+        return rawUniverse.stream()
+                .filter(symbol -> symbol != null && !symbol.isBlank())
+                .map(String::trim)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toCollection(LinkedHashSet::new),
+                        ArrayList::new
+                ));
+    }
+
+    private List<String> extractUniverse(JsonNode universeNode) {
+        if (universeNode == null || !universeNode.isArray()) {
             return List.of();
         }
-        return yahooFinanceService.getStockData(
-                request.symbol(),
-                request.period(),
-                request.from(),
-                request.to()
-        );
+
+        List<String> symbols = new ArrayList<>();
+        for (JsonNode symbolNode : universeNode) {
+            if (!symbolNode.isTextual()) {
+                continue;
+            }
+            String symbol = symbolNode.asText();
+            if (symbol != null && !symbol.isBlank()) {
+                symbols.add(symbol.trim());
+            }
+        }
+        return loadUniverse(symbols);
+    }
+
+    private List<StockData> loadStockData(List<String> universe) {
+        List<String> symbols = loadUniverse(universe);
+        if (symbols.isEmpty()) {
+            return List.of();
+        }
+
+        List<StockData> stockData = new ArrayList<>();
+        for (String symbol : symbols) {
+            stockData.addAll(stockDataService.getStockData(symbol));
+        }
+        return stockData;
     }
 
     private void writeStockDataCsv(Path stockDataFile, List<StockData> stockData) throws IOException {
@@ -183,25 +259,20 @@ public class AnalysisJobService {
             Path jobContextFile,
             AnalysisJob job,
             Strategy strategy,
-            StockDataRequest request,
+            ResolvedStrategyConfiguration resolvedConfiguration,
             Path stockDataFile,
             Path configFile,
-            int stockRowCount
+            List<StockData> stockData
     ) throws IOException {
-        Map<String, Object> stockDataRequest = new LinkedHashMap<>();
-        stockDataRequest.put("symbol", request.symbol());
-        stockDataRequest.put("period", request.period());
-        stockDataRequest.put("from", request.from());
-        stockDataRequest.put("to", request.to());
-
         Map<String, Object> jobContext = new LinkedHashMap<>();
         jobContext.put("jobId", job.getId());
         jobContext.put("strategyId", strategy.getId());
         jobContext.put("strategyName", strategy.getName());
         jobContext.put("configFile", configFile.getFileName().toString());
         jobContext.put("stockDataFile", stockDataFile.getFileName().toString());
-        jobContext.put("stockDataRequest", stockDataRequest);
-        jobContext.put("stockRowCount", stockRowCount);
+        jobContext.put("universe", resolvedConfiguration.universe());
+        jobContext.put("stockRowCount", stockData.size());
+        jobContext.put("stockRowCountBySymbol", summarizeStockRows(stockData));
         Files.writeString(jobContextFile, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jobContext));
     }
 
@@ -214,17 +285,16 @@ public class AnalysisJobService {
         return text == null || text.isBlank() ? null : text;
     }
 
-    private String textOrDefault(JsonNode node, String fieldName, String defaultValue) {
-        String text = textOrNull(node, fieldName);
-        return text == null ? defaultValue : text;
-    }
-
-    private LocalDate parseDate(String value) {
-        return value == null ? null : LocalDate.parse(value);
-    }
-
     private String csvValue(Object value) {
         return value == null ? "" : value.toString();
+    }
+
+    private Map<String, Long> summarizeStockRows(List<StockData> stockData) {
+        Map<String, Long> rowsBySymbol = new LinkedHashMap<>();
+        for (StockData row : stockData) {
+            rowsBySymbol.merge(row.getTicker(), 1L, Long::sum);
+        }
+        return rowsBySymbol;
     }
 
     private String sanitizeStrategyOutput(String output) {
@@ -243,6 +313,6 @@ public class AnalysisJobService {
         return output.trim();
     }
 
-    private record StockDataRequest(String symbol, String period, LocalDate from, LocalDate to) {
+    private record ResolvedStrategyConfiguration(String executionConfigurationJson, List<String> universe) {
     }
 }

@@ -6,9 +6,9 @@ import cz.vko.stockstrategy.dto.AnalysisJobDTO;
 import cz.vko.stockstrategy.dto.StrategyDTO;
 import cz.vko.stockstrategy.model.StockData;
 import cz.vko.stockstrategy.model.Strategy;
+import cz.vko.stockstrategy.service.StockDataService;
 import cz.vko.stockstrategy.service.StrategyExecutionRequest;
 import cz.vko.stockstrategy.service.StrategyExecutionService;
-import cz.vko.stockstrategy.service.YahooFinanceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -54,14 +55,33 @@ class BackendServerIntegrationTest {
             """;
 
     private static final String STRATEGY_CONFIGURATION = """
-            {
-              "marketData": {
-                "symbol": "AAPL",
-                "period": "1d",
-                "from": "2024-01-02",
-                "to": "2024-01-04"
+            [
+              {
+                "id": "universe",
+                "label": "Universe",
+                "type": "multi-select",
+                "options": ["AAPL", "MSFT", "NVDA"],
+                "defaultValue": ["AAPL", "MSFT"]
+              },
+              {
+                "id": "lookbackWindow",
+                "label": "Lookback Window",
+                "type": "number",
+                "defaultValue": 20
+              },
+              {
+                "id": "benchmark",
+                "label": "Benchmark",
+                "type": "string",
+                "defaultValue": "QQQ"
+              },
+              {
+                "id": "useStops",
+                "label": "Use Stops",
+                "type": "boolean",
+                "defaultValue": true
               }
-            }
+            ]
             """;
 
     @LocalServerPort
@@ -74,7 +94,7 @@ class BackendServerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private YahooFinanceService yahooFinanceService;
+    private StockDataService stockDataService;
 
     @MockBean
     private StrategyExecutionService strategyExecutionService;
@@ -96,12 +116,8 @@ class BackendServerIntegrationTest {
     void createStrategyListStrategiesAndAnalyzeJob() throws Exception {
         AtomicReference<StrategyExecutionRequest> capturedRequest = new AtomicReference<>();
 
-        when(yahooFinanceService.getStockData(
-                eq("AAPL"),
-                eq("1d"),
-                eq(LocalDate.parse("2024-01-02")),
-                eq(LocalDate.parse("2024-01-04"))
-        )).thenReturn(sampleStockData());
+        when(stockDataService.getStockData(eq("AAPL"))).thenReturn(sampleAaplStockData());
+        when(stockDataService.getStockData(eq("MSFT"))).thenReturn(sampleMsftStockData());
 
         when(strategyExecutionService.execute(any())).thenAnswer(invocation -> {
             StrategyExecutionRequest request = invocation.getArgument(0);
@@ -113,22 +129,31 @@ class BackendServerIntegrationTest {
             assertTrue(Files.exists(request.jobContextFile()));
 
             String source = Files.readString(request.sourceFile());
-            String config = Files.readString(request.configFile());
+            JsonNode config = objectMapper.readTree(Files.readString(request.configFile()));
             List<String> csvLines = Files.readAllLines(request.stockDataFile());
             JsonNode jobContext = objectMapper.readTree(Files.readString(request.jobContextFile()));
 
             assertTrue(source.contains("class StrategyMain"));
-            assertTrue(config.contains("\"symbol\": \"AAPL\""));
-            assertEquals("AAPL", jobContext.path("stockDataRequest").path("symbol").asText());
-            assertEquals(3, jobContext.path("stockRowCount").asInt());
-            assertEquals(4, csvLines.size());
+            assertTrue(config.path("universe").isArray());
+            assertEquals("AAPL", config.path("universe").get(0).asText());
+            assertEquals("MSFT", config.path("universe").get(1).asText());
+            assertEquals(20, config.path("lookbackWindow").asInt());
+            assertEquals("QQQ", config.path("benchmark").asText());
+            assertTrue(config.path("useStops").asBoolean());
+            assertEquals("AAPL", jobContext.path("universe").get(0).asText());
+            assertEquals("MSFT", jobContext.path("universe").get(1).asText());
+            assertEquals(5, jobContext.path("stockRowCount").asInt());
+            assertEquals(3, jobContext.path("stockRowCountBySymbol").path("AAPL").asInt());
+            assertEquals(2, jobContext.path("stockRowCountBySymbol").path("MSFT").asInt());
+            assertEquals(6, csvLines.size());
             assertTrue(csvLines.get(0).contains("ticker,period,tradeDate"));
             assertTrue(csvLines.get(1).startsWith("AAPL,1d,2024-01-02"));
+            assertTrue(csvLines.get(4).startsWith("MSFT,1d,2024-01-02"));
 
             return objectMapper.writeValueAsString(Map.of(
                     "status", "ok",
-                    "symbol", "AAPL",
-                    "stockRows", 3,
+                    "universe", List.of("AAPL", "MSFT"),
+                    "stockRows", 5,
                     "performance", 0.1234,
                     "trades", 2,
                     "winRate", 0.5
@@ -179,8 +204,9 @@ class BackendServerIntegrationTest {
 
         JsonNode result = objectMapper.readTree(finishedJob.getResult());
         assertEquals("ok", result.path("status").asText());
-        assertEquals("AAPL", result.path("symbol").asText());
-        assertEquals(3, result.path("stockRows").asInt());
+        assertEquals("AAPL", result.path("universe").get(0).asText());
+        assertEquals("MSFT", result.path("universe").get(1).asText());
+        assertEquals(5, result.path("stockRows").asInt());
         assertEquals(2, result.path("trades").asInt());
         assertEquals(0.5, result.path("winRate").asDouble(), 0.000001);
         assertEquals(0.1234, result.path("performance").asDouble(), 0.000001);
@@ -189,6 +215,8 @@ class BackendServerIntegrationTest {
         assertNotNull(executionRequest);
         assertEquals(createdStrategy.getId(), executionRequest.strategyId());
         assertEquals(jobIdNumber.longValue(), executionRequest.jobId());
+        verify(stockDataService).getStockData("AAPL");
+        verify(stockDataService).getStockData("MSFT");
     }
 
     @Test
@@ -227,11 +255,18 @@ class BackendServerIntegrationTest {
         throw new AssertionError("Timed out waiting for job " + jobId + " to finish. Last state: " + (latest == null ? "null" : latest.getStatus()));
     }
 
-    private List<StockData> sampleStockData() {
+    private List<StockData> sampleAaplStockData() {
         return List.of(
                 stockData("AAPL", "1d", "2024-01-02", "09:30:00", "185.64", "186.91", "184.35", "185.64", 82488700L),
                 stockData("AAPL", "1d", "2024-01-03", "09:30:00", "184.22", "185.88", "183.43", "184.25", 58414500L),
                 stockData("AAPL", "1d", "2024-01-04", "09:30:00", "182.15", "183.09", "180.88", "181.91", 71983600L)
+        );
+    }
+
+    private List<StockData> sampleMsftStockData() {
+        return List.of(
+                stockData("MSFT", "1d", "2024-01-02", "09:30:00", "373.86", "375.90", "366.51", "370.87", 25258600L),
+                stockData("MSFT", "1d", "2024-01-03", "09:30:00", "369.01", "373.26", "368.51", "370.60", 23083500L)
         );
     }
 

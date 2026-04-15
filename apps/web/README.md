@@ -17,6 +17,20 @@ SPRING_DATASOURCE_PASSWORD=password \
 bash ./mvnw spring-boot:run
 ```
 
+## Strategy Execution
+
+Strategies are now stored with configuration option definitions, and the backend resolves those definitions into execution values when a job starts.
+
+The reserved `universe` option must contain a `defaultValue` array of stock symbols. When `/api/strategies/{id}/analyze` is called, the backend:
+
+- resolves the saved configuration array into a plain JSON object of config values
+- loads all persisted stock rows for every symbol in `universe.defaultValue`
+- writes the resolved config to `config.json`
+- writes the aggregated market data to `stock-data.csv`
+- writes execution metadata, including the resolved universe and per-symbol row counts, to `job-context.json`
+
+Legacy strategies created before the `universe` option existed are removed by Flyway migration `V0003__clean_legacy_strategies_without_universe.sql`, so the strategy table starts clean under the new contract.
+
 First, run the development server:
 
 ```bash

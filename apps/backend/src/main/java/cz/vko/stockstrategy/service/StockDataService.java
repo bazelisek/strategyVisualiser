@@ -19,4 +19,8 @@ public class StockDataService {
     public List<StockData> getStockData(String symbol, String period, LocalDate from, LocalDate to) {
         return dao.findByTickerAndPeriodAndDateRange(symbol, period, from, to);
     }
+
+    public List<StockData> getStockData(String symbol) {
+        return dao.findByTicker(symbol);
+    }
 }

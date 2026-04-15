@@ -3,10 +3,10 @@ package cz.vko.stockstrategy.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.vko.stockstrategy.dto.StrategyCreateDTO;
 import cz.vko.stockstrategy.dto.StrategyDTO;
+import cz.vko.stockstrategy.model.AnalysisJob;
 import cz.vko.stockstrategy.model.Strategy;
 import cz.vko.stockstrategy.service.AnalysisJobService;
 import cz.vko.stockstrategy.service.StrategyService;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -165,9 +165,19 @@ class StrategyControllerTest {
     }
 
     @Test
-    @Disabled("Endpoint is not implemented yet; enable once analysis execution is fully supported.")
     void analyzeStrategyAcceptsAnalysisJob() throws Exception {
+        AnalysisJob job = new AnalysisJob();
+        job.setId(5L);
+        job.setStrategyId(5L);
+        job.setStatus("pending");
+
+        when(analysisJobService.createAnalysisJob(5L)).thenReturn(job);
+
         mockMvc.perform(post("/api/strategies/5/analyze"))
-                .andExpect(status().isAccepted());
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.job_id").value(5))
+                .andExpect(jsonPath("$.status").value("accepted"));
+
+        verify(analysisJobService).executeAnalysisJob(5L);
     }
 }

@@ -53,6 +53,16 @@ public class StockDataDao {
         return jdbcTemplate.query(sql, STOCK_DATA_MAPPER, ticker, period, start, end);
     }
 
+    public List<StockData> findByTicker(String ticker) {
+        String sql = """
+            SELECT * FROM stock_data
+             WHERE ticker = ?
+             ORDER BY trade_date, trade_time
+        """;
+
+        return jdbcTemplate.query(sql, STOCK_DATA_MAPPER, ticker);
+    }
+
     public boolean exists(String ticker, String period, LocalDate tradeDate, LocalTime tradeTime) {
         String sql = """
             SELECT COUNT(*) FROM stock_data
