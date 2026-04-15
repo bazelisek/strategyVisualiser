@@ -35,7 +35,7 @@ export function createSecondaryChart(
       vertTouchDrag: false,
     },
     handleScale: {
-      mouseWheel: false,
+      mouseWheel: true,
       pinch: true,
       axisPressedMouseMove: {
         time: true,

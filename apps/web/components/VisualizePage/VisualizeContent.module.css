@@ -47,10 +47,10 @@
 }
 .tileGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
   gap: 2rem;
   width: 100%;
-  max-width: 100%;
+  max-width: min(100%, 1440px);
   margin: 0 auto;
   box-sizing: border-box;
   justify-items: center; /* center tiles inside their column */
@@ -62,4 +62,10 @@
   justify-self: center;  /* but don’t stretch, keep centered */
   max-width: 800px;      /* control how wide the odd tile can get */
   width: 100%;           /* but still responsive */
+}
+
+@media (max-width: 900px) {
+  .tileGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -21,6 +21,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -219,9 +220,22 @@ class StrategyControllerTest {
         job.setStrategyId(5L);
         job.setStatus("pending");
 
-        when(analysisJobService.createAnalysisJob(5L)).thenReturn(job);
+        when(analysisJobService.createAnalysisJob(eq(5L), any())).thenReturn(job);
 
-        mockMvc.perform(post("/api/strategies/5/analyze"))
+        String payload = """
+                {
+                  "symbol": "AAPL",
+                  "fromDate": "2024-01-01",
+                  "toDate": "2024-12-31",
+                  "config": {
+                    "lookbackWindow": 14
+                  }
+                }
+                """;
+
+        mockMvc.perform(post("/api/strategies/5/analyze")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.job_id").value(5))
                 .andExpect(jsonPath("$.status").value("accepted"));

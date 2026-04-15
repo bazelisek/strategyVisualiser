@@ -46,6 +46,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   );
 
   const chartRef = useRef<HTMLDivElement>(null);
+  const chartAreaRef = useRef<HTMLDivElement>(null);
   const mainChartRef = useRef<IChartApi | null>(null);
   const indicatorRefs = useRef<{ [chartIndex: number]: HTMLDivElement | null }>(
     {}
@@ -55,6 +56,21 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     time: Time;
     index: number;
   } | null>(null);
+
+  useEffect(() => {
+    const chartArea = chartAreaRef.current;
+    if (!chartArea) return;
+
+    const preventPageScroll = (event: WheelEvent) => {
+      event.preventDefault();
+    };
+
+    chartArea.addEventListener("wheel", preventPageScroll, { passive: false });
+
+    return () => {
+      chartArea.removeEventListener("wheel", preventPageScroll);
+    };
+  }, []);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -93,7 +109,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         vertTouchDrag: false,
       },
       handleScale: {
-        mouseWheel: false,
+        mouseWheel: true,
         pinch: true,
         axisPressedMouseMove: {
           time: true,
@@ -161,6 +177,22 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
     // Click marker handler
     mainChart.subscribeClick((param) => {
+      const hoveredObjectId =
+        typeof param.hoveredObjectId === "string" ? param.hoveredObjectId : null;
+      if (hoveredObjectId) {
+        const markerIndex = tradeMarkers.findIndex(
+          (marker) => marker.id === hoveredObjectId
+        );
+        if (markerIndex !== -1) {
+          setSelectedTime({
+            time: tradeMarkers[markerIndex].time,
+            index: markerIndex,
+          });
+          centerToMarker(tradeMarkers[markerIndex].time, mainChart);
+          return;
+        }
+      }
+
       if (!param.time) {
         setSelectedTime(null);
         return;
@@ -227,7 +259,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     tradeMarkers,
     index,
     indicatorsWithIndex,
-    indicatorDefinitionsByKey,
+    indicatorDefinitionMap,
   ]);
 
   // Group again for rendering secondary divs
@@ -242,7 +274,10 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div
+      ref={chartAreaRef}
+      style={{ display: "flex", flexDirection: "column", width: "100%" }}
+    >
       {/* Main chart */}
       <div ref={chartRef} />
 

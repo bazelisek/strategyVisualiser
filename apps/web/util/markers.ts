@@ -1,7 +1,8 @@
-import { IChartApi, SeriesMarker, Time, UTCTimestamp } from "lightweight-charts";
+import { IChartApi, SeriesMarker, Time } from "lightweight-charts";
 
 export function getTradeMarkers(fetchData: { time: number; amount: number }[]) {
-  return fetchData.map(({ time, amount }): SeriesMarker<Time> => ({
+  return fetchData.map(({ time, amount }, index): SeriesMarker<Time> => ({
+    id: `${time}-${index}-${amount < 0 ? "sell" : "buy"}`,
     time: time as Time,
     position: amount < 0 ? "belowBar" : "aboveBar",
     shape: amount < 0 ? "arrowDown" : "arrowUp",
@@ -11,22 +12,18 @@ export function getTradeMarkers(fetchData: { time: number; amount: number }[]) {
 }
 
 export function centerToMarker(markerTime: Time, chart: IChartApi) {
-  const visibleRange = chart.timeScale().getVisibleRange();
-  if (!visibleRange) return;
+  const logicalRange = chart.timeScale().getVisibleLogicalRange();
+  if (!logicalRange) return;
 
-  const { from, to } = visibleRange;
+  const markerIndex = chart.timeScale().timeToIndex(markerTime, true);
+  if (markerIndex === null) return;
 
-  const fromTS = toUTCTimestamp(from);
-  const toTS = toUTCTimestamp(to);
-  const markerTS = toUTCTimestamp(markerTime);
+  const rangeLength = logicalRange.to - logicalRange.from;
+  const markerLogical = Number(markerIndex);
 
-  if (fromTS === null || toTS === null || markerTS === null) return;
-
-  const rangeLength = toTS - fromTS;
-
-  chart.timeScale().setVisibleRange({
-    from: markerTS - rangeLength / 2 as UTCTimestamp,
-    to: markerTS + rangeLength / 2 as UTCTimestamp,
+  chart.timeScale().setVisibleLogicalRange({
+    from: markerLogical - rangeLength / 2,
+    to: markerLogical + rangeLength / 2,
   });
 }
 

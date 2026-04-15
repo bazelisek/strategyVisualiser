@@ -116,8 +116,10 @@ class BackendServerIntegrationTest {
     void createStrategyListStrategiesAndAnalyzeJob() throws Exception {
         AtomicReference<StrategyExecutionRequest> capturedRequest = new AtomicReference<>();
 
-        when(stockDataService.getStockData(eq("AAPL"))).thenReturn(sampleAaplStockData());
-        when(stockDataService.getStockData(eq("MSFT"))).thenReturn(sampleMsftStockData());
+        when(stockDataService.getStockData(eq("AAPL"), eq("1d"), eq(LocalDate.parse("2024-01-02")), eq(LocalDate.parse("2024-01-03"))))
+                .thenReturn(sampleAaplStockDataInRange());
+        when(stockDataService.getStockData(eq("MSFT"), eq("1d"), eq(LocalDate.parse("2024-01-02")), eq(LocalDate.parse("2024-01-03"))))
+                .thenReturn(sampleMsftStockData());
 
         when(strategyExecutionService.execute(any())).thenAnswer(invocation -> {
             StrategyExecutionRequest request = invocation.getArgument(0);
@@ -137,23 +139,25 @@ class BackendServerIntegrationTest {
             assertTrue(config.path("universe").isArray());
             assertEquals("AAPL", config.path("universe").get(0).asText());
             assertEquals("MSFT", config.path("universe").get(1).asText());
-            assertEquals(20, config.path("lookbackWindow").asInt());
-            assertEquals("QQQ", config.path("benchmark").asText());
-            assertTrue(config.path("useStops").asBoolean());
+            assertEquals(10, config.path("lookbackWindow").asInt());
+            assertEquals("SPY", config.path("benchmark").asText());
+            assertFalse(config.path("useStops").asBoolean());
             assertEquals("AAPL", jobContext.path("universe").get(0).asText());
             assertEquals("MSFT", jobContext.path("universe").get(1).asText());
-            assertEquals(5, jobContext.path("stockRowCount").asInt());
-            assertEquals(3, jobContext.path("stockRowCountBySymbol").path("AAPL").asInt());
+            assertEquals("2024-01-02", jobContext.path("rangeStart").asText());
+            assertEquals("2024-01-03", jobContext.path("rangeEnd").asText());
+            assertEquals(4, jobContext.path("stockRowCount").asInt());
+            assertEquals(2, jobContext.path("stockRowCountBySymbol").path("AAPL").asInt());
             assertEquals(2, jobContext.path("stockRowCountBySymbol").path("MSFT").asInt());
-            assertEquals(6, csvLines.size());
+            assertEquals(5, csvLines.size());
             assertTrue(csvLines.get(0).contains("ticker,period,tradeDate"));
             assertTrue(csvLines.get(1).startsWith("AAPL,1d,2024-01-02"));
-            assertTrue(csvLines.get(4).startsWith("MSFT,1d,2024-01-02"));
+            assertTrue(csvLines.get(3).startsWith("MSFT,1d,2024-01-02"));
 
             return objectMapper.writeValueAsString(Map.of(
                     "status", "ok",
                     "universe", List.of("AAPL", "MSFT"),
-                    "stockRows", 5,
+                    "stockRows", 4,
                     "performance", 0.1234,
                     "trades", 2,
                     "winRate", 0.5
@@ -184,9 +188,20 @@ class BackendServerIntegrationTest {
         assertNotNull(listResponse.getBody());
         assertTrue(List.of(listResponse.getBody()).stream().anyMatch(strategy -> strategy.getId().equals(createdStrategy.getId())));
 
+        Map<String, Object> analyzePayload = Map.of(
+                "symbol", "AAPL",
+                "fromDate", "2024-01-02",
+                "toDate", "2024-01-03",
+                "config", Map.of(
+                        "lookbackWindow", 10,
+                        "benchmark", "SPY",
+                        "useStops", false
+                )
+        );
+
         ResponseEntity<Map> analyzeResponse = restTemplate.postForEntity(
                 url("/api/strategies/" + createdStrategy.getId() + "/analyze"),
-                null,
+                analyzePayload,
                 Map.class
         );
 
@@ -206,7 +221,7 @@ class BackendServerIntegrationTest {
         assertEquals("ok", result.path("status").asText());
         assertEquals("AAPL", result.path("universe").get(0).asText());
         assertEquals("MSFT", result.path("universe").get(1).asText());
-        assertEquals(5, result.path("stockRows").asInt());
+        assertEquals(4, result.path("stockRows").asInt());
         assertEquals(2, result.path("trades").asInt());
         assertEquals(0.5, result.path("winRate").asDouble(), 0.000001);
         assertEquals(0.1234, result.path("performance").asDouble(), 0.000001);
@@ -215,15 +230,15 @@ class BackendServerIntegrationTest {
         assertNotNull(executionRequest);
         assertEquals(createdStrategy.getId(), executionRequest.strategyId());
         assertEquals(jobIdNumber.longValue(), executionRequest.jobId());
-        verify(stockDataService).getStockData("AAPL");
-        verify(stockDataService).getStockData("MSFT");
+        verify(stockDataService).getStockData("AAPL", "1d", LocalDate.parse("2024-01-02"), LocalDate.parse("2024-01-03"));
+        verify(stockDataService).getStockData("MSFT", "1d", LocalDate.parse("2024-01-02"), LocalDate.parse("2024-01-03"));
     }
 
     @Test
     void analyzeMissingStrategyReturnsBadRequest() {
         ResponseEntity<Map> response = restTemplate.postForEntity(
                 url("/api/strategies/999999/analyze"),
-                null,
+                Map.of(),
                 Map.class
         );
 
@@ -260,6 +275,13 @@ class BackendServerIntegrationTest {
                 stockData("AAPL", "1d", "2024-01-02", "09:30:00", "185.64", "186.91", "184.35", "185.64", 82488700L),
                 stockData("AAPL", "1d", "2024-01-03", "09:30:00", "184.22", "185.88", "183.43", "184.25", 58414500L),
                 stockData("AAPL", "1d", "2024-01-04", "09:30:00", "182.15", "183.09", "180.88", "181.91", 71983600L)
+        );
+    }
+
+    private List<StockData> sampleAaplStockDataInRange() {
+        return List.of(
+                stockData("AAPL", "1d", "2024-01-02", "09:30:00", "185.64", "186.91", "184.35", "185.64", 82488700L),
+                stockData("AAPL", "1d", "2024-01-03", "09:30:00", "184.22", "185.88", "183.43", "184.25", 58414500L)
         );
     }
 

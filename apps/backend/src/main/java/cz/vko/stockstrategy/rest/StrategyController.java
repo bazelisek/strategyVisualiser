@@ -3,6 +3,7 @@ package cz.vko.stockstrategy.rest;
 import cz.vko.stockstrategy.dto.StrategyCreateDTO;
 import cz.vko.stockstrategy.dto.StrategyDTO;
 import cz.vko.stockstrategy.dto.UserStrategiesDTO;
+import cz.vko.stockstrategy.dto.AnalyzeStrategyRequestDTO;
 import cz.vko.stockstrategy.model.Strategy;
 import cz.vko.stockstrategy.service.AnalysisJobService;
 import cz.vko.stockstrategy.service.StrategyService;
@@ -122,9 +123,12 @@ public class StrategyController {
                     content = @Content(schema = @Schema(implementation = Map.class))
             )
     })
-    public ResponseEntity<Map<String, Object>> analyzeStrategy(@Parameter(description = "Strategy id") @PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> analyzeStrategy(
+            @Parameter(description = "Strategy id") @PathVariable Long id,
+            @RequestBody(required = false) AnalyzeStrategyRequestDTO request
+    ) {
         try {
-            var job = analysisJobService.createAnalysisJob(id);
+            var job = analysisJobService.createAnalysisJob(id, request);
             analysisJobService.executeAnalysisJob(job.getId());
 
             return ResponseEntity.accepted()

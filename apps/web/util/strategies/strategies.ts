@@ -1,17 +1,41 @@
 "use server";
 
+import { getServerSession } from "@/auth/server";
+import { fetchDataFromUrl } from "@/util/fetch";
 import { User } from "better-auth";
+import { getBaseUrl } from "../baseURL";
+
+const BASE_URL = getBaseUrl();
 
 export async function getAvailableStrategies() {
-  /*const { data, error } = await fetchDataFromUrl(
-    `https://DUMMYURL/api/getStrategyKeys`
-  );
-  if (error) {
-    return { data: [], error };
+  const session = await getServerSession();
+  const email = session?.user?.email;
+  if (!email) {
+    return [];
   }
-  return {data, error: null};  
-  */
- return ['Dummy strategy', 'Second dummy strategy']
+
+  try {
+    const { data } = await fetchDataFromUrl(
+      `${BASE_URL}/api/strategies/users/${encodeURIComponent(email)}`
+    );
+    const privateStrategies = Array.isArray(data?.privateStrategies)
+      ? data.privateStrategies
+      : [];
+    const publicStrategies = Array.isArray(data?.publicStrategies)
+      ? data.publicStrategies
+      : [];
+    const merged = [...privateStrategies, ...publicStrategies];
+    const deduped = new Map<number, string>();
+    for (const strategy of merged) {
+      if (!strategy || typeof strategy.id !== "number") {
+        continue;
+      }
+      deduped.set(strategy.id, `${strategy.id}:${strategy.name}`);
+    }
+    return Array.from(deduped.values());
+  } catch {
+    return [];
+  }
 }
 
 export type Strategy = {

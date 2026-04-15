@@ -34,9 +34,9 @@ class JobControllerTest {
         job.setResult("{\"performance\":0.12}");
         job.setCreatedAt(LocalDateTime.of(2026, 4, 2, 19, 0));
 
-        when(analysisJobService.getJobById(3L)).thenReturn(Optional.of(job));
+        when(analysisJobService.getJobById(3L, "AAPL")).thenReturn(Optional.of(job));
 
-        mockMvc.perform(get("/api/jobs/3"))
+        mockMvc.perform(get("/api/jobs/3?symbol=AAPL"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(3))
                 .andExpect(jsonPath("$.strategyId").value(8))
@@ -46,7 +46,7 @@ class JobControllerTest {
 
     @Test
     void getJobStatusReturnsNotFoundWhenMissing() throws Exception {
-        when(analysisJobService.getJobById(4L)).thenReturn(Optional.empty());
+        when(analysisJobService.getJobById(4L, null)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/jobs/4"))
                 .andExpect(status().isNotFound());

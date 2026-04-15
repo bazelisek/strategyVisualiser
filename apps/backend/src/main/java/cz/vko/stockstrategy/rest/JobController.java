@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,8 +31,11 @@ public class JobController {
             @ApiResponse(responseCode = "200", description = "Job found"),
             @ApiResponse(responseCode = "404", description = "Job not found")
     })
-    public ResponseEntity<AnalysisJobDTO> getJobStatus(@Parameter(description = "Analysis job id") @PathVariable Long jobId) {
-        Optional<AnalysisJobDTO> job = analysisJobService.getJobById(jobId);
+    public ResponseEntity<AnalysisJobDTO> getJobStatus(
+            @Parameter(description = "Analysis job id") @PathVariable Long jobId,
+            @RequestParam(required = false) String symbol
+    ) {
+        Optional<AnalysisJobDTO> job = analysisJobService.getJobById(jobId, symbol);
         return job.map(ResponseEntity::ok)
                  .orElse(ResponseEntity.notFound().build());
     }

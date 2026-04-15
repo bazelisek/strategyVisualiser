@@ -12,6 +12,7 @@ public class StrategyExecutionService {
     public String execute(StrategyExecutionRequest request) throws IOException, InterruptedException {
         String containerRuntime = System.getenv().getOrDefault("STRATEGY_CONTAINER_RUNTIME", "docker");
         String containerImage = System.getenv().getOrDefault("STRATEGY_CONTAINER_IMAGE", "strategy-runner");
+        boolean runAsRoot = Boolean.parseBoolean(System.getenv().getOrDefault("STRATEGY_CONTAINER_RUN_AS_ROOT", "false"));
         String workspaceVolume = request.workspaceDir().toAbsolutePath() + ":/opt/strategy/workspace"
                 + ("podman".equalsIgnoreCase(containerRuntime) ? ":Z" : "");
 
@@ -22,9 +23,10 @@ public class StrategyExecutionService {
                 "--memory=512m",
                 "--pids-limit=128",
                 "--read-only",
-                "--tmpfs", "/opt/strategy/tmp:rw,noexec,nosuid,size=512m"
+                "--tmpfs", "/opt/strategy/tmp:rw,noexec,nosuid,size=512m",
+                "--tmpfs", "/tmp:rw,noexec,nosuid,size=512m"
         ));
-        if ("podman".equalsIgnoreCase(containerRuntime)) {
+        if ("podman".equalsIgnoreCase(containerRuntime) || runAsRoot) {
             command.add("--user");
             command.add("0");
         }
@@ -32,6 +34,7 @@ public class StrategyExecutionService {
                 "-e", "STRATEGY_CONFIG_FILE=/opt/strategy/workspace/" + request.configFile().getFileName(),
                 "-e", "STRATEGY_STOCK_DATA_FILE=/opt/strategy/workspace/" + request.stockDataFile().getFileName(),
                 "-e", "STRATEGY_JOB_CONTEXT_FILE=/opt/strategy/workspace/" + request.jobContextFile().getFileName(),
+                "-e", "STRATEGY_TMP_DIR=/tmp",
                 "-e", "STRATEGY_JOB_ID=" + request.jobId(),
                 "-e", "STRATEGY_ID=" + request.strategyId(),
                 "-v", workspaceVolume,
