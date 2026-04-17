@@ -32,6 +32,7 @@ class JobControllerTest {
         job.setStrategyId(8L);
         job.setStatus("completed");
         job.setResult("{\"performance\":0.12}");
+        job.setConsoleOutput("[strategy-runner] Starting StrategyMain");
         job.setCreatedAt(LocalDateTime.of(2026, 4, 2, 19, 0));
 
         when(analysisJobService.getJobById(3L, "AAPL")).thenReturn(Optional.of(job));
@@ -41,6 +42,7 @@ class JobControllerTest {
                 .andExpect(jsonPath("$.id").value(3))
                 .andExpect(jsonPath("$.strategyId").value(8))
                 .andExpect(jsonPath("$.status").value("completed"))
+                .andExpect(jsonPath("$.consoleOutput").value("[strategy-runner] Starting StrategyMain"))
                 .andExpect(jsonPath("$.result").value("{\"performance\":0.12}"));
     }
 

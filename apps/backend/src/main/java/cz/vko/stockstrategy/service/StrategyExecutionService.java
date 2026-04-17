@@ -2,14 +2,20 @@ package cz.vko.stockstrategy.service;
 
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 @Service
 public class StrategyExecutionService {
 
     public String execute(StrategyExecutionRequest request) throws IOException, InterruptedException {
+        return execute(request, null);
+    }
+
+    public String execute(StrategyExecutionRequest request, Consumer<String> outputListener) throws IOException, InterruptedException {
         String containerRuntime = System.getenv().getOrDefault("STRATEGY_CONTAINER_RUNTIME", "docker");
         String containerImage = System.getenv().getOrDefault("STRATEGY_CONTAINER_IMAGE", "strategy-runner");
         boolean runAsRoot = Boolean.parseBoolean(System.getenv().getOrDefault("STRATEGY_CONTAINER_RUN_AS_ROOT", "false"));
@@ -46,18 +52,26 @@ public class StrategyExecutionService {
         processBuilder.redirectErrorStream(true);
 
         Process process = processBuilder.start();
-        String output;
-        try (var reader = process.inputReader()) {
-            output = reader.lines().reduce("", (left, right) ->
-                    left.isEmpty() ? right : left + System.lineSeparator() + right);
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = process.inputReader()) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (output.length() > 0) {
+                    output.append(System.lineSeparator());
+                }
+                output.append(line);
+                if (outputListener != null) {
+                    outputListener.accept(line);
+                }
+            }
         }
         int exitCode = process.waitFor();
 
         if (exitCode != 0) {
             throw new IOException("Strategy container failed with exit code " + exitCode
-                    + (output.isBlank() ? "" : System.lineSeparator() + output));
+                    + (output.isEmpty() ? "" : System.lineSeparator() + output));
         }
 
-        return output;
+        return output.toString();
     }
 }

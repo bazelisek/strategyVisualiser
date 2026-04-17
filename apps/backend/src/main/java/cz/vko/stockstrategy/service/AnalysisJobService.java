@@ -113,6 +113,7 @@ public class AnalysisJobService {
             // Update status to running
             job.setStatus("running");
             job.setStartedAt(LocalDateTime.now());
+            job.setConsoleOutput("");
             analysisJobDao.save(job);
 
             Path workspaceDir = Paths.get("/tmp/strategyVisualizer", "job_" + job.getId());
@@ -146,7 +147,7 @@ public class AnalysisJobService {
                     jobContextFile,
                     job.getId(),
                     strategy.getId()
-            ));
+            ), line -> appendConsoleOutput(job, line));
 
             String sanitizedOutput = sanitizeStrategyOutput(output);
             job.setStatus("completed");
@@ -169,6 +170,7 @@ public class AnalysisJobService {
         dto.setStatus(job.getStatus());
         dto.setResult(filterResultBySymbol(job.getResult(), symbol));
         dto.setErrorMessage(job.getErrorMessage());
+        dto.setConsoleOutput(job.getConsoleOutput());
         dto.setCreatedAt(job.getCreatedAt());
         dto.setStartedAt(job.getStartedAt());
         dto.setCompletedAt(job.getCompletedAt());
@@ -419,9 +421,18 @@ public class AnalysisJobService {
         if (node.isArray()) {
             ArrayNode filteredArray = objectMapper.createArrayNode();
             for (JsonNode item : node) {
-                if (matchesSymbol(item, symbol) || (!item.isObject() && !item.isArray())) {
+                if (!item.isObject() && !item.isArray()) {
                     filteredArray.add(item.deepCopy());
                     continue;
+                }
+                if (item.isObject()) {
+                    if (matchesSymbol(item, symbol)) {
+                        filteredArray.add(item.deepCopy());
+                        continue;
+                    }
+                    if (hasExplicitSymbolField(item)) {
+                        continue;
+                    }
                 }
                 JsonNode nested = filterNodeBySymbol(item, symbol);
                 if (nested != null && !nested.isNull() && (!nested.isArray() || nested.size() > 0) && (!nested.isObject() || nested.size() > 0)) {
@@ -456,6 +467,21 @@ public class AnalysisJobService {
                 || symbol.equalsIgnoreCase(textOrNull(node, "instrument"));
     }
 
+    private boolean hasExplicitSymbolField(JsonNode node) {
+        return node != null
+                && node.isObject()
+                && (node.hasNonNull("symbol") || node.hasNonNull("ticker") || node.hasNonNull("instrument"));
+    }
+
+    private void appendConsoleOutput(AnalysisJob job, String line) {
+        String currentOutput = job.getConsoleOutput();
+        String nextOutput = (currentOutput == null || currentOutput.isBlank())
+                ? line
+                : currentOutput + System.lineSeparator() + line;
+        job.setConsoleOutput(nextOutput);
+        analysisJobDao.save(job);
+    }
+
     private AnalysisJob createReusedJob(
             Long strategyId,
             ResolvedStrategyConfiguration configuration,
@@ -466,6 +492,7 @@ public class AnalysisJobService {
         reusedJob.setStrategyId(strategyId);
         reusedJob.setStatus("completed");
         reusedJob.setResult(reusedSource.getResult());
+        reusedJob.setConsoleOutput(reusedSource.getConsoleOutput());
         reusedJob.setConfigSignature(reusedSource.getConfigSignature());
         reusedJob.setConfigPayload(configuration.executionConfigurationJson());
         reusedJob.setRangeStart(request.getFromDate());

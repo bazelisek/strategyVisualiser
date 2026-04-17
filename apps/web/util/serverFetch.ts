@@ -25,6 +25,7 @@ export async function getCandlestickChartData({
 }) {
   const fromIso = new Date(period1 * 1000).toISOString().slice(0, 10);
   const toIso = new Date(period2 * 1000).toISOString().slice(0, 10);
+  let yahooError: string | null = null;
 
   try {
     const yahooRes = await fetch(
@@ -45,9 +46,13 @@ export async function getCandlestickChartData({
       if (transformedData.candles.length > 0) {
         return { data: transformedData, error: null };
       }
+      yahooError = "No candlestick data available.";
+    } else {
+      yahooError = "Unable to fetch candlestick data.";
     }
   } catch {
     // Fall back to imported backend data below.
+    yahooError = "Unable to fetch candlestick data.";
   }
 
   try {

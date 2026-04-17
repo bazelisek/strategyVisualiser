@@ -1,6 +1,7 @@
 package cz.vko.stockstrategy.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cz.vko.stockstrategy.dto.AnalysisJobDTO;
 import cz.vko.stockstrategy.dao.AnalysisJobDao;
 import cz.vko.stockstrategy.dao.StrategyDao;
 import cz.vko.stockstrategy.dto.AnalyzeStrategyRequestDTO;
@@ -43,6 +44,7 @@ class AnalysisJobServiceTest {
     @Mock
     private StrategyExecutionService strategyExecutionService;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private AnalysisJobService analysisJobService;
 
     @BeforeEach
@@ -53,7 +55,7 @@ class AnalysisJobServiceTest {
                 stockDataService,
                 yahooFinanceService,
                 strategyExecutionService,
-                new ObjectMapper()
+                objectMapper
         );
     }
 
@@ -118,6 +120,36 @@ class AnalysisJobServiceTest {
         verify(analysisJobDao).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo("pending");
         assertThat(captor.getValue().getConfigPayload()).contains("\"lookback\"").contains("8");
+    }
+
+    @Test
+    void getJobByIdFiltersTradeArraysBySymbol() throws Exception {
+        AnalysisJob job = new AnalysisJob();
+        job.setId(77L);
+        job.setStrategyId(9L);
+        job.setStatus("completed");
+        job.setResult("""
+                {"status":"ok","trades":[{"symbol":"AAPL","time":1704187800,"amount":1},{"symbol":"MSFT","time":1704187800,"amount":-1}]}
+                """);
+
+        when(analysisJobDao.findById(77L)).thenReturn(Optional.of(job));
+
+        Optional<AnalysisJobDTO> filteredJobOpt = analysisJobService.getJobById(77L, "AAPL");
+
+        assertThat(filteredJobOpt).isPresent();
+        AnalysisJobDTO filteredJob = filteredJobOpt.orElseThrow();
+        assertThat(filteredJob.getResult()).isNotBlank();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> filteredResult = objectMapper.readValue(filteredJob.getResult(), Map.class);
+        assertThat(filteredResult.get("trades")).isInstanceOf(Iterable.class);
+        assertThat((Iterable<?>) filteredResult.get("trades"))
+                .singleElement()
+                .satisfies(trade -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> tradeMap = (Map<String, Object>) trade;
+                    assertThat(tradeMap.get("symbol")).isEqualTo("AAPL");
+                });
     }
 
     private Strategy strategyWithConfiguration() {

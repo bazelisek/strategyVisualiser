@@ -10,6 +10,7 @@ const mockUseChartDataState = {
   runCalculation: mockRunCalculation,
   stage: "configuring" as "configuring" | "submitting" | "running" | "success" | "failed",
   statusMessage: "",
+  consoleOutput: "",
 };
 
 jest.mock("@/hooks/useTiles", () => ({
@@ -55,6 +56,7 @@ describe("ChartSection", () => {
     mockUseChartDataState.strategyData = [];
     mockUseChartDataState.transformedData = { longName: "", symbol: "AAPL", candles: [] };
     mockUseChartDataState.statusMessage = "";
+    mockUseChartDataState.consoleOutput = "";
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -107,6 +109,21 @@ describe("ChartSection", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("chart-wrapper")).toBeInTheDocument();
+    });
+  });
+
+  test("shows strategy console while calculation is running", async () => {
+    mockUseChartDataState.stage = "running";
+    mockUseChartDataState.loading = true;
+    mockUseChartDataState.consoleOutput =
+      "[strategy-runner] Compiling StrategyMain.java\nTick 1";
+
+    render(<ChartSection index={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Strategy console")).toBeInTheDocument();
+      expect(screen.getByText(/\[strategy-runner\] Compiling StrategyMain\.java/)).toBeInTheDocument();
+      expect(screen.getByText(/Tick 1/)).toBeInTheDocument();
     });
   });
 });

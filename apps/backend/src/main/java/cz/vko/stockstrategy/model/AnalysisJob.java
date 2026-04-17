@@ -17,6 +17,7 @@ public class AnalysisJob {
     private String status; // pending, running, completed, failed
     private String result;
     private String errorMessage;
+    private String consoleOutput;
     private String configSignature;
     private String configPayload;
     private LocalDate rangeStart;

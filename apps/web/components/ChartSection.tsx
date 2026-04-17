@@ -57,7 +57,16 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   ) {
     throw new Error("period is not a  number");
   }
-  const { strategyData, loading, transformedData, error, runCalculation, stage, statusMessage } = useChartData(
+  const {
+    strategyData,
+    loading,
+    transformedData,
+    error,
+    runCalculation,
+    stage,
+    statusMessage,
+    consoleOutput,
+  } = useChartData(
     {
       symbol,
       interval,
@@ -253,6 +262,14 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
                 Calculate strategy
               </Button>
             </div>
+            {stage === "running" && (
+              <div className={classes.consolePanel}>
+                <Typography level="title-sm">Strategy console</Typography>
+                <pre className={classes.consoleOutput}>
+                  {consoleOutput || "Waiting for strategy output..."}
+                </pre>
+              </div>
+            )}
           </Stack>
         </Sheet>
       )}

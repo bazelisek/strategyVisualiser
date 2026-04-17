@@ -31,6 +31,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -116,13 +117,15 @@ class BackendServerIntegrationTest {
     void createStrategyListStrategiesAndAnalyzeJob() throws Exception {
         AtomicReference<StrategyExecutionRequest> capturedRequest = new AtomicReference<>();
 
-        when(stockDataService.getStockData(eq("AAPL"), eq("1d"), eq(LocalDate.parse("2024-01-02")), eq(LocalDate.parse("2024-01-03"))))
+        when(stockDataService.getStockData(eq("AAPL"), eq("D"), eq(LocalDate.parse("2024-01-02")), eq(LocalDate.parse("2024-01-03"))))
                 .thenReturn(sampleAaplStockDataInRange());
-        when(stockDataService.getStockData(eq("MSFT"), eq("1d"), eq(LocalDate.parse("2024-01-02")), eq(LocalDate.parse("2024-01-03"))))
+        when(stockDataService.getStockData(eq("MSFT"), eq("D"), eq(LocalDate.parse("2024-01-02")), eq(LocalDate.parse("2024-01-03"))))
                 .thenReturn(sampleMsftStockData());
 
-        when(strategyExecutionService.execute(any())).thenAnswer(invocation -> {
+        when(strategyExecutionService.execute(any(), any())).thenAnswer(invocation -> {
             StrategyExecutionRequest request = invocation.getArgument(0);
+            @SuppressWarnings("unchecked")
+            Consumer<String> outputListener = invocation.getArgument(1, Consumer.class);
             capturedRequest.set(request);
 
             assertTrue(Files.exists(request.sourceFile()));
@@ -153,6 +156,9 @@ class BackendServerIntegrationTest {
             assertTrue(csvLines.get(0).contains("ticker,period,tradeDate"));
             assertTrue(csvLines.get(1).startsWith("AAPL,1d,2024-01-02"));
             assertTrue(csvLines.get(3).startsWith("MSFT,1d,2024-01-02"));
+
+            outputListener.accept("[strategy-runner] Compiling StrategyMain.java");
+            outputListener.accept("[strategy-runner] Starting StrategyMain");
 
             return objectMapper.writeValueAsString(Map.of(
                     "status", "ok",
@@ -213,6 +219,7 @@ class BackendServerIntegrationTest {
         AnalysisJobDTO finishedJob = waitForJob(jobIdNumber.longValue());
         assertEquals("completed", finishedJob.getStatus());
         assertNull(finishedJob.getErrorMessage());
+        assertEquals("[strategy-runner] Compiling StrategyMain.java\n[strategy-runner] Starting StrategyMain", finishedJob.getConsoleOutput());
         assertNotNull(finishedJob.getStartedAt());
         assertNotNull(finishedJob.getCompletedAt());
         assertFalse(finishedJob.getCompletedAt().isBefore(finishedJob.getStartedAt()));
@@ -230,8 +237,80 @@ class BackendServerIntegrationTest {
         assertNotNull(executionRequest);
         assertEquals(createdStrategy.getId(), executionRequest.strategyId());
         assertEquals(jobIdNumber.longValue(), executionRequest.jobId());
-        verify(stockDataService).getStockData("AAPL", "1d", LocalDate.parse("2024-01-02"), LocalDate.parse("2024-01-03"));
-        verify(stockDataService).getStockData("MSFT", "1d", LocalDate.parse("2024-01-02"), LocalDate.parse("2024-01-03"));
+        verify(stockDataService).getStockData("AAPL", "D", LocalDate.parse("2024-01-02"), LocalDate.parse("2024-01-03"));
+        verify(stockDataService).getStockData("MSFT", "D", LocalDate.parse("2024-01-02"), LocalDate.parse("2024-01-03"));
+    }
+
+    @Test
+    void getJobStatusFiltersTradesByRequestedSymbol() throws Exception {
+        when(stockDataService.getStockData(eq("AAPL"), eq("D"), eq(LocalDate.parse("2024-01-02")), eq(LocalDate.parse("2024-01-03"))))
+                .thenReturn(sampleAaplStockDataInRange());
+        when(stockDataService.getStockData(eq("MSFT"), eq("D"), eq(LocalDate.parse("2024-01-02")), eq(LocalDate.parse("2024-01-03"))))
+                .thenReturn(sampleMsftStockData());
+
+        when(strategyExecutionService.execute(any(), any())).thenAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            Consumer<String> outputListener = invocation.getArgument(1, Consumer.class);
+            outputListener.accept("streaming trade debug");
+            return objectMapper.writeValueAsString(Map.of(
+                    "status", "ok",
+                    "trades", List.of(
+                            Map.of("symbol", "AAPL", "time", 1704187800L, "amount", 1),
+                            Map.of("symbol", "MSFT", "time", 1704187800L, "amount", -1)
+                    )
+            ));
+        });
+
+        Map<String, Object> createPayload = Map.of(
+                "name", "Filter by Symbol Strategy",
+                "description", "Verifies job result symbol filtering",
+                "code", STRATEGY_CODE,
+                "configuration", STRATEGY_CONFIGURATION
+        );
+
+        ResponseEntity<Strategy> createResponse = restTemplate.postForEntity(
+                url("/api/strategies"),
+                createPayload,
+                Strategy.class
+        );
+
+        assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
+        Strategy createdStrategy = createResponse.getBody();
+        assertNotNull(createdStrategy);
+        assertNotNull(createdStrategy.getId());
+
+        Map<String, Object> analyzePayload = Map.of(
+                "symbol", "AAPL",
+                "fromDate", "2024-01-02",
+                "toDate", "2024-01-03",
+                "config", Map.of()
+        );
+
+        ResponseEntity<Map> analyzeResponse = restTemplate.postForEntity(
+                url("/api/strategies/" + createdStrategy.getId() + "/analyze"),
+                analyzePayload,
+                Map.class
+        );
+
+        assertEquals(HttpStatus.ACCEPTED, analyzeResponse.getStatusCode());
+        assertNotNull(analyzeResponse.getBody());
+        Number jobIdNumber = (Number) analyzeResponse.getBody().get("job_id");
+        assertNotNull(jobIdNumber);
+
+        waitForJob(jobIdNumber.longValue());
+
+        ResponseEntity<AnalysisJobDTO> filteredResponse = restTemplate.getForEntity(
+                url("/api/jobs/" + jobIdNumber.longValue() + "?symbol=AAPL"),
+                AnalysisJobDTO.class
+        );
+
+        assertEquals(HttpStatus.OK, filteredResponse.getStatusCode());
+        AnalysisJobDTO filteredJob = filteredResponse.getBody();
+        assertNotNull(filteredJob);
+        JsonNode filteredResult = objectMapper.readTree(filteredJob.getResult());
+        assertEquals(1, filteredResult.path("trades").size());
+        assertEquals("AAPL", filteredResult.path("trades").get(0).path("symbol").asText());
+        assertEquals(1704187800L, filteredResult.path("trades").get(0).path("time").asLong());
     }
 
     @Test

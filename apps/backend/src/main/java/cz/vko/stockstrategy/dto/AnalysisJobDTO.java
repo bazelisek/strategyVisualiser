@@ -14,6 +14,7 @@ public class AnalysisJobDTO {
     private String status;
     private String result;
     private String errorMessage;
+    private String consoleOutput;
     private LocalDateTime createdAt;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;

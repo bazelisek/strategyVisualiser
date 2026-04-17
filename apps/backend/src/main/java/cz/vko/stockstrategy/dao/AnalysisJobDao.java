@@ -34,6 +34,7 @@ public class AnalysisJobDao {
             job.setStatus(rs.getString("status"));
             job.setResult(rs.getString("result"));
             job.setErrorMessage(rs.getString("error_message"));
+            job.setConsoleOutput(rs.getString("console_output"));
             job.setConfigSignature(rs.getString("config_signature"));
             job.setConfigPayload(rs.getString("config_payload"));
             if (rs.getDate("range_start") != null) {
@@ -122,9 +123,9 @@ public class AnalysisJobDao {
     private AnalysisJob insert(AnalysisJob job) {
         String sql = """
             INSERT INTO analysis_jobs (
-                strategy_id, status, result, error_message, config_signature, config_payload, range_start, range_end, reused_from_job_id, created_at, started_at, completed_at
+                strategy_id, status, result, error_message, console_output, config_signature, config_payload, range_start, range_end, reused_from_job_id, created_at, started_at, completed_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?)
             """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -134,32 +135,33 @@ public class AnalysisJobDao {
             ps.setString(2, job.getStatus());
             ps.setString(3, job.getResult());
             ps.setString(4, job.getErrorMessage());
-            ps.setString(5, job.getConfigSignature());
-            ps.setString(6, job.getConfigPayload());
+            ps.setString(5, job.getConsoleOutput());
+            ps.setString(6, job.getConfigSignature());
+            ps.setString(7, job.getConfigPayload());
             if (job.getRangeStart() != null) {
-                ps.setDate(7, java.sql.Date.valueOf(job.getRangeStart()));
-            } else {
-                ps.setNull(7, Types.DATE);
-            }
-            if (job.getRangeEnd() != null) {
-                ps.setDate(8, java.sql.Date.valueOf(job.getRangeEnd()));
+                ps.setDate(8, java.sql.Date.valueOf(job.getRangeStart()));
             } else {
                 ps.setNull(8, Types.DATE);
             }
-            if (job.getReusedFromJobId() != null) {
-                ps.setLong(9, job.getReusedFromJobId());
+            if (job.getRangeEnd() != null) {
+                ps.setDate(9, java.sql.Date.valueOf(job.getRangeEnd()));
             } else {
-                ps.setNull(9, Types.BIGINT);
+                ps.setNull(9, Types.DATE);
+            }
+            if (job.getReusedFromJobId() != null) {
+                ps.setLong(10, job.getReusedFromJobId());
+            } else {
+                ps.setNull(10, Types.BIGINT);
             }
             if (job.getStartedAt() != null) {
-                ps.setTimestamp(10, java.sql.Timestamp.valueOf(job.getStartedAt()));
-            } else {
-                ps.setTimestamp(10, null);
-            }
-            if (job.getCompletedAt() != null) {
-                ps.setTimestamp(11, java.sql.Timestamp.valueOf(job.getCompletedAt()));
+                ps.setTimestamp(11, java.sql.Timestamp.valueOf(job.getStartedAt()));
             } else {
                 ps.setTimestamp(11, null);
+            }
+            if (job.getCompletedAt() != null) {
+                ps.setTimestamp(12, java.sql.Timestamp.valueOf(job.getCompletedAt()));
+            } else {
+                ps.setTimestamp(12, null);
             }
             return ps;
         }, keyHolder);
@@ -177,7 +179,7 @@ public class AnalysisJobDao {
     private AnalysisJob update(AnalysisJob job) {
         String sql = """
             UPDATE analysis_jobs
-            SET strategy_id = ?, status = ?, result = ?, error_message = ?, config_signature = ?, config_payload = ?, range_start = ?, range_end = ?, reused_from_job_id = ?, started_at = ?, completed_at = ?
+            SET strategy_id = ?, status = ?, result = ?, error_message = ?, console_output = ?, config_signature = ?, config_payload = ?, range_start = ?, range_end = ?, reused_from_job_id = ?, started_at = ?, completed_at = ?
             WHERE id = ?
             """;
 
@@ -186,6 +188,7 @@ public class AnalysisJobDao {
                 job.getStatus(),
                 job.getResult(),
                 job.getErrorMessage(),
+                job.getConsoleOutput(),
                 job.getConfigSignature(),
                 job.getConfigPayload(),
                 job.getRangeStart(),

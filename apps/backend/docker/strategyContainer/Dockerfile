@@ -28,9 +28,9 @@ RUN apt-get update \
 ENV STRATEGY_HOME=/opt/strategy \
     STRATEGY_WORKDIR=/opt/strategy/workspace \
     STRATEGY_LIB_DIR=/opt/strategy/lib \
-    STRATEGY_TMP_DIR=/opt/strategy/workspace/tmp \
+    STRATEGY_TMP_DIR=/tmp \
     RUN_TIMEOUT_SECONDS=300 \
-    JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0 -XX:InitialRAMPercentage=25.0 -XX:+ExitOnOutOfMemoryError -XX:ActiveProcessorCount=2 -Djava.io.tmpdir=/opt/strategy/workspace/tmp -Duser.home=/opt/strategy -Dfile.encoding=UTF-8 -Djava.awt.headless=true"
+    JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0 -XX:InitialRAMPercentage=25.0 -XX:+ExitOnOutOfMemoryError -XX:ActiveProcessorCount=2 -Djava.io.tmpdir=/tmp -Duser.home=/opt/strategy -Dfile.encoding=UTF-8 -Djava.awt.headless=true"
 
 RUN groupadd --system strategy \
     && useradd --system --gid strategy --create-home --home-dir /opt/strategy --shell /usr/sbin/nologin strategy \

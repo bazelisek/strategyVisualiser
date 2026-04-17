@@ -1,9 +1,21 @@
 import { candleData } from "@/util/serverFetch";
-import { getStrategyPerformance } from "@/util/strategyPerformance";
-import React, { ReactNode, useState } from "react";
+import { getStrategyPerformance } from "@/util/strategyPerformance/strategyPerformance";
+import React, { ReactNode, useMemo, useState } from "react";
 import AnimationButton from "./Input/Buttons/AnimationButton";
 import { AnimatePresence, motion } from "framer-motion";
 import classes from "./StrategyPerformanceOverview.module.css";
+import Table from "./common/Table";
+import { Typography, Sheet, Stack, Chip, Divider, Card } from "@mui/joy";
+import { formatLocalDateTime } from "@/util/time";
+
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
+import InsightsIcon from "@mui/icons-material/Insights";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { TableCell, TableRow } from "@mui/material";
+import DropdownButton from "./Input/Buttons/DropdownButton";
 
 interface StrategyPerformanceOverviewProps {
   children?: ReactNode;
@@ -23,55 +35,237 @@ interface StrategyPerformanceOverviewProps {
 const StrategyPerformanceOverview: React.FC<
   StrategyPerformanceOverviewProps
 > = ({ transformedData, strategy, strategyData, className }) => {
-  const [open, setOpen] = useState<boolean>(false);
-  const performance = getStrategyPerformance(
-    strategyData,
-    transformedData,
-    strategy
-  );
+  const [open, setOpen] = useState(false);
+
+  const performance = getStrategyPerformance(strategyData, transformedData);
+
+  const enriched = useMemo(() => {
+    if (!performance.data) return null;
+
+    const trades = performance.data.trades.map((t) => {
+      const pct = ((t.sell - t.buy) / t.buy) * 100;
+      return { ...t, pct };
+    });
+
+    const wins = trades.filter((t) => t.pct > 0).length;
+    const losses = trades.length - wins;
+
+    const totalPct = trades.reduce((a, b) => a + b.pct, 0);
+    const avgPct = trades.length ? totalPct / trades.length : 0;
+
+    const pnl = trades.reduce((a, b) => a + (b.sell - b.buy), 0);
+
+    const totalBuyValue = trades.reduce((a, t) => a + t.buy, 0);
+    const totalSellValue = trades.reduce((a, t) => a + t.sell, 0);
+
+    const avgBuy = trades.length ? totalBuyValue / trades.length : 0;
+    const avgSell = trades.length ? totalSellValue / trades.length : 0;
+    const avgPnL = trades.length ? pnl / trades.length : 0;
+    const avgPctFinal = trades.length ? totalPct / trades.length : 0;
+
+    return {
+      trades,
+      wins,
+      losses,
+      winRate: trades.length ? (wins / trades.length) * 100 : 0,
+      avgPct,
+      pnl,
+      totalBuyValue,
+      totalSellValue,
+      totalPct,
+      avgBuy,
+      avgSell,
+      avgPnL,
+      avgPctFinal,
+    };
+  }, [performance.data]);
 
   return (
     <motion.div
-      // callback ref — při mountu React zavolá setContainerEl(el)
-      initial={{ opacity: 0, y: -200 }}
+      initial={{ opacity: 0, y: -120 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring" }}
       className={`${className} ${classes.div}`}
     >
-      <AnimationButton onClick={() => setOpen((prev) => !prev)} className={classes.button}>
-        Strategy Performance Overview{" "}
-        <motion.span animate={{ rotate: open ? 180 : 0 , transition: {duration: 0.3}}}>&#x25BC;</motion.span>
-      </AnimationButton>
+      <Sheet
+        variant="outlined"
+        sx={{
+          borderRadius: "lg",
+          p: 1.5,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%"
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <AnalyticsIcon color="primary" />
+          <Typography fontWeight="lg">Strategy Performance</Typography>
+        </Stack>
+
+        <DropdownButton onClick={() => setOpen((p) => !p)}>
+          {strategy}
+        </DropdownButton>
+      </Sheet>
+
       <AnimatePresence>
         {open && (
           <motion.div
-            key="expand"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
+            transition={{ duration: 0.35 }}
             style={{ overflow: "hidden" }}
           >
-            <h2>Strategy Performance Overview</h2>
-            <h3>{strategy}</h3>
-            <table>
-              <thead>
-                <tr>
-                  {performance.headers.map((a, index) => (
-                    <th key={index}>{a}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {performance.data.map((a, index) => (
-                  <tr key={index}>
-                    {a.map((value, index) => (
-                      <th key={index}>{value}</th>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Sheet sx={{ mt: 2, p: 2, borderRadius: "lg" }}>
+              {performance.error && (
+                <Typography color="danger">{performance.error}</Typography>
+              )}
+
+              {!performance.error && enriched && (
+                <>
+                  {/* SUMMARY CARDS */}
+                  <Stack direction="row" spacing={2} flexWrap="wrap">
+                    <Card>
+                      <Typography level="body-sm">Win Rate</Typography>
+                      <Typography fontSize="xl" fontWeight="lg">
+                        {enriched.winRate.toFixed(1)}%
+                      </Typography>
+                    </Card>
+
+                    <Card>
+                      <Typography level="body-sm">Avg Trade</Typography>
+                      <Typography fontSize="xl" fontWeight="lg">
+                        {enriched.avgPct.toFixed(2)}%
+                      </Typography>
+                    </Card>
+
+                    <Card>
+                      <Typography level="body-sm">Total PnL</Typography>
+                      <Typography
+                        fontSize="xl"
+                        fontWeight="lg"
+                        color={enriched.pnl >= 0 ? "success" : "danger"}
+                      >
+                        {enriched.pnl.toFixed(2)}
+                      </Typography>
+                    </Card>
+
+                    <Card>
+                      <Typography level="body-sm">Trades</Typography>
+                      <Typography fontSize="xl" fontWeight="lg">
+                        {enriched.trades.length}
+                      </Typography>
+                    </Card>
+                  </Stack>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  {/* BEST / WORST */}
+                  <Stack direction="row" spacing={2}>
+                    <Chip color="success" startDecorator={<TrendingUpIcon />}>
+                      Best: {performance.data!.bestTrade.result.toFixed(2)}
+                    </Chip>
+
+                    <Chip color="danger" startDecorator={<TrendingDownIcon />}>
+                      Worst: {performance.data!.worstTrade.result.toFixed(2)}
+                    </Chip>
+                  </Stack>
+
+                  {/* TABLE */}
+                  <Typography level="title-md" sx={{ mt: 2 }}>
+                    Trades
+                  </Typography>
+
+                  <Table
+                    columns={[
+                      {
+                        id: "buyTime",
+                        header: "Buy",
+                        cell: (r) => formatLocalDateTime(r.buyTime),
+                        sortable: true,
+                      },
+                      {
+                        id: "sellTime",
+                        header: "Sell",
+                        cell: (r) => formatLocalDateTime(r.sellTime),
+                        sortable: true,
+                      },
+                      {
+                        id: "buy",
+                        header: "Buy",
+                        cell: (r) => r.buy.toFixed(2),
+                        sortable: true,
+                      },
+                      {
+                        id: "sell",
+                        header: "Sell",
+                        cell: (r) => r.sell.toFixed(2),
+                        sortable: true,
+                      },
+                      {
+                        id: "result",
+                        header: "PnL",
+                        cell: (r) => r.result.toFixed(2),
+                        sortable: true,
+                      },
+                      {
+                        id: "pct",
+                        header: "%",
+                        cell: (r: any) => (
+                          <Typography color={r.pct >= 0 ? "success" : "danger"}>
+                            {r.pct.toFixed(2)}%
+                          </Typography>
+                        ),
+                        sortable: true,
+                      },
+                    ]}
+                    rows={enriched.trades as any}
+                    renderFooter={() => (
+                      <>
+                        <TableRow>
+                          <TableCell colSpan={2}><Typography><strong>Total</strong></Typography></TableCell>
+                          <TableCell>{enriched.totalBuyValue.toFixed(2)}</TableCell>
+                          <TableCell>{enriched.totalSellValue.toFixed(2)}</TableCell>
+                          <TableCell>{enriched.pnl.toFixed(2)}</TableCell>
+                          <TableCell><Typography color={enriched.totalPct >= 0 ? "success" : "danger"}>{enriched.totalPct.toFixed(2)}%</Typography></TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell colSpan={2}><Typography><strong>Average</strong></Typography></TableCell>
+                          <TableCell>{enriched.avgBuy.toFixed(2)}</TableCell>
+                          <TableCell>{enriched.avgSell.toFixed(2)}</TableCell>
+                          <TableCell>{enriched.avgPnL.toFixed(2)}</TableCell>
+                          <TableCell><Typography color={enriched.avgPctFinal >= 0 ? "success" : "danger"}>{enriched.avgPctFinal.toFixed(2)}%</Typography></TableCell>
+                        </TableRow>
+                      </>
+                    )}
+                  />
+
+                  <Sheet
+                    variant="soft"
+                    sx={{
+                      mt: 2,
+                      p: 2,
+                      borderRadius: "lg",
+                    }}
+                  >
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <InsightsIcon />
+                      <Typography fontWeight="lg">Strategy Summary</Typography>
+                    </Stack>
+
+                    {/* ANALYSIS */}
+                    <Divider sx={{ my: 1 }} />
+
+                    <Typography level="body-sm">
+                      {enriched.pnl > 0
+                        ? "Strategy is net profitable. Positive expectancy confirmed."
+                        : "Strategy is net losing. Edge is not statistically supported."}
+                    </Typography>
+                  </Sheet>
+                </>
+              )}
+            </Sheet>
           </motion.div>
         )}
       </AnimatePresence>

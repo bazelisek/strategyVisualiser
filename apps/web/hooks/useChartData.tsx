@@ -25,6 +25,7 @@ export function useChartData(
   },
   redirectPathOnInvalid: string
 ): {
+  consoleOutput: string;
   error: string;
   statusMessage: string;
   stage: "configuring" | "submitting" | "running" | "success" | "failed";
@@ -38,6 +39,7 @@ export function useChartData(
   runCalculation: (configOverrides: Record<string, unknown>) => Promise<void>;
 } {
   const router = useRouter();
+  const [consoleOutput, setConsoleOutput] = useState("");
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [stage, setStage] = useState<
@@ -86,6 +88,9 @@ export function useChartData(
         throw new Error(job.error ?? "Unable to fetch job status.");
       }
       const jobStatus = String(job.data.status ?? "");
+      setConsoleOutput(
+        typeof job.data.consoleOutput === "string" ? job.data.consoleOutput : ""
+      );
       setStatusMessage(`Calculation status: ${jobStatus}`);
       if (jobStatus === "completed") {
         const parsedResult =
@@ -153,6 +158,7 @@ export function useChartData(
 
     try {
       setLoading(true);
+      setConsoleOutput("");
       setError("");
       setStatusMessage("Submitting strategy calculation...");
       setStage("submitting");
@@ -184,5 +190,14 @@ export function useChartData(
     }
   }
 
-  return { error, loading, strategyData, transformedData, runCalculation, statusMessage, stage };
+  return {
+    consoleOutput,
+    error,
+    loading,
+    strategyData,
+    transformedData,
+    runCalculation,
+    statusMessage,
+    stage,
+  };
 }
