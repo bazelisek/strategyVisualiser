@@ -18,7 +18,7 @@ const AddTile: React.FC<AddTileProps> = ({onClick, active = true}) => {
   return (
     <>
       <AnimationButton disabled={!active} onClick={handleAddTile}>
-        AddTile
+        Add Tile
       </AnimationButton>
     </>
   );

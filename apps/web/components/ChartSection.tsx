@@ -5,6 +5,7 @@ import React, { ReactNode, useEffect, useMemo, useState } from "react";
 import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
 import classes from "./ChartSection.module.css";
 import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
+import StrategyConsoleCollapsible from "./StrategyConsoleCollapsible";
 import { useTiles } from "@/hooks/useTiles";
 import {
   Autocomplete,
@@ -25,7 +26,6 @@ import {
   isConfigOptions,
 } from "@/util/strategies/configuration";
 import { parseStrategyId } from "@/util/strategies/strategyId";
-import ChartLoading from "./common/ChartLoading";
 
 interface ChartSectionProps {
   children?: ReactNode;
@@ -78,7 +78,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     "/"
   );
   const tradeMarkers = getTradeMarkers(strategyData);
-  console.log("Trade markers " + JSON.stringify(tradeMarkers));
 
   useEffect(() => {
     let isActive = true;
@@ -263,11 +262,14 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
                 Calculate strategy
               </Button>
             </div>
-            {stage === "running" && (
+            {(stage === "submitting" || stage === "running") && loading && (
               <div className={classes.consolePanel}>
-                <Typography level="title-sm">Strategy console</Typography>
+                <Typography level="title-sm">Strategy run log</Typography>
                 <pre className={classes.consoleOutput}>
-                  {consoleOutput || "Preparing stock data for strategy..."}
+                  {consoleOutput ||
+                    (stage === "submitting"
+                      ? "Submitting job…"
+                      : "Waiting for runner output…")}
                 </pre>
               </div>
             )}
@@ -297,12 +299,18 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
         />
       )}
       {!loading && !error && showChart && isConfigReady && (
-        <StrategyPerformanceOverview
-          transformedData={transformedData} 
-          strategyData={strategyData}
-          strategy={strategy}
-          className={classes.div}
-        />
+        <>
+          <StrategyPerformanceOverview
+            transformedData={transformedData}
+            strategyData={strategyData}
+            strategy={strategy}
+            className={classes.div}
+          />
+          <StrategyConsoleCollapsible
+            consoleOutput={consoleOutput}
+            className={classes.div}
+          />
+        </>
       )}
     </>
   );

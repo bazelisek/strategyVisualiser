@@ -112,7 +112,7 @@ describe("ChartSection", () => {
     });
   });
 
-  test("shows strategy console while calculation is running", async () => {
+  test("shows strategy run log while calculation is running", async () => {
     mockUseChartDataState.stage = "running";
     mockUseChartDataState.loading = true;
     mockUseChartDataState.consoleOutput =
@@ -121,9 +121,21 @@ describe("ChartSection", () => {
     render(<ChartSection index={0} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Strategy console")).toBeInTheDocument();
+      expect(screen.getByText("Strategy run log")).toBeInTheDocument();
       expect(screen.getByText(/\[strategy-runner\] Compiling StrategyMain\.java/)).toBeInTheDocument();
       expect(screen.getByText(/Tick 1/)).toBeInTheDocument();
+    });
+  });
+
+  test("shows log panel while job is submitting", async () => {
+    mockUseChartDataState.stage = "submitting";
+    mockUseChartDataState.loading = true;
+    mockUseChartDataState.consoleOutput = "";
+
+    render(<ChartSection index={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Submitting job…")).toBeInTheDocument();
     });
   });
 });

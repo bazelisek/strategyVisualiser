@@ -2,6 +2,8 @@
 
 This image is intended to run user-supplied Java strategy code from the backend job executor.
 
+**Strategy authoring (workflow, input/output contracts, examples):** see [docs/strategy-authoring.md](../../docs/strategy-authoring.md).
+
 ## What it contains
 
 - Java 21, matching the backend project

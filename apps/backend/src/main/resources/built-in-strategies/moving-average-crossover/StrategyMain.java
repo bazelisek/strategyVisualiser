@@ -7,8 +7,10 @@ import org.ta4j.core.BaseBarSeriesBuilder;
 import org.ta4j.core.Rule;
 import org.ta4j.core.indicators.averages.SMAIndicator;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
+import org.ta4j.core.indicators.helpers.PreviousValueIndicator;
 import org.ta4j.core.rules.CrossedDownIndicatorRule;
 import org.ta4j.core.rules.CrossedUpIndicatorRule;
+import org.ta4j.core.rules.OverIndicatorRule;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,7 +38,17 @@ public class StrategyMain {
         int maRange1 = readPositiveInt(config, "maRange1");
         int maRange2 = readPositiveInt(config, "maRange2");
 
-        Map<String, List<BarPoint>> barsBySymbol = loadBars(resolveInputPath("STRATEGY_STOCK_DATA_FILE", "stock-data.csv"));
+        Map<String, List<BarPoint>> barsBySymbol = loadBars(
+            resolveInputPath("STRATEGY_STOCK_DATA_FILE", "stock-data.csv"));
+    
+        System.out.println("Loaded symbols:");
+        
+        for (String symbol : barsBySymbol.keySet()) {
+            System.out.println(symbol);
+        }
+        for (BarPoint point : barsBySymbol.getOrDefault("GOOG", List.of())) {
+            System.out.println(point);
+        }
         ObjectNode result = MAPPER.createObjectNode();
         ArrayNode trades = result.putArray("trades");
 
@@ -134,8 +146,7 @@ public class StrategyMain {
             List<BarPoint> bars,
             int maRange1,
             int maRange2,
-            ArrayNode trades
-    ) {
+            ArrayNode trades) {
         BarSeries series = new BaseBarSeriesBuilder().withName(symbol).build();
         for (BarPoint bar : bars) {
             series.addBar(series.barBuilder()
@@ -150,14 +161,26 @@ public class StrategyMain {
         }
 
         ClosePriceIndicator closePrice = new ClosePriceIndicator(series);
-        SMAIndicator firstMa = new SMAIndicator(closePrice, maRange1);
-        SMAIndicator secondMa = new SMAIndicator(closePrice, maRange2);
-        Rule entryRule = new CrossedUpIndicatorRule(firstMa, secondMa);
-        Rule exitRule = new CrossedDownIndicatorRule(firstMa, secondMa);
+        int shortPeriod = Math.min(maRange1, maRange2);
+        int longPeriod = Math.max(maRange1, maRange2);
+
+        SMAIndicator shortMa = new SMAIndicator(closePrice, shortPeriod);
+        SMAIndicator longMa = new SMAIndicator(closePrice, longPeriod);
+        int slopeLookback = 3;
+
+        PreviousValueIndicator longMaPrev = new PreviousValueIndicator(longMa, slopeLookback);
+        Rule longMaRising = new OverIndicatorRule(longMa, longMaPrev);
+        Rule crossover = new CrossedUpIndicatorRule(shortMa, longMa);
+        Rule entryRule = crossover.and(longMaRising);
+
+        Rule longMaFallingOrFlat = new OverIndicatorRule(longMa, longMaPrev).negation();
+
+        Rule exitRule = new CrossedDownIndicatorRule(shortMa, longMa)
+                .or(longMaFallingOrFlat);
 
         Set<Long> emittedTimes = new HashSet<>();
         boolean inPosition = false;
-        int startIndex = Math.max(maRange1, maRange2) - 1;
+        int startIndex = Math.max(shortPeriod - 1, longPeriod - 1 + slopeLookback);
 
         for (int index = startIndex; index <= series.getEndIndex(); index++) {
             long time = bars.get(index).time();
@@ -183,6 +206,7 @@ public class StrategyMain {
         return trade;
     }
 
-    private record BarPoint(String symbol, long time, double open, double high, double low, double close, double volume) {
+    private record BarPoint(String symbol, long time, double open, double high, double low, double close,
+            double volume) {
     }
 }

@@ -19,7 +19,8 @@ public final class BuiltInStrategyCatalog {
 
     private static final BuiltInStrategyDefinition MOVING_AVERAGE_CROSSOVER = new BuiltInStrategyDefinition(
             MOVING_AVERAGE_CROSSOVER_NAME,
-            "Buys when MA Range 1 crosses above MA Range 2 and sells when it crosses below.",
+            "Buys when the shorter-period SMA crosses above the longer-period SMA while the longer SMA is "
+                    + "trending up; exits on cross back below or when the longer SMA is flat or falling.",
             readResource(MOVING_AVERAGE_CROSSOVER_SOURCE_PATH),
             readResource(MOVING_AVERAGE_CROSSOVER_CONFIGURATION_PATH),
             SYSTEM_OWNER_EMAIL,

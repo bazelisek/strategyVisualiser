@@ -10,6 +10,8 @@ import { usePathname } from "next/navigation";
 import { Stack, Link as JoyUILink } from "@mui/joy";
 import { link } from "node:fs/promises";
 import User from "./User/User";
+import ChartLoading from "./common/ChartLoading";
+import AppIcon from "./common/AppIcon";
 
 interface HeaderProps {
   children?: ReactNode;
@@ -31,8 +33,6 @@ const Header: React.FC<HeaderProps> = () => {
   const { isAuthenticated, isPending, session } = useGetAuthStatus();
   const currentPath = usePathname();
 
-  const newPageLinks = pageLinks.filter(({ path }) => path !== currentPath);
-
   const handleLogout = async () => {
     try {
       await logout();
@@ -44,10 +44,11 @@ const Header: React.FC<HeaderProps> = () => {
   return (
     <>
       <header className={classes.header}>
-        <Link className={classes.brand} href={"/"}>
+        <Link className={classes.brand} href={"/"} style={{display: 'flex', alignItems: 'center'}}>
           <Typography level="h2" sx={{ m: 0, lineHeight: 1.15 }}>
             React Strategy Visualiser
           </Typography>
+          <AppIcon />
         </Link>
         <Stack
           className={classes.nav}
@@ -55,8 +56,8 @@ const Header: React.FC<HeaderProps> = () => {
           sx={{ marginX: 5 }}
           gap={2}
         >
-          {newPageLinks.map(({ path, name }) => (
-            <JoyUILink component={Link} key={path} href={path}>
+          {pageLinks.map(({ path, name }) => (
+            <JoyUILink component={Link} key={path} href={path} underline={path === currentPath ? 'always' : 'hover'} >
               <Typography textAlign={"center"}>{name}</Typography>
             </JoyUILink>
           ))}

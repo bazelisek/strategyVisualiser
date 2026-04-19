@@ -19,7 +19,11 @@ import { createSecondaryChart } from "@/util/charts";
 import { centerToMarker, toUTCTimestamp } from "@/util/markers";
 import MarkerNavigation from "./MarkerNavigation";
 import useIndicators from "@/hooks/useIndicators";
-import { indicatorDefinitionsByKey, IndicatorGraphContext } from "@/util/indicators";
+import {
+  indicatorDefinitionsByKey,
+  IndicatorGraphContext,
+} from "@/util/indicators";
+import AnimatedDate from "../blocks/AnimatedDate";
 
 interface CandlestickChartProps {
   width: number;
@@ -42,14 +46,14 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const indicatorDefinitionMap = indicatorDefinitionsByKey;
   const indicatorsWithIndex = useMemo(
     () => indicatorSlice.filter((item) => item.index === index),
-    [indicatorSlice, index]
+    [indicatorSlice, index],
   );
 
   const chartRef = useRef<HTMLDivElement>(null);
   const chartAreaRef = useRef<HTMLDivElement>(null);
   const mainChartRef = useRef<IChartApi | null>(null);
   const indicatorRefs = useRef<{ [chartIndex: number]: HTMLDivElement | null }>(
-    {}
+    {},
   );
 
   const [selectedTime, setSelectedTime] = useState<{
@@ -83,7 +87,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         acc[chartIndex].push(indicator);
         return acc;
       },
-      {} as Record<number, typeof indicatorsWithIndex>
+      {} as Record<number, typeof indicatorsWithIndex>,
     );
 
     // Create main chart
@@ -138,7 +142,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
           { current: ref },
           mainChart,
           width,
-          height * 0.3
+          height * 0.3,
         );
       }
     });
@@ -163,7 +167,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         close: c.close,
       }))
       .filter(({ open, high, low, close }) =>
-        [open, high, low, close].every(Number.isFinite)
+        [open, high, low, close].every(Number.isFinite),
       )
       .sort((a, b) => a.time - b.time);
 
@@ -178,10 +182,12 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     // Click marker handler
     mainChart.subscribeClick((param) => {
       const hoveredObjectId =
-        typeof param.hoveredObjectId === "string" ? param.hoveredObjectId : null;
+        typeof param.hoveredObjectId === "string"
+          ? param.hoveredObjectId
+          : null;
       if (hoveredObjectId) {
         const markerIndex = tradeMarkers.findIndex(
-          (marker) => marker.id === hoveredObjectId
+          (marker) => marker.id === hoveredObjectId,
         );
         if (markerIndex !== -1) {
           setSelectedTime({
@@ -203,7 +209,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
         return;
       }
       const found = tradeMarkers.findIndex(
-        (m) => toUTCTimestamp(m.time) === clickedTime
+        (m) => toUTCTimestamp(m.time) === clickedTime,
       );
       if (found !== -1) {
         setSelectedTime({ time: tradeMarkers[found].time, index: found });
@@ -217,32 +223,34 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     const chartsWithCCILines = new Set<number>();
 
     // Render indicators on their respective charts using the registry
-    Object.entries(groupedIndicators).forEach(([chartIndexStr, chartIndicators]) => {
-      const chartIndex = Number(chartIndexStr);
-      const chart = charts[chartIndex];
-      if (!chart) return;
+    Object.entries(groupedIndicators).forEach(
+      ([chartIndexStr, chartIndicators]) => {
+        const chartIndex = Number(chartIndexStr);
+        const chart = charts[chartIndex];
+        if (!chart) return;
 
-      chartIndicators.forEach((indicatorInstance) => {
-        const value = indicatorInstance.indicator.value;
-        const visible = indicatorInstance.indicator.visible;
+        chartIndicators.forEach((indicatorInstance) => {
+          const value = indicatorInstance.indicator.value;
+          const visible = indicatorInstance.indicator.visible;
 
-        if (!visible) return;
+          if (!visible) return;
 
-        const definition = indicatorDefinitionMap[indicatorInstance.key];
-        if (!definition) return;
+          const definition = indicatorDefinitionMap[indicatorInstance.key];
+          if (!definition) return;
 
-        const context: IndicatorGraphContext = {
-          mainChart,
-          chart,
-          candles,
-          config: value,
-          chartIndex,
-          chartsWithCCILines,
-        };
+          const context: IndicatorGraphContext = {
+            mainChart,
+            chart,
+            candles,
+            config: value,
+            chartIndex,
+            chartsWithCCILines,
+          };
 
-        definition.createGraph(context);
-      });
-    });
+          definition.createGraph(context);
+        });
+      },
+    );
 
     // Cleanup
     return () => {
@@ -270,7 +278,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       acc[chartIndex].push(indicator);
       return acc;
     },
-    {} as Record<number, typeof indicatorsWithIndex>
+    {} as Record<number, typeof indicatorsWithIndex>,
   );
 
   return (
@@ -300,7 +308,24 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       {/* Marker info */}
       <div style={{ marginTop: "8px", color: "#fff" }}>
         {selectedTime !== null ? (
-          <>Selected marker time: {selectedTime.time.toString()}</>
+          <>
+            Selected marker:{" "}
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "monospace",
+                fontSize: 20,
+                lineHeight: "1em",
+              }}
+            >
+              <AnimatedDate
+                dates={tradeMarkers.map(
+                  (marker) => new Date(toUTCTimestamp(marker.time)! * 1000),
+                )}
+                date={selectedTime.time}
+              />
+            </div>
+          </>
         ) : (
           <>Click a marker to select it</>
         )}

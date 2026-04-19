@@ -13,6 +13,8 @@ import org.springframework.boot.DefaultApplicationArguments;
 
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,12 +49,33 @@ class BuiltInStrategySeederTest {
     }
 
     @Test
-    void doesNotSeedMovingAverageCrossoverStrategyWhenAlreadyPresent() throws Exception {
+    void doesNotUpdateMovingAverageCrossoverWhenCatalogMatches() throws Exception {
+        Strategy existing = BuiltInStrategyCatalog.movingAverageCrossover().toStrategy();
+        existing.setId(5L);
         when(strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME))
-                .thenReturn(Optional.of(new Strategy()));
+                .thenReturn(Optional.of(existing));
 
         seeder.run(new DefaultApplicationArguments(new String[0]));
 
-        verify(strategyDao, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(strategyDao, never()).save(any());
+    }
+
+    @Test
+    void updatesMovingAverageCrossoverWhenSystemTemplateDriftedFromCatalog() throws Exception {
+        Strategy existing = BuiltInStrategyCatalog.movingAverageCrossover().toStrategy();
+        existing.setId(12L);
+        existing.setCode("// stale built-in snapshot");
+        when(strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME))
+                .thenReturn(Optional.of(existing));
+
+        seeder.run(new DefaultApplicationArguments(new String[0]));
+
+        ArgumentCaptor<Strategy> captor = ArgumentCaptor.forClass(Strategy.class);
+        verify(strategyDao).save(captor.capture());
+
+        Strategy updated = captor.getValue();
+        assertThat(updated.getId()).isEqualTo(12L);
+        assertThat(updated.getCode()).contains("class StrategyMain");
+        assertThat(updated.getDescription()).contains("longer-period SMA");
     }
 }
