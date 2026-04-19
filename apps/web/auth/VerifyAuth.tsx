@@ -2,8 +2,8 @@
 
 import { ReactNode, Suspense, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CircularProgress } from "@mui/joy";
 import { useGetAuthStatus } from "@/auth/useGetAuthStatus";
+import ChartLoading from "@/components/common/ChartLoading";
 
 export default function VerifyAuth({children} : {children: ReactNode}) {
   const router = useRouter();
@@ -26,7 +26,7 @@ export default function VerifyAuth({children} : {children: ReactNode}) {
   if (isPending || !isAuthenticated) {
     return (
       <div className="loading">
-        <CircularProgress />
+        <ChartLoading />
       </div>
     );
   }
@@ -35,7 +35,7 @@ export default function VerifyAuth({children} : {children: ReactNode}) {
     <Suspense
       fallback={
         <div className="loading">
-          <CircularProgress />
+          <ChartLoading />
         </div>
       }
     >

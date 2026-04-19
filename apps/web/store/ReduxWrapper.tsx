@@ -3,7 +3,7 @@ import React, { ReactNode } from 'react';
 import { Provider } from 'react-redux';
 import { persistor, store } from './reduxStore';
 import { PersistGate } from 'redux-persist/integration/react';
-import { CircularProgress } from '@mui/joy'; // Or your loading component
+import ChartLoading from '@/components/common/ChartLoading';
 
 interface ReduxWrapperProps {
   children?: ReactNode;
@@ -16,7 +16,7 @@ const ReduxWrapper: React.FC<ReduxWrapperProps> = (props) => {
       <PersistGate 
         loading={
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <CircularProgress />
+            <ChartLoading />
           </div>
         } 
         persistor={persistor}

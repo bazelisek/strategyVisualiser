@@ -1,9 +1,8 @@
 import { updateVisualization } from "@/app/actions/updateVisualization";
-import { authClient } from "@/auth-client";
 import { useVisualization } from "@/hooks/useVisualization";
-import { CircularProgress, Input, Typography } from "@mui/joy";
-import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Input, Typography } from "@mui/joy";
+import { useEffect, useState } from "react";
+import ChartLoading from "../common/ChartLoading";
 
 export default function VisualizationName({ id }: { id: string }) {
   const { visualization, error, isLoading } = useVisualization(id);
@@ -29,7 +28,7 @@ export default function VisualizationName({ id }: { id: string }) {
     return () => clearTimeout(timeout);
   }, [name, visualization?.name]);
 
-  if (isLoading) return <CircularProgress />;
+  if (isLoading) return <ChartLoading />;
 
   if (error) {
     return (

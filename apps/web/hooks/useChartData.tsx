@@ -80,7 +80,7 @@ export function useChartData(
   }, [symbol, interval, period1, period2, strategy, redirectPathOnInvalid, router]);
 
   async function pollJobUntilFinished(jobId: number) {
-    const timeoutMs = 30000;
+    const timeoutMs = 60000*20;
     const pollStart = Date.now();
     while (Date.now() - pollStart < timeoutMs) {
       const job = await getJobDataForSymbol(jobId, symbol);

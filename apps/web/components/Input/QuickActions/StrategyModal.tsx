@@ -6,8 +6,8 @@ import QuickActionsModal from "./QuickActionsModal";
 import { RootState, setModal } from "@/store/reduxStore";
 import { motion } from "framer-motion";
 import { getAvailableStrategies } from "@/util/strategies/strategies";
-import { CircularProgress } from "@mui/joy";
 import { useTiles } from "@/hooks/useTiles";
+import ChartLoading from "@/components/common/ChartLoading";
 
 interface StrategyModalProps {
   children?: ReactNode;
@@ -95,7 +95,7 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ index }) => {
       )}
       {!strategies && (
         <div className="loading">
-          <CircularProgress />
+          <ChartLoading />
         </div>
       )}
     </QuickActionsModal>

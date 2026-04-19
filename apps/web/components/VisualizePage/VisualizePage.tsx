@@ -21,7 +21,8 @@ import {
   configInitialState,
   type ConfigState,
 } from "@/store/slices/configSlice";
-import { CircularProgress, Stack } from "@mui/joy";
+import {  Stack } from "@mui/joy";
+import ChartLoading from "../common/ChartLoading";
 
 const normalizeDefaults = (
   defaults?: Partial<ConfigState>,
@@ -103,7 +104,7 @@ const VisualizePage = ({ id }: { id: string }) => {
         width={"100%"}
         height={"100%"}
       >
-        <CircularProgress />
+        <ChartLoading />
       </Stack>
     );
   }

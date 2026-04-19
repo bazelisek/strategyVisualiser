@@ -7,8 +7,8 @@ import Modal from "@/components/Modal";
 import classes from "./AuthenticationModal.module.css";
 import { login } from "@/auth/login";
 import { signup } from "@/auth/signup";
-import { CircularProgress } from "@mui/joy";
 import AuthPanelTransition from "@/components/AuthPanelTransition";
+import ChartLoading from "./common/ChartLoading";
 
 interface AuthenticationModalProps {
   open: boolean;
@@ -194,7 +194,7 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({
                   </div>
                   {signupError && <p className={classes.error}>{signupError}</p>}
                   <button type="submit" className={classes.primaryButton}>
-                    {signupLoading ? <CircularProgress /> : "Continue to sign up"}
+                    {signupLoading ? <ChartLoading /> : "Continue to sign up"}
                   </button>
                 </form>
               </div>

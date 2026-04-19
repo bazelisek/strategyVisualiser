@@ -9,8 +9,8 @@ import AddVisualization from "./AddVisualization";
 import { VisualizerParams } from "@/util/visualizerTypes";
 import { useRouter } from "next/navigation";
 import DeleteButton from "../Input/Buttons/DeleteButton";
-import { CircularProgress } from "@mui/material";
 import { useHistory } from "@/hooks/useHistory";
+import ChartLoading from "../common/ChartLoading";
 
 interface VisualizerHistoryProps {
   hasSheet?: boolean;
@@ -167,7 +167,7 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
             Visualizations
           </Typography>
           <div style={{ width: "100%" }}>
-            {isLoading && <CircularProgress />}
+            {isLoading && <ChartLoading />}
             {!isLoading && error && (
               <Typography level="body-sm" textColor="danger.500">
                 {error}

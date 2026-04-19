@@ -25,6 +25,7 @@ import {
   isConfigOptions,
 } from "@/util/strategies/configuration";
 import { parseStrategyId } from "@/util/strategies/strategyId";
+import ChartLoading from "./common/ChartLoading";
 
 interface ChartSectionProps {
   children?: ReactNode;
@@ -266,7 +267,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
               <div className={classes.consolePanel}>
                 <Typography level="title-sm">Strategy console</Typography>
                 <pre className={classes.consoleOutput}>
-                  {consoleOutput || "Waiting for strategy output..."}
+                  {consoleOutput || "Preparing stock data for strategy..."}
                 </pre>
               </div>
             )}
@@ -297,7 +298,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
       )}
       {!loading && !error && showChart && isConfigReady && (
         <StrategyPerformanceOverview
-          transformedData={transformedData}
+          transformedData={transformedData} 
           strategyData={strategyData}
           strategy={strategy}
           className={classes.div}

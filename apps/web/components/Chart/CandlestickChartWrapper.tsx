@@ -6,8 +6,9 @@ import classes from "./CandlestickChartWrapper.module.css";
 import { SeriesMarker, Time } from "lightweight-charts";
 import ShowModalButton from "../Input/Indicators/ShowModalButton";
 import { candleData } from "@/util/serverFetch";
-import { CircularProgress, Stack } from "@mui/joy";
+import {  Stack } from "@mui/joy";
 import SymbolButton from "../Input/QuickActions/SymbolButton";
+import ChartLoading from "../common/ChartLoading";
 
 interface CandlestickChartWrapperProps {
   //searchParams: Promise<{ [key: string]: string | undefined }>;
@@ -65,7 +66,7 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
 
   return (
     <>
-      {loading && <div className="loading"><CircularProgress/></div>}
+      {loading && <div className="loading"><ChartLoading /></div>}
       {!loading && (
         <motion.div
           id="chart"

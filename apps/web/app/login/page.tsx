@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import Tabs from "@mui/joy/Tabs";
 import TabList from "@mui/joy/TabList";
 import Tab from "@mui/joy/Tab";
-import { CircularProgress } from "@mui/joy";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/auth-client";
 import { useGetAuthStatus } from "@/auth/useGetAuthStatus";
 import AuthPanelTransition from "@/components/AuthPanelTransition";
 import pageClasses from "./page.module.css";
 import authClasses from "@/components/AuthenticationModal.module.css";
+import ChartLoading from "@/components/common/ChartLoading";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -88,7 +88,7 @@ export default function LoginPage() {
   if (isPending || isAuthenticated) {
     return (
       <div className="loading">
-        <CircularProgress />
+        <ChartLoading />
       </div>
     );
   }
@@ -187,7 +187,7 @@ export default function LoginPage() {
                     </div>
                     {signupError && <p className={authClasses.error}>{signupError}</p>}
                     <button type="submit" className={authClasses.primaryButton}>
-                      {signupLoading ? <CircularProgress /> : "Continue to sign up"}
+                      {signupLoading ? <ChartLoading /> : "Continue to sign up"}
                     </button>
                   </form>
                 </div>

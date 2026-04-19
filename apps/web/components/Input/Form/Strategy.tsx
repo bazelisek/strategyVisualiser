@@ -3,7 +3,7 @@ import React, { ReactNode, useEffect, useState } from "react";
 import AnimationWrapper from "./AnimationWrapper";
 import CustomSelect from "./CustomSelect";
 import { getAvailableStrategies } from "@/util/strategies/strategies";
-import { CircularProgress } from "@mui/joy";
+import ChartLoading from "@/components/common/ChartLoading";
 
 interface StrategyProps {
   children?: ReactNode;
@@ -47,7 +47,7 @@ const Strategy: React.FC<StrategyProps> = ({
           </div>
         </AnimationWrapper>
       )}
-      {!availableStrategies && <div className="loading"><CircularProgress/></div>}
+      {!availableStrategies && <div className="loading"><ChartLoading /></div>}
     </>
   );
 };

@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CircularProgress } from "@mui/joy";
 import { useGetAuthStatus } from "@/auth/useGetAuthStatus";
+import ChartLoading from "@/components/common/ChartLoading";
 
 export default function Home() {
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function Home() {
 
   return (
     <div className="loading">
-      <CircularProgress />
+      <ChartLoading />
     </div>
   );
 }
