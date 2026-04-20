@@ -43,6 +43,7 @@ export default async function getStrategy(
     ownerUser,
     code: data.code,
     configuration: data.configuration,
+    requirements: data.requirements,
     createdAt: data.createdAt,
     description: data.description,
     id: data.id,

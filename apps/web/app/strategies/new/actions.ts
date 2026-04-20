@@ -14,6 +14,7 @@ export async function createStrategy(formData: FormData) {
 
   const strategyCode = formData.get("strategyCode");
   const strategyConfig = formData.get("strategyConfig");
+  const strategyRequirements = formData.get("strategyRequirements");
 
   if (typeof strategyName !== "string" || !strategyName.trim()) {
     throw new Error("Strategy name is required.");
@@ -32,12 +33,22 @@ export async function createStrategy(formData: FormData) {
       ? strategyConfig
       : null;
 
+  const requirementsFile =
+    strategyRequirements instanceof File && strategyRequirements.size > 0
+      ? strategyRequirements
+      : null;
+
   const codeText = codeFile ? await codeFile.text() : "";
   const configText = configFile ? await configFile.text() : "";
+  const requirementsText = requirementsFile ? await requirementsFile.text() : '';
   const parsedConfig = configText ? parseUserConfigOptions(configText) : [];
+  const parsedRequirements = requirementsText ? parseUserConfigOptions(requirementsText) : [];
   const finalConfig = JSON.stringify(
     buildStrategyConfiguration(parsedConfig)
   );
+  const finalRequirements = JSON.stringify(
+    parsedRequirements
+  )
 
   console.log("Recieved request for saving a new strategy: ");
   console.log({
@@ -46,6 +57,7 @@ export async function createStrategy(formData: FormData) {
     strategyIsPublic,
     codeText,
     configText: finalConfig,
+    requirementsText: finalRequirements
   });
 
   const { error } = await postStrategy({
@@ -54,6 +66,7 @@ export async function createStrategy(formData: FormData) {
     isPublic: strategyIsPublic,
     strategyCode: codeText,
     configurationOptions: finalConfig,
+    requirements: finalRequirements
   });
 
   if (error) {

@@ -76,6 +76,7 @@ public class StrategyService {
         strategy.setConfiguration(dto.getConfiguration());
         strategy.setOwnerEmail(dto.getOwnerEmail());
         strategy.setIsPublic(dto.getIsPublic() != null ? dto.getIsPublic() : true);
+        strategy.setRequirements(dto.getRequirements());
 
         return strategyDao.save(strategy);
     }
@@ -104,6 +105,9 @@ public class StrategyService {
         }
         if (dto.getIsPublic() != null) {
             strategy.setIsPublic(dto.getIsPublic());
+        }
+        if (dto.getRequirements() != null) {
+            strategy.setRequirements(dto.getRequirements());
         }
 
         Strategy saved = strategyDao.save(strategy);

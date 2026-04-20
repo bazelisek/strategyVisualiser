@@ -6,16 +6,18 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { format } from "date-fns";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { Requirements } from "./Form";
 
 interface TimeProps {
   children?: ReactNode;
   valueFrom: string;
   valueTo: string;
   onChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   handleContinue: () => void;
   modalContainerRef?: React.RefObject<HTMLElement | null>;
+  requirements?: Requirements;
 }
 const darkTheme = createTheme({
   palette: {
@@ -38,9 +40,25 @@ const Time: React.FC<TimeProps> = ({
   handleContinue,
   modalContainerRef,
   children,
+  requirements,
 }) => {
-  const fromDate = valueFrom ? new Date(valueFrom) : null;
-  const toDate = valueTo ? new Date(valueTo) : null;
+  let fromDate: Date | null = valueFrom ? new Date(valueFrom) : null;
+
+  const minDate = requirements?.period?.min
+    ? new Date(requirements.period.min * 1000)
+    : null;
+
+  if (fromDate && minDate && fromDate < minDate) {
+    fromDate = minDate;
+  }
+  let toDate: Date | null = valueTo ? new Date(valueTo) : null;
+  const maxDate = requirements?.period?.max
+    ? new Date(requirements.period.max * 1000)
+    : null;
+
+  if (toDate && maxDate && toDate > maxDate) {
+    toDate = maxDate;
+  }
 
   // helper: normalize to 13:30 if only date is picked
   const adjustPickedDate = (date: Date, isToPicker = false) => {
@@ -90,7 +108,8 @@ const Time: React.FC<TimeProps> = ({
                 }
               }}
               format="dd.MM.yyyy HH:mm" // display format
-              maxDateTime={toDate || new Date()} // ensures From < To
+              maxDateTime={toDate || maxDate || new Date()} // ensures From < To
+              minDateTime={minDate || undefined}
               slotProps={{
                 textField: {
                   fullWidth: true,
@@ -124,8 +143,8 @@ const Time: React.FC<TimeProps> = ({
                 }
               }}
               format="dd.MM.yyyy HH:mm"
-              minDateTime={fromDate || undefined}
-              maxDateTime={new Date()}
+              minDateTime={fromDate || minDate || undefined}
+              maxDateTime={maxDate || new Date()}
               slotProps={{
                 textField: {
                   fullWidth: true,

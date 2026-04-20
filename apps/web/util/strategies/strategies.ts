@@ -7,7 +7,7 @@ import { getBaseUrl } from "../baseURL";
 
 const BASE_URL = getBaseUrl();
 
-export async function getAvailableStrategies() {
+export async function getAvailableStrategies(): Promise<Strategy[]> {
   const session = await getServerSession();
   const email = session?.user?.email;
   if (!email) {
@@ -25,12 +25,12 @@ export async function getAvailableStrategies() {
       ? data.publicStrategies
       : [];
     const merged = [...privateStrategies, ...publicStrategies];
-    const deduped = new Map<number, string>();
+    const deduped = new Map<number, Strategy>();
     for (const strategy of merged) {
       if (!strategy || typeof strategy.id !== "number") {
         continue;
       }
-      deduped.set(strategy.id, `${strategy.id}:${strategy.name}`);
+      deduped.set(strategy.id, strategy);
     }
     return Array.from(deduped.values());
   } catch {
@@ -48,4 +48,5 @@ export type Strategy = {
   isPublic: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;
+  requirements: string;
 }

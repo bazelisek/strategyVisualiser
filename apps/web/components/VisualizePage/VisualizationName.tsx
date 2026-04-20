@@ -33,7 +33,7 @@ export default function VisualizationName({ id }: { id: string }) {
   if (error) {
     return (
       <div>
-        <Typography>Couldn't fetch visualization name.</Typography>
+        <Typography>Couldn&apos;t fetch visualization name.</Typography>
         <Typography>{error}</Typography>
       </div>
     );

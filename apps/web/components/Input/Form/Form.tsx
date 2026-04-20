@@ -12,6 +12,7 @@ import { newIndicators, RootState } from "@/store/reduxStore";
 import useIndicators from "@/hooks/useIndicators";
 import { useModalRef } from "../../Modal";
 import { createIndicatorId } from "@/util/indicators/identity";
+import { type Strategy as StrategyType } from "@/util/strategies/strategies";
 
 interface FormProps {
   children?: React.ReactNode;
@@ -26,7 +27,16 @@ interface FormProps {
   index: number;
 }
 
+export type Requirements = {
+  symbol?: { whitelist?: string[]; blacklist?: string[] };
+  interval?: { whitelist?: string[]; blacklist?: string[] };
+  period?: { min?: number; max?: number };
+};
+
 const Form: React.FC<FormProps> = ({ onClose, index }) => {
+  const [availableStrategies, setAvailableStrategies] = useState<
+    StrategyType[]
+  >([]);
   const dispatch = useDispatch();
   const config = useSelector((state: RootState) => state.config);
   const indicators = useIndicators();
@@ -39,12 +49,17 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
     //duration: { value: "" },
     strategy: { value: config.strategy.defaultValue },
   });
+  const requirements: Requirements = JSON.parse(
+    availableStrategies.find(
+      (str) => str.id.toString() == formData.strategy.value,
+    )?.requirements ?? "{}",
+  );
   console.log(JSON.stringify(config));
   const [error, setError] = useState("");
   const [currentInput, setCurrentInput] = useState(0);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
 
@@ -88,7 +103,7 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
               indicator: JSON.parse(JSON.stringify(ic.indicator)),
               chartIndex: ic.chartIndex, // Add the chartIndex property
             },
-          })
+          }),
         );
       }
 
@@ -97,17 +112,17 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
         formData.interval.value ||
         getValidIntervals(
           new Date(formData.period1.value),
-          new Date(formData.period2.value)
+          new Date(formData.period2.value),
         )[0]; /*validRanges[formData.duration.value][0]*/
       if (onClose)
         onClose({
           symbol: formData.symbol.value,
           interval: interval,
           period1: Math.floor(
-            new Date(formData.period1.value).getTime() / 1000
+            new Date(formData.period1.value).getTime() / 1000,
           ).toString(),
           period2: Math.floor(
-            new Date(formData.period2.value).getTime() / 1000
+            new Date(formData.period2.value).getTime() / 1000,
           ).toString(),
           //duration: formData.duration.value,
           strategy: formData.strategy.value,
@@ -125,7 +140,7 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
       if (
         !getValidIntervals(
           new Date(formData.period1.value),
-          new Date(formData.period2.value)
+          new Date(formData.period2.value),
         ).includes(config.interval.defaultValue)
       ) {
         setFormData((old) => ({ ...old, interval: { value: "" } }));
@@ -138,19 +153,20 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
   return (
     <>
       <AnimatePresence mode="wait">
-        {currentInput === 0 && (
+        {currentInput === 1 && (
           <Symbol
             key="symbol-step"
             value={formData.symbol.value}
             onChange={handleChange}
             handleContinue={handleContinue}
+            requirements={requirements}
           >
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
             {error && <p>{error}</p>}
           </Symbol>
         )}
 
-        {currentInput === 1 && (
+        {currentInput === 2 && (
           <Time
             valueFrom={formData.period1.value}
             onChange={handleChange}
@@ -158,6 +174,7 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
             handleContinue={handleContinue}
             modalContainerRef={modalContainerRef}
             key="time-step"
+            requirements={requirements}
           >
             <AnimationButton onClick={handleBack}>Back</AnimationButton>
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
@@ -174,7 +191,7 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
           </TimePeriod>*/
         )}
 
-        {currentInput === 2 && (
+        {currentInput === 3 && (
           <Interval
             key="interval-step"
             value={formData.interval.value}
@@ -182,10 +199,11 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
             availableIntervals={
               getValidIntervals(
                 new Date(formData.period1.value),
-                new Date(formData.period2.value)
+                new Date(formData.period2.value),
               ) /*validRanges[formData.duration.value]*/
             }
             handleContinue={handleContinue}
+            requirements={requirements}
           >
             <AnimationButton onClick={handleBack}>Back</AnimationButton>
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>
@@ -193,12 +211,14 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
           </Interval>
         )}
 
-        {currentInput === 3 && (
+        {currentInput === 0 && (
           <Strategy
             key="strategy-step"
             value={formData.strategy.value}
             onChange={handleChange}
             handleContinue={handleContinue}
+            availableStrategies={availableStrategies}
+            setAvailableStrategies={setAvailableStrategies}
           >
             <AnimationButton onClick={handleBack}>Back</AnimationButton>
             <AnimationButton onClick={handleContinue}>Continue</AnimationButton>

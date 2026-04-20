@@ -7,7 +7,7 @@ import {
   parseUserConfigOptions,
 } from "@/util/strategies/configuration";
 
-interface ConfigurationOptionsProps {
+interface JSONOptionsProps {
   onConfigUpload?: ({
     parsedConfig,
     stringConfig,
@@ -17,12 +17,14 @@ interface ConfigurationOptionsProps {
   }) => void;
   name?: string;
   resetTrigger?: number;
+  label: string;
 }
 
-const ConfigurationOptions: React.FC<ConfigurationOptionsProps> = ({
+const JSONOptions: React.FC<JSONOptionsProps> = ({
   onConfigUpload,
   name,
   resetTrigger,
+  label
 }) => {
   const [info, setInfo] = useState({
     error: false,
@@ -65,7 +67,7 @@ const ConfigurationOptions: React.FC<ConfigurationOptionsProps> = ({
   }
   return (
     <FormControl error={info.error}>
-      <FormLabel>Configuration Options</FormLabel>
+      <FormLabel>{label}</FormLabel>
       <UploadFile
         accept=".json"
         name={name}
@@ -82,4 +84,4 @@ const ConfigurationOptions: React.FC<ConfigurationOptionsProps> = ({
   );
 };
 
-export default ConfigurationOptions;
+export default JSONOptions;

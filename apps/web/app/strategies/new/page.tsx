@@ -1,6 +1,6 @@
 "use client";
 import CodeUpload from "@/components/Input/File/Strategies/CodeUpload";
-import ConfigurationOptions from "@/components/Input/File/Strategies/ConfigurationOptionsUpload";
+import JSONOptions from "@/components/Input/File/Strategies/JSONOptionsUpload";
 import {
   Button,
   FormControl,
@@ -62,10 +62,17 @@ export default function NewStrategyPage() {
               name="strategyCode"
               resetTrigger={resetTrigger}
             />
-            <ConfigurationOptions
+            <JSONOptions
               onConfigUpload={() => {}}
               name="strategyConfig"
               resetTrigger={resetTrigger}
+              label="Configuration Options"
+            />
+            <JSONOptions
+              onConfigUpload={() => {}}
+              name="strategyRequirements"
+              resetTrigger={resetTrigger}
+              label="Requiremenets"
             />
             <div>
               <Button type="submit">Submit</Button>

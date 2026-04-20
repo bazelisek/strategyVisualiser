@@ -12,12 +12,14 @@ export async function postStrategy({
   isPublic,
   strategyCode,
   configurationOptions,
+  requirements
 }: {
   name: string;
   description: string;
   isPublic: boolean;
   strategyCode: string;
   configurationOptions: string;
+  requirements: string;
 }): Promise<{ error: string | null; }> {
     const session = await getServerSession();
     const userEmail = session?.user.email;
@@ -29,7 +31,8 @@ export async function postStrategy({
         code: strategyCode,
         configuration: configurationOptions,
         ownerEmail: userEmail,
-        isPublic
+        isPublic,
+        requirements
     }
 
     await axios.post(BASE_URL + "/api/strategies", data)

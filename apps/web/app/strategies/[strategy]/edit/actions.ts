@@ -27,6 +27,7 @@ export async function updateStrategy(strategyId: string, formData: FormData) {
   const strategyIsPublic = formData.get("strategyIsPublic") === "on";
   const strategyCode = formData.get("strategyCode");
   const strategyConfig = formData.get("strategyConfig");
+  const strategyRequirements = formData.get("strategyRequirements");
 
   if (typeof strategyName !== "string" || !strategyName.trim()) {
     throw new Error("Strategy name is required.");
@@ -39,13 +40,19 @@ export async function updateStrategy(strategyId: string, formData: FormData) {
     strategyCode instanceof File && strategyCode.size > 0 ? strategyCode : null;
   const configFile =
     strategyConfig instanceof File && strategyConfig.size > 0 ? strategyConfig : null;
+  const requirementsFile = strategyRequirements instanceof File && strategyRequirements.size > 0 ? strategyRequirements : null;
 
   const codeText = codeFile ? await codeFile.text() : existingStrategy.code;
   const configText = configFile ? await configFile.text() : "";
+  const requirementsText = requirementsFile ? await requirementsFile.text() : '';
   const parsedConfig = configText ? parseUserConfigOptions(configText) : [];
+  const parsedRequirements = requirementsText ? JSON.parse(requirementsText) : {};
   const finalConfig = configFile
     ? JSON.stringify(buildStrategyConfiguration(parsedConfig))
     : existingStrategy.configuration;
+const finalRequirements = requirementsFile
+    ? JSON.stringify(buildStrategyConfiguration(parsedRequirements))
+    : existingStrategy.requirements;
 
   const { error } = await patchStrategy({
     id: strategyId,
@@ -54,6 +61,7 @@ export async function updateStrategy(strategyId: string, formData: FormData) {
     isPublic: strategyIsPublic,
     strategyCode: codeText,
     configurationOptions: finalConfig,
+    requirements: finalRequirements
   });
 
   if (error) {

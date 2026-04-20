@@ -2,7 +2,7 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import AnimationWrapper from "./AnimationWrapper";
 import CustomSelect from "./CustomSelect";
-import { getAvailableStrategies } from "@/util/strategies/strategies";
+import { getAvailableStrategies, type Strategy } from "@/util/strategies/strategies";
 import ChartLoading from "@/components/common/ChartLoading";
 
 interface StrategyProps {
@@ -12,6 +12,8 @@ interface StrategyProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
   handleContinue: () => void;
+  availableStrategies: Strategy[];
+  setAvailableStrategies: React.Dispatch<React.SetStateAction<Strategy[]>>;
 }
 
 const Strategy: React.FC<StrategyProps> = ({
@@ -19,8 +21,9 @@ const Strategy: React.FC<StrategyProps> = ({
   onChange,
   handleContinue,
   children,
+  availableStrategies,
+  setAvailableStrategies
 }) => {
-  const [availableStrategies, setAvailableStrategies] = useState<string[]>([]);
   useEffect(() => {
     async function handleFetch() {
       setAvailableStrategies(await getAvailableStrategies());
@@ -39,7 +42,8 @@ const Strategy: React.FC<StrategyProps> = ({
               onChange={(val) =>
                 onChange({ target: { name: "strategy", value: val } } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)
               }
-              options={availableStrategies}
+              options={availableStrategies.map(str => str.id.toString())}
+              mapping={availableStrategies.map(str => str.name)}
               value={value}
               initialText="Plese select a strategy"
             />

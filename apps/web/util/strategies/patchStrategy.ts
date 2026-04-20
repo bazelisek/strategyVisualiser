@@ -13,6 +13,7 @@ export async function patchStrategy({
   isPublic,
   strategyCode,
   configurationOptions,
+  requirements
 }: {
   id: string;
   name: string;
@@ -20,6 +21,7 @@ export async function patchStrategy({
   isPublic: boolean;
   strategyCode: string;
   configurationOptions: string;
+  requirements: string;
 }): Promise<{ error: string | null }> {
   const session = await getServerSession();
   const userEmail = session?.user.email;
@@ -32,6 +34,7 @@ export async function patchStrategy({
     configuration: configurationOptions,
     ownerEmail: userEmail,
     isPublic,
+    requirements
   };
 
   await axios.patch(`${BASE_URL}/api/strategies/${id}`, data);

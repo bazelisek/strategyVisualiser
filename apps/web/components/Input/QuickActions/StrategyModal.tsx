@@ -31,7 +31,8 @@ const StrategyModal: React.FC<StrategyModalProps> = ({ index }) => {
 
   useEffect(() => {
     async function handleFetch() {
-      setStrategies(await getAvailableStrategies());
+      const availableStrategies = await getAvailableStrategies();
+      setStrategies(availableStrategies.map(str => str.name));
     }
     handleFetch();
   }, []);

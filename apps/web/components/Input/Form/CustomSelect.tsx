@@ -5,6 +5,7 @@ import DropdownBox from "./DropdownBox";
 
 interface CustomSelectProps {
   options: string[];
+  mapping?: string[];
   value: string;
   onChange: (value: string) => void;
   initialText: string;
@@ -14,6 +15,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   value,
   onChange,
   options,
+  mapping,
   initialText,
 }) => {
   const [open, setOpen] = useState(false);
@@ -29,7 +31,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
       <AnimatePresence mode="sync">
         {open && (
-          <DropdownBox onChange={onChange} options={options} setOpen={setOpen}/>
+          <DropdownBox onChange={(value: string) => {mapping ? onChange(options[mapping.indexOf(value)]):onChange(value)}} options={mapping ?? options} setOpen={setOpen}/>
         )}
       </AnimatePresence>
     </div>

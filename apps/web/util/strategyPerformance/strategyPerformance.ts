@@ -5,7 +5,7 @@ interface StrategyPoint {
   amount: number; // >0 = buy, <0 = sell
 }
 
-type Trade = {
+export type Trade = {
   buy: number;
   sell: number;
   result: number;

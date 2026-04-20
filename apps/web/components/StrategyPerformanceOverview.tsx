@@ -1,5 +1,8 @@
 import { candleData } from "@/util/serverFetch";
-import { getStrategyPerformance } from "@/util/strategyPerformance/strategyPerformance";
+import {
+  getStrategyPerformance,
+  Trade,
+} from "@/util/strategyPerformance/strategyPerformance";
 import React, { ReactNode, useMemo, useState } from "react";
 import AnimationButton from "./Input/Buttons/AnimationButton";
 import { AnimatePresence, motion } from "framer-motion";
@@ -16,6 +19,10 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { TableCell, TableRow } from "@mui/material";
 import DropdownButton from "./Input/Buttons/DropdownButton";
+
+type EnrichedTrade = Trade & {
+  pct: number;
+};
 
 interface StrategyPerformanceOverviewProps {
   children?: ReactNode;
@@ -42,7 +49,7 @@ const StrategyPerformanceOverview: React.FC<
   const enriched = useMemo(() => {
     if (!performance.data) return null;
 
-    const trades = performance.data.trades.map((t) => {
+    const trades: EnrichedTrade[] = performance.data.trades.map((t) => {
       const pct = ((t.sell - t.buy) / t.buy) * 100;
       return { ...t, pct };
     });
@@ -95,7 +102,7 @@ const StrategyPerformanceOverview: React.FC<
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          width: "100%"
+          width: "100%",
         }}
       >
         <Stack direction="row" spacing={1} alignItems="center">
@@ -182,37 +189,37 @@ const StrategyPerformanceOverview: React.FC<
                       {
                         id: "buyTime",
                         header: "Buy",
-                        cell: (r) => formatLocalDateTime(r.buyTime),
+                        cell: (r: EnrichedTrade) => formatLocalDateTime(r.buyTime),
                         sortable: true,
                       },
                       {
                         id: "sellTime",
                         header: "Sell",
-                        cell: (r) => formatLocalDateTime(r.sellTime),
+                        cell: (r: EnrichedTrade) => formatLocalDateTime(r.sellTime),
                         sortable: true,
                       },
                       {
                         id: "buy",
                         header: "Buy",
-                        cell: (r) => r.buy.toFixed(2),
+                        cell: (r: EnrichedTrade) => r.buy.toFixed(2),
                         sortable: true,
                       },
                       {
                         id: "sell",
                         header: "Sell",
-                        cell: (r) => r.sell.toFixed(2),
+                        cell: (r: EnrichedTrade) => r.sell.toFixed(2),
                         sortable: true,
                       },
                       {
                         id: "result",
                         header: "PnL",
-                        cell: (r) => r.result.toFixed(2),
+                        cell: (r: EnrichedTrade) => r.result.toFixed(2),
                         sortable: true,
                       },
                       {
                         id: "pct",
                         header: "%",
-                        cell: (r: any) => (
+                        cell: (r: EnrichedTrade) => (
                           <Typography color={r.pct >= 0 ? "success" : "danger"}>
                             {r.pct.toFixed(2)}%
                           </Typography>
@@ -220,22 +227,50 @@ const StrategyPerformanceOverview: React.FC<
                         sortable: true,
                       },
                     ]}
-                    rows={enriched.trades as any}
+                    rows={enriched.trades}
                     renderFooter={() => (
                       <>
                         <TableRow>
-                          <TableCell colSpan={2}><Typography><strong>Total</strong></Typography></TableCell>
-                          <TableCell>{enriched.totalBuyValue.toFixed(2)}</TableCell>
-                          <TableCell>{enriched.totalSellValue.toFixed(2)}</TableCell>
+                          <TableCell colSpan={2}>
+                            <Typography>
+                              <strong>Total</strong>
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            {enriched.totalBuyValue.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            {enriched.totalSellValue.toFixed(2)}
+                          </TableCell>
                           <TableCell>{enriched.pnl.toFixed(2)}</TableCell>
-                          <TableCell><Typography color={enriched.totalPct >= 0 ? "success" : "danger"}>{enriched.totalPct.toFixed(2)}%</Typography></TableCell>
+                          <TableCell>
+                            <Typography
+                              color={
+                                enriched.totalPct >= 0 ? "success" : "danger"
+                              }
+                            >
+                              {enriched.totalPct.toFixed(2)}%
+                            </Typography>
+                          </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell colSpan={2}><Typography><strong>Average</strong></Typography></TableCell>
+                          <TableCell colSpan={2}>
+                            <Typography>
+                              <strong>Average</strong>
+                            </Typography>
+                          </TableCell>
                           <TableCell>{enriched.avgBuy.toFixed(2)}</TableCell>
                           <TableCell>{enriched.avgSell.toFixed(2)}</TableCell>
                           <TableCell>{enriched.avgPnL.toFixed(2)}</TableCell>
-                          <TableCell><Typography color={enriched.avgPctFinal >= 0 ? "success" : "danger"}>{enriched.avgPctFinal.toFixed(2)}%</Typography></TableCell>
+                          <TableCell>
+                            <Typography
+                              color={
+                                enriched.avgPctFinal >= 0 ? "success" : "danger"
+                              }
+                            >
+                              {enriched.avgPctFinal.toFixed(2)}%
+                            </Typography>
+                          </TableCell>
                         </TableRow>
                       </>
                     )}

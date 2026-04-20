@@ -1,6 +1,7 @@
 import React, { ReactNode } from "react";
 import AnimationWrapper from "./AnimationWrapper";
 import CustomSelect from "./CustomSelect";
+import { Requirements } from "./Form";
 
 interface IntervalProps {
   children?: ReactNode;
@@ -10,6 +11,7 @@ interface IntervalProps {
   ) => void;
   availableIntervals: string[];
   handleContinue: () => void;
+  requirements: Requirements;
 }
 const Interval: React.FC<IntervalProps> = ({
   value,
@@ -17,7 +19,17 @@ const Interval: React.FC<IntervalProps> = ({
   availableIntervals,
   handleContinue,
   children,
+  requirements
 }) => {
+  const finalAvailableIntervals = requirements.symbol?.whitelist
+      ? availableIntervals.filter((interval) =>
+          requirements.interval?.whitelist?.includes(interval),
+        )
+      : requirements.interval?.blacklist
+        ? availableIntervals.filter(
+            (interval) => !requirements.interval?.blacklist?.includes(interval),
+          )
+        : availableIntervals;
   return (
     <AnimationWrapper handleContinue={handleContinue}>
       <div>
@@ -29,7 +41,7 @@ const Interval: React.FC<IntervalProps> = ({
               target: { name: "interval", value: val },
             } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)
           }
-          options={availableIntervals}
+          options={finalAvailableIntervals}
           value={value}
           initialText="Plese select an interval"
         />

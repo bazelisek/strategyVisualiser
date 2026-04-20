@@ -94,8 +94,8 @@ public class StrategyDao {
 
     private Strategy insert(Strategy strategy) {
         String sql = """
-            INSERT INTO strategies (name, description, code, configuration, owner_email, is_public, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT INTO strategies (name, description, code, configuration, owner_email, is_public, requirements, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -107,6 +107,7 @@ public class StrategyDao {
             ps.setString(4, strategy.getConfiguration());
             ps.setString(5, strategy.getOwnerEmail());
             ps.setBoolean(6, strategy.getIsPublic() != null ? strategy.getIsPublic() : true);
+            ps.setString(7, strategy.getRequirements());
             return ps;
         }, keyHolder);
 
