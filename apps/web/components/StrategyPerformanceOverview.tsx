@@ -1,3 +1,5 @@
+'use client';
+
 import { candleData } from "@/util/serverFetch";
 import {
   getStrategyPerformance,
@@ -19,6 +21,7 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { TableCell, TableRow } from "@mui/material";
 import DropdownButton from "./Input/Buttons/DropdownButton";
+import { useStrategyName } from "@/hooks/useStrategyName";
 
 type EnrichedTrade = Trade & {
   pct: number;
@@ -44,6 +47,7 @@ const StrategyPerformanceOverview: React.FC<
 > = ({ transformedData, strategy, strategyData, className }) => {
   const [open, setOpen] = useState(false);
 
+  const strategyName = useStrategyName(strategy);
   const performance = getStrategyPerformance(strategyData, transformedData);
 
   const enriched = useMemo(() => {
@@ -110,8 +114,8 @@ const StrategyPerformanceOverview: React.FC<
           <Typography fontWeight="lg">Strategy Performance</Typography>
         </Stack>
 
-        <DropdownButton onClick={() => setOpen((p) => !p)}>
-          {strategy}
+<DropdownButton onClick={() => setOpen((p) => !p)}>
+          {strategyName ?? `Strategy ${strategy}`}
         </DropdownButton>
       </Sheet>
 

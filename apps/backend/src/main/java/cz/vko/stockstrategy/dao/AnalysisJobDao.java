@@ -12,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +30,7 @@ public class AnalysisJobDao {
         @Override
         public AnalysisJob mapRow(@NonNull ResultSet rs, int rowNum) throws SQLException {
             AnalysisJob job = new AnalysisJob();
+
             job.setId(rs.getLong("id"));
             job.setStrategyId(rs.getLong("strategy_id"));
             job.setStatus(rs.getString("status"));
@@ -37,16 +39,19 @@ public class AnalysisJobDao {
             job.setConsoleOutput(rs.getString("console_output"));
             job.setConfigSignature(rs.getString("config_signature"));
             job.setConfigPayload(rs.getString("config_payload"));
+
             if (rs.getDate("range_start") != null) {
                 job.setRangeStart(rs.getDate("range_start").toLocalDate());
             }
             if (rs.getDate("range_end") != null) {
                 job.setRangeEnd(rs.getDate("range_end").toLocalDate());
             }
+
             long reusedFromJobId = rs.getLong("reused_from_job_id");
             if (!rs.wasNull()) {
                 job.setReusedFromJobId(reusedFromJobId);
             }
+
             job.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
 
             if (rs.getTimestamp("started_at") != null) {
@@ -66,6 +71,72 @@ public class AnalysisJobDao {
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }
 
+    /**
+     * ✅ FIXED: true deterministic cache lookup
+     * No NULL logic, no partial matching, no ambiguity.
+     */
+    public Optional<AnalysisJob> findCompletedByExactRange(
+            Long strategyId,
+            String configSignature,
+            LocalDate rangeStart,
+            LocalDate rangeEnd
+    ) {
+        String sql = """
+            SELECT * FROM analysis_jobs
+            WHERE strategy_id = ?
+              AND status = 'completed'
+              AND config_signature = ?
+              AND range_start = ?
+              AND range_end = ?
+            ORDER BY completed_at DESC
+            LIMIT 1
+            """;
+
+        List<AnalysisJob> results = jdbcTemplate.query(
+                sql,
+                JOB_MAPPER,
+                strategyId,
+                configSignature,
+                rangeStart,
+                rangeEnd
+        );
+
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
+
+    /**
+     * ⚠️ Kept but now clearly labeled as "range reuse", not cache.
+     * This is NOT safe for caching.
+     */
+    public Optional<AnalysisJob> findCompletedContainingRange(
+            Long strategyId,
+            String configSignature,
+            LocalDate rangeStart,
+            LocalDate rangeEnd
+    ) {
+        String sql = """
+            SELECT * FROM analysis_jobs
+            WHERE strategy_id = ?
+              AND status = 'completed'
+              AND config_signature = ?
+              AND range_start <= ?
+              AND range_end >= ?
+            ORDER BY completed_at DESC
+            LIMIT 1
+            """;
+
+        List<AnalysisJob> results = jdbcTemplate.query(
+                sql,
+                JOB_MAPPER,
+                strategyId,
+                configSignature,
+                rangeStart,
+                rangeEnd
+        );
+
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
+    }
+
     public AnalysisJob save(AnalysisJob job) {
         if (job.getId() == null) {
             return insert(job);
@@ -74,63 +145,43 @@ public class AnalysisJobDao {
         }
     }
 
-    public Optional<AnalysisJob> findCompletedByExactRange(Long strategyId, String configSignature, java.time.LocalDate rangeStart, java.time.LocalDate rangeEnd) {
-        String sql = """
-            SELECT * FROM analysis_jobs
-            WHERE strategy_id = ?
-              AND status = 'completed'
-              AND config_signature = ?
-              AND (
-                    (? IS NULL AND range_start IS NULL)
-                    OR range_start = ?
-                  )
-              AND (
-                    (? IS NULL AND range_end IS NULL)
-                    OR range_end = ?
-                  )
-            ORDER BY completed_at DESC
-            LIMIT 1
-            """;
-        List<AnalysisJob> results = jdbcTemplate.query(sql, JOB_MAPPER, strategyId, configSignature, rangeStart, rangeStart, rangeEnd, rangeEnd);
-        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
-    }
-
-    public Optional<AnalysisJob> findCompletedContainingRange(Long strategyId, String configSignature, java.time.LocalDate rangeStart, java.time.LocalDate rangeEnd) {
-        String sql = """
-            SELECT * FROM analysis_jobs
-            WHERE strategy_id = ?
-              AND status = 'completed'
-              AND config_signature = ?
-              AND (? IS NULL OR range_start IS NULL OR range_start <= ?)
-              AND (? IS NULL OR range_end IS NULL OR range_end >= ?)
-            ORDER BY completed_at DESC
-            LIMIT 1
-            """;
-        List<AnalysisJob> results = jdbcTemplate.query(sql, JOB_MAPPER, strategyId, configSignature, rangeStart, rangeStart, rangeEnd, rangeEnd);
-        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
-    }
-
     public int deleteByStrategyId(Long strategyId) {
-        String sql = "DELETE FROM analysis_jobs WHERE strategy_id = ?";
-        return jdbcTemplate.update(sql, strategyId);
+        return jdbcTemplate.update(
+                "DELETE FROM analysis_jobs WHERE strategy_id = ?",
+                strategyId
+        );
     }
 
     public int deleteAll() {
-        String sql = "DELETE FROM analysis_jobs";
-        return jdbcTemplate.update(sql);
+        return jdbcTemplate.update("DELETE FROM analysis_jobs");
     }
 
     private AnalysisJob insert(AnalysisJob job) {
+
         String sql = """
             INSERT INTO analysis_jobs (
-                strategy_id, status, result, error_message, console_output, config_signature, config_payload, range_start, range_end, reused_from_job_id, created_at, started_at, completed_at
+                strategy_id,
+                status,
+                result,
+                error_message,
+                console_output,
+                config_signature,
+                config_payload,
+                range_start,
+                range_end,
+                reused_from_job_id,
+                created_at,
+                started_at,
+                completed_at
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?)
             """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
+
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+
             ps.setLong(1, job.getStrategyId());
             ps.setString(2, job.getStatus());
             ps.setString(3, job.getResult());
@@ -138,48 +189,65 @@ public class AnalysisJobDao {
             ps.setString(5, job.getConsoleOutput());
             ps.setString(6, job.getConfigSignature());
             ps.setString(7, job.getConfigPayload());
+
             if (job.getRangeStart() != null) {
                 ps.setDate(8, java.sql.Date.valueOf(job.getRangeStart()));
             } else {
                 ps.setNull(8, Types.DATE);
             }
+
             if (job.getRangeEnd() != null) {
                 ps.setDate(9, java.sql.Date.valueOf(job.getRangeEnd()));
             } else {
                 ps.setNull(9, Types.DATE);
             }
+
             if (job.getReusedFromJobId() != null) {
                 ps.setLong(10, job.getReusedFromJobId());
             } else {
                 ps.setNull(10, Types.BIGINT);
             }
+
             if (job.getStartedAt() != null) {
                 ps.setTimestamp(11, java.sql.Timestamp.valueOf(job.getStartedAt()));
             } else {
                 ps.setTimestamp(11, null);
             }
+
             if (job.getCompletedAt() != null) {
                 ps.setTimestamp(12, java.sql.Timestamp.valueOf(job.getCompletedAt()));
             } else {
                 ps.setTimestamp(12, null);
             }
+
             return ps;
         }, keyHolder);
 
-        Map<String, Object> generatedKeys = keyHolder.getKeys();
-        Number generatedId = generatedKeys != null ? (Number) generatedKeys.get("id") : null;
-        if (generatedId == null) {
-            throw new IllegalStateException("Insert analysis job did not return a generated id.");
+        Number id = keyHolder.getKey();
+        if (id == null) {
+            throw new IllegalStateException("Insert failed: no ID returned");
         }
 
-        return findById(generatedId.longValue())
-                .orElseThrow(() -> new IllegalStateException("Inserted analysis job could not be loaded."));
+        return findById(id.longValue())
+                .orElseThrow(() -> new IllegalStateException("Inserted job not found"));
     }
 
     private AnalysisJob update(AnalysisJob job) {
+
         String sql = """
             UPDATE analysis_jobs
-            SET strategy_id = ?, status = ?, result = ?, error_message = ?, console_output = ?, config_signature = ?, config_payload = ?, range_start = ?, range_end = ?, reused_from_job_id = ?, started_at = ?, completed_at = ?
+            SET strategy_id = ?,
+                status = ?,
+                result = ?,
+                error_message = ?,
+                console_output = ?,
+                config_signature = ?,
+                config_payload = ?,
+                range_start = ?,
+                range_end = ?,
+                reused_from_job_id = ?,
+                started_at = ?,
+                completed_at = ?
             WHERE id = ?
             """;
 
@@ -196,7 +264,8 @@ public class AnalysisJobDao {
                 job.getReusedFromJobId(),
                 job.getStartedAt() != null ? java.sql.Timestamp.valueOf(job.getStartedAt()) : null,
                 job.getCompletedAt() != null ? java.sql.Timestamp.valueOf(job.getCompletedAt()) : null,
-                job.getId());
+                job.getId()
+        );
 
         return job;
     }

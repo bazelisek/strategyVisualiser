@@ -72,7 +72,7 @@ export default function NewStrategyPage() {
               onConfigUpload={() => {}}
               name="strategyRequirements"
               resetTrigger={resetTrigger}
-              label="Requiremenets"
+              label="Requirements"
             />
             <div>
               <Button type="submit">Submit</Button>

@@ -44,7 +44,7 @@ const Strategy: React.FC<StrategyProps> = ({
               }
               options={availableStrategies.map(str => str.id.toString())}
               mapping={availableStrategies.map(str => str.name)}
-              value={value}
+              value={availableStrategies.find(strategy => strategy.id === +value)?.name || ''}
               initialText="Plese select a strategy"
             />
             {children}

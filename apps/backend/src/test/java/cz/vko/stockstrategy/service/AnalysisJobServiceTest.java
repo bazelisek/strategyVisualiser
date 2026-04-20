@@ -6,6 +6,7 @@ import cz.vko.stockstrategy.dao.AnalysisJobDao;
 import cz.vko.stockstrategy.dao.StrategyDao;
 import cz.vko.stockstrategy.dto.AnalyzeStrategyRequestDTO;
 import cz.vko.stockstrategy.model.AnalysisJob;
+import cz.vko.stockstrategy.model.StockData;
 import cz.vko.stockstrategy.model.Strategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,13 +15,17 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -82,15 +87,17 @@ class AnalysisJobServiceTest {
         verify(analysisJobDao, never()).findCompletedContainingRange(any(), any(), any(), any());
     }
 
+    /**
+     * A cached job whose stored range *contains* the requested range ran the strategy over more
+     * data than the user asked for.  Its result therefore covers a wider interval and must NOT be
+     * reused for a narrower request — doing so would return signals for dates outside the
+     * requested window.  The service must create a fresh pending job instead.
+     */
     @Test
-    void createAnalysisJobUsesContainedRangeWhenExactMissing() {
+    void createAnalysisJobCreatesPendingWhenOnlyContainingRangeExists() {
         Strategy strategy = strategyWithConfiguration();
         when(strategyDao.findById(9L)).thenReturn(Optional.of(strategy));
         when(analysisJobDao.findCompletedByExactRange(eq(9L), any(), any(), any())).thenReturn(Optional.empty());
-
-        AnalysisJob existing = completedJob(222L, "sig-2", LocalDate.parse("2023-01-01"), LocalDate.parse("2024-12-31"));
-        when(analysisJobDao.findCompletedContainingRange(eq(9L), any(), eq(LocalDate.parse("2024-01-01")), eq(LocalDate.parse("2024-01-31"))))
-                .thenReturn(Optional.of(existing));
         when(analysisJobDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         AnalyzeStrategyRequestDTO request = new AnalyzeStrategyRequestDTO();
@@ -99,8 +106,12 @@ class AnalysisJobServiceTest {
         request.setConfig(Map.of("lookback", 42));
 
         AnalysisJob created = analysisJobService.createAnalysisJob(9L, request);
-        assertThat(created.getStatus()).isEqualTo("completed");
-        assertThat(created.getReusedFromJobId()).isEqualTo(222L);
+
+        // Must be a fresh pending job, not a reuse of the wider cached result
+        assertThat(created.getStatus()).isEqualTo("pending");
+        assertThat(created.getReusedFromJobId()).isNull();
+        // findCompletedContainingRange must never be consulted
+        verify(analysisJobDao, never()).findCompletedContainingRange(any(), any(), any(), any());
     }
 
     @Test
@@ -108,7 +119,6 @@ class AnalysisJobServiceTest {
         Strategy strategy = strategyWithConfiguration();
         when(strategyDao.findById(9L)).thenReturn(Optional.of(strategy));
         when(analysisJobDao.findCompletedByExactRange(eq(9L), any(), any(), any())).thenReturn(Optional.empty());
-        when(analysisJobDao.findCompletedContainingRange(eq(9L), any(), any(), any())).thenReturn(Optional.empty());
         when(analysisJobDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         AnalyzeStrategyRequestDTO request = new AnalyzeStrategyRequestDTO();
@@ -120,6 +130,7 @@ class AnalysisJobServiceTest {
         verify(analysisJobDao).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo("pending");
         assertThat(captor.getValue().getConfigPayload()).contains("\"lookback\"").contains("8");
+        verify(analysisJobDao, never()).findCompletedContainingRange(any(), any(), any(), any());
     }
 
     @Test

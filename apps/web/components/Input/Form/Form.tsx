@@ -77,8 +77,8 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
   function handleContinue() {
     const value = formData.symbol.value;
     if (
-      currentInput === 0 &&
-      (value.length === 0 || value.toUpperCase() !== value)
+      currentInput === 1 &&
+      (value.length === 1 || value.toUpperCase() !== value)
     ) {
       setError("Incorrect symbol");
       return;

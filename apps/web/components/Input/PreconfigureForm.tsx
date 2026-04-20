@@ -8,10 +8,15 @@ import Symbol from "./Form/Symbol";
 import Time from "./Form/Time";
 import Interval from "./Form/Interval";
 import Strategy from "./Form/Strategy";
-import { addToArrayAndHandleEdgeCases, getValidIntervals } from "@/util/formCheck";
+import {
+  addToArrayAndHandleEdgeCases,
+  getValidIntervals,
+} from "@/util/formCheck";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/reduxStore";
 import { useTiles } from "@/hooks/useTiles";
+import { Requirements } from "./Form/Form";
+import { type Strategy as StrategyType } from "@/util/strategies/strategies";
 
 interface PreconfigureFormProps {
   children?: ReactNode;
@@ -26,6 +31,14 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
   const config = useSelector((state: RootState) => state.config);
   const [formData, setFormData] = useState<ConfigState>(config);
   const { tiles, setTiles } = useTiles();
+  const [availableStrategies, setAvailableStrategies] = useState<
+    StrategyType[]
+  >([]);
+  const requirements: Requirements = JSON.parse(
+    availableStrategies.find(
+      (str) => str.id.toString() == formData.strategy.defaultValue,
+    )?.requirements ?? "{}",
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -33,7 +46,7 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
   }, [open, config]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -52,7 +65,7 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
     formData.period1.defaultValue && formData.period2.defaultValue
       ? getValidIntervals(
           new Date(formData.period1.defaultValue),
-          new Date(formData.period2.defaultValue)
+          new Date(formData.period2.defaultValue),
         )
       : [
           "1m",
@@ -79,10 +92,22 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
       >
         <motion.ul className={classes.ul} layout>
           <motion.li className={classes.li} layout>
+            <Strategy
+              value={formData.strategy.defaultValue}
+              onChange={handleChange}
+              handleContinue={() => {}}
+              availableStrategies={availableStrategies}
+              setAvailableStrategies={setAvailableStrategies}
+            />
+            <GlobalizeButton onClick={() => handleGlobalize("strategy")} />
+          </motion.li>
+          <motion.li className={classes.li} layout>
             <Symbol
               value={formData.symbol.defaultValue}
               onChange={handleChange}
               handleContinue={() => {}}
+              requirements={requirements}
+              
             />
             <GlobalizeButton onClick={() => handleGlobalize("symbol")} />
           </motion.li>
@@ -106,17 +131,11 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
               onChange={handleChange}
               availableIntervals={availableIntervals}
               handleContinue={() => {}}
+              requirements={requirements}
             />
             <GlobalizeButton onClick={() => handleGlobalize("interval")} />
           </motion.li>
-          <motion.li className={classes.li} layout>
-            <Strategy
-              value={formData.strategy.defaultValue}
-              onChange={handleChange}
-              handleContinue={() => {}}
-            />
-            <GlobalizeButton onClick={() => handleGlobalize("strategy")} />
-          </motion.li>
+          
         </motion.ul>
       </Modal>
     </>

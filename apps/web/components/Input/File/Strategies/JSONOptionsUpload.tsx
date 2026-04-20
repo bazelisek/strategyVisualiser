@@ -71,7 +71,7 @@ const JSONOptions: React.FC<JSONOptionsProps> = ({
       <UploadFile
         accept=".json"
         name={name}
-        displayName={"Configuration"}
+        displayName={label}
         onChange={handleFileUpload}
       />
       {info.display && (

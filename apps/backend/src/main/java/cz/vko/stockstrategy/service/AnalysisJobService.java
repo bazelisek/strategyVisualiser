@@ -69,15 +69,10 @@ public class AnalysisJobService {
             return createReusedJob(strategyId, resolvedConfiguration, effectiveRequest, exactMatch.get());
         }
 
-        Optional<AnalysisJob> containedRangeMatch = analysisJobDao.findCompletedContainingRange(
-                strategyId,
-                configSignature,
-                effectiveRequest.getFromDate(),
-                effectiveRequest.getToDate()
-        );
-        if (containedRangeMatch.isPresent()) {
-            return createReusedJob(strategyId, resolvedConfiguration, effectiveRequest, containedRangeMatch.get());
-        }
+        // A job whose stored range *contains* the requested range ran the strategy over more data
+        // than the user asked for, so its result covers a wider interval and cannot be reused
+        // as-is for a narrower request.  We only reuse it when the ranges are identical (handled
+        // above by findCompletedByExactRange).  Drop through to create a fresh job instead.
 
         AnalysisJob job = new AnalysisJob();
         job.setStrategyId(strategyId);
@@ -296,7 +291,12 @@ public class AnalysisJobService {
         for (String symbol : symbols) {
             if (fromDate != null && toDate != null) {
                 List<StockData> symbolData = stockDataService.getStockData(symbol, "D", fromDate, toDate);
-                if (symbolData.isEmpty()) {
+                // Fetch from Yahoo when the DB has no data at all, or when the data it returned
+                // does not fully cover the requested date range (partial coverage).  Partial
+                // coverage happens when, for example, only the first half of the requested
+                // interval was previously imported.  We always save whatever Yahoo returns so
+                // that subsequent requests can benefit from the cached rows.
+                if (symbolData.isEmpty() || !coversFullRange(symbolData, fromDate, toDate)) {
                     List<StockData> yahooData = yahooFinanceService.getStockData(symbol, "1d", fromDate, toDate);
                     if (!yahooData.isEmpty()) {
                         stockDataService.saveIfMissing(yahooData);
@@ -312,6 +312,29 @@ public class AnalysisJobService {
                 .thenComparing(StockData::getTradeDate)
                 .thenComparing(StockData::getTradeTime));
         return stockData;
+    }
+
+    /**
+     * Returns {@code true} when the given stock-data rows span the full requested date range,
+     * i.e. the earliest row is on or before {@code fromDate} and the latest row is on or after
+     * {@code toDate}.  Stock markets are closed on weekends and holidays, so we cannot simply
+     * check that every calendar day is present; instead we verify that the data set starts no
+     * later than the requested start and ends no earlier than the requested end.
+     */
+    private boolean coversFullRange(List<StockData> data, LocalDate fromDate, LocalDate toDate) {
+        if (data.isEmpty()) {
+            return false;
+        }
+        LocalDate earliest = data.stream()
+                .map(StockData::getTradeDate)
+                .min(Comparator.naturalOrder())
+                .orElse(null);
+        LocalDate latest = data.stream()
+                .map(StockData::getTradeDate)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+        return earliest != null && !earliest.isAfter(fromDate)
+                && latest != null && !latest.isBefore(toDate);
     }
 
     private void writeStockDataCsv(Path stockDataFile, List<StockData> stockData) throws IOException {
