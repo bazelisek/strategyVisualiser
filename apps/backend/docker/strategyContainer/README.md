@@ -37,8 +37,8 @@ docker run --rm \
   --read-only \
   --tmpfs /opt/strategy/tmp:rw,noexec,nosuid,size=512m \
   --tmpfs /opt/strategy/workspace:rw,nosuid,size=512m \
-  -v "$PWD/job:/opt/strategy/workspace" \
-  strategy-runner MyStrategy.java
+  -v "$PWD/job:/opt/strategy/workspace:Z" \
+  strategy-runner /opt/strategy/workspace/MyStrategy.java
 ```
 
 Run an explicit command:
@@ -60,3 +60,6 @@ Recommended runtime flags:
 - `--cap-drop=ALL`
 - `--security-opt=no-new-privileges`
 - A restrictive seccomp profile if you add one on the backend side
+
+On SELinux-enabled hosts such as Fedora, add a relabel option like `:Z` or `:z`
+to bind-mounted workspaces so the container can see strategy source files.

@@ -32,6 +32,9 @@ case "$1" in
   *.java)
     source_file="$1"
     shift
+    if [[ ! -f "$source_file" ]]; then
+      source_file="${workdir}/$(basename "$source_file")"
+    fi
     main_class="${RUN_MAIN_CLASS:-$(basename "$source_file" .java)}"
     mkdir -p "$class_output_dir"
     echo "[strategy-runner] Compiling ${source_file}"

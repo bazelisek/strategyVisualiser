@@ -4,12 +4,17 @@ import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 @Service
 public class StrategyExecutionService {
+    static final String CONTAINER_WORKSPACE = "/opt/strategy/workspace";
+    private static final Path SELINUX_ENFORCE_PATH = Paths.get("/sys/fs/selinux/enforce");
 
     public String execute(StrategyExecutionRequest request) throws IOException, InterruptedException {
         return execute(request, null);
@@ -19,8 +24,8 @@ public class StrategyExecutionService {
         String containerRuntime = System.getenv().getOrDefault("STRATEGY_CONTAINER_RUNTIME", "docker");
         String containerImage = System.getenv().getOrDefault("STRATEGY_CONTAINER_IMAGE", "strategy-runner");
         boolean runAsRoot = Boolean.parseBoolean(System.getenv().getOrDefault("STRATEGY_CONTAINER_RUN_AS_ROOT", "false"));
-        String workspaceVolume = request.workspaceDir().toAbsolutePath() + ":/opt/strategy/workspace"
-                + ("podman".equalsIgnoreCase(containerRuntime) ? ":Z" : "");
+        String workspaceVolume = request.workspaceDir().toAbsolutePath() + ":" + CONTAINER_WORKSPACE
+                + workspaceVolumeSuffix(containerRuntime);
 
         List<String> command = new ArrayList<>(List.of(
                 containerRuntime, "run", "--rm",
@@ -45,7 +50,7 @@ public class StrategyExecutionService {
                 "-e", "STRATEGY_ID=" + request.strategyId(),
                 "-v", workspaceVolume,
                 containerImage,
-                request.sourceFile().getFileName().toString()
+                containerWorkspacePath(request.sourceFile())
         ));
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -73,5 +78,29 @@ public class StrategyExecutionService {
         }
 
         return output.toString();
+    }
+
+    static String containerWorkspacePath(Path hostPath) {
+        return CONTAINER_WORKSPACE + "/" + hostPath.getFileName();
+    }
+
+    static String workspaceVolumeSuffix(String containerRuntime) {
+        return workspaceVolumeSuffix(containerRuntime, isSelinuxEnforcing());
+    }
+
+    static String workspaceVolumeSuffix(String containerRuntime, boolean selinuxEnforcing) {
+        if (selinuxEnforcing) {
+            return ":Z";
+        }
+        return "podman".equalsIgnoreCase(containerRuntime) ? ":Z" : "";
+    }
+
+    static boolean isSelinuxEnforcing() {
+        try {
+            return Files.exists(SELINUX_ENFORCE_PATH)
+                    && "1".equals(Files.readString(SELINUX_ENFORCE_PATH).trim());
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 }
