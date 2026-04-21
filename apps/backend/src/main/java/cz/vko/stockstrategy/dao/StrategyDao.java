@@ -33,6 +33,7 @@ public class StrategyDao {
             s.setDescription(rs.getString("description"));
             s.setCode(rs.getString("code"));
             s.setConfiguration(rs.getString("configuration"));
+            s.setRequirements(rs.getString("requirements"));
             s.setOwnerEmail(rs.getString("owner_email"));
             s.setIsPublic(rs.getBoolean("is_public"));
             s.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
@@ -124,7 +125,7 @@ public class StrategyDao {
     private Strategy update(Strategy strategy) {
         String sql = """
             UPDATE strategies
-            SET name = ?, description = ?, code = ?, configuration = ?, owner_email = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP
+            SET name = ?, description = ?, code = ?, configuration = ?, requirements = ?, owner_email = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """;
 
@@ -133,6 +134,7 @@ public class StrategyDao {
                 strategy.getDescription(),
                 strategy.getCode(),
                 strategy.getConfiguration(),
+                strategy.getRequirements(),
                 strategy.getOwnerEmail(),
                 strategy.getIsPublic() != null ? strategy.getIsPublic() : true,
                 strategy.getId());

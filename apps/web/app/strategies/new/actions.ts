@@ -2,6 +2,7 @@
 
 import {
   buildStrategyConfiguration,
+  parseStrategyRequirements,
   parseUserConfigOptions,
 } from "@/util/strategies/configuration";
 import { postStrategy } from "@/util/strategies/postStrategy";
@@ -42,7 +43,7 @@ export async function createStrategy(formData: FormData) {
   const configText = configFile ? await configFile.text() : "";
   const requirementsText = requirementsFile ? await requirementsFile.text() : '';
   const parsedConfig = configText ? parseUserConfigOptions(configText) : [];
-  const parsedRequirements = requirementsText ? parseUserConfigOptions(requirementsText) : [];
+  const parsedRequirements = requirementsText ? parseStrategyRequirements(requirementsText) : {};
   const finalConfig = JSON.stringify(
     buildStrategyConfiguration(parsedConfig)
   );
@@ -50,7 +51,7 @@ export async function createStrategy(formData: FormData) {
     parsedRequirements
   )
 
-  console.log("Recieved request for saving a new strategy: ");
+  console.log("Received request for saving a new strategy: ");
   console.log({
     strategyName,
     strategyDescription,

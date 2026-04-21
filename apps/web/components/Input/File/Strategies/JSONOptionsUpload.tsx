@@ -24,8 +24,9 @@ const JSONOptions: React.FC<JSONOptionsProps> = ({
   onConfigUpload,
   name,
   resetTrigger,
-  label
+  label,
 }) => {
+  const [parsed, setParsed] = useState<string>("");
   const [info, setInfo] = useState({
     error: false,
     message: "",
@@ -49,7 +50,9 @@ const JSONOptions: React.FC<JSONOptionsProps> = ({
 
     const fileText = await file.text();
     try {
-      const parsedConfig = parseUserConfigOptions(fileText);
+      const parsedConfig = JSON.parse(fileText);
+      setParsed(fileText);
+      onConfigUpload?.({ parsedConfig, stringConfig: fileText });
 
       setInfo({
         error: false,

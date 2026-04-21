@@ -1,0 +1,130 @@
+[
+  {
+    "id": "emaFast",
+    "label": "Fast EMA Period",
+    "type": "number",
+    "defaultValue": 20
+  },
+  {
+    "id": "emaMid",
+    "label": "Mid EMA Period",
+    "type": "number",
+    "defaultValue": 50
+  },
+  {
+    "id": "emaSlow",
+    "label": "Slow EMA Period",
+    "type": "number",
+    "defaultValue": 100
+  },
+  {
+    "id": "smaLong",
+    "label": "Long SMA Period",
+    "type": "number",
+    "defaultValue": 200
+  },
+
+  {
+    "id": "slopeLookback",
+    "label": "SMA Slope Lookback",
+    "type": "number",
+    "defaultValue": 15
+  },
+
+  {
+    "id": "adxPeriod",
+    "label": "ADX Period",
+    "type": "number",
+    "defaultValue": 14
+  },
+  {
+    "id": "adxThreshold",
+    "label": "ADX Threshold",
+    "type": "number",
+    "defaultValue": 25
+  },
+
+  {
+    "id": "cciPeriod",
+    "label": "CCI Period",
+    "type": "number",
+    "defaultValue": 20
+  },
+  {
+    "id": "cciOversold",
+    "label": "CCI Oversold Level",
+    "type": "number",
+    "defaultValue": -100
+  },
+  {
+    "id": "cciOverbought",
+    "label": "CCI Overbought Level",
+    "type": "number",
+    "defaultValue": 100
+  },
+
+  {
+    "id": "atrPeriod",
+    "label": "ATR Period",
+    "type": "number",
+    "defaultValue": 14
+  },
+  {
+    "id": "atrMultiplier",
+    "label": "ATR Stop Multiplier",
+    "type": "number",
+    "defaultValue": 2.0
+  },
+
+  {
+    "id": "riskPercent",
+    "label": "Risk per Trade (%)",
+    "type": "number",
+    "defaultValue": 1.0
+  },
+
+  {
+    "id": "useTrailingStop",
+    "label": "Use ATR Trailing Stop",
+    "type": "boolean",
+    "defaultValue": true
+  },
+  {
+    "id": "useEmaExit",
+    "label": "Use EMA Exit",
+    "type": "boolean",
+    "defaultValue": true
+  },
+
+  {
+    "id": "cooldownBars",
+    "label": "Cooldown Bars After Exit",
+    "type": "number",
+    "defaultValue": 5
+  },
+
+  {
+    "id": "allowShorts",
+    "label": "Allow Short Positions",
+    "type": "boolean",
+    "defaultValue": true
+  },
+  {
+    "id": "accountSize",
+    "label": "Account Size",
+    "type": "number",
+    "defaultValue": 10000
+  },
+  {
+    "id": "minPositionSize",
+    "label": "Minimum Position Size",
+    "type": "number",
+    "defaultValue": 1
+  },
+  {
+    "id": "maxPositionSize",
+    "label": "Maximum Position Size",
+    "type": "number",
+    "defaultValue": 1000
+  }
+]

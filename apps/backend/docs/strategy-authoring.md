@@ -190,7 +190,7 @@ The UI expects `requirements` to be a **JSON object** of requirements with optio
 
 The `interval` field expects an object with an array of intervals keyed by `whitelist` or `blacklist`, note that all specified values might not be displayed, as Yahoo nly accepts certain intervals for certain ranges of data. Accepted values are "1m", "2m", "5m", "15m", "30m", "60m", "90m", "1d", "5d", "1wk", "1mo", "3mo". Both whitelist and blacklist cannot be defined. If they are, only whitelist will be taken into account.
 
-The `period` expects an object with keys `min` and `max`, which have values of type `int`. These values represent the range of possible selectable values in unix seconds. `period1` is the start date and `period2` is the end date.
+The `period` expects an object with keys `min` and `max`, which have values of type `int`. These values represent the range of possible selectable values in unix seconds.
 
 The `symbol` field expects an object with an array of symbols keyed by `whitelist` or `blacklist`. Both whitelist and blacklist cannot be defined. If they are, only whitelist will be taken into account.
 

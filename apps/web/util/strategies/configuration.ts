@@ -1,3 +1,4 @@
+import { Requirements } from "@/components/Input/Form/Form";
 import { symbols } from "@/util/symbols";
 
 export const UNIVERSE_CONFIG_ID = "universe";
@@ -104,4 +105,14 @@ export function buildStrategyConfiguration(
   configOptions: ConfigOptions = []
 ): ConfigOptions {
   return [createUniverseConfigOption(), ...configOptions];
+}
+
+export function parseStrategyRequirements(text: string): Requirements {
+  const parsed = JSON.parse(text);
+
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("Invalid requirements structure.");
+  }
+
+  return parsed;
 }

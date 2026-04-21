@@ -1,0 +1,5 @@
+{
+  "interval": {
+    "blacklist": ["1mo", "3mo"]
+  }
+}

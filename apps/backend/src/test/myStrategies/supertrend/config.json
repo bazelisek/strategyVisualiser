@@ -1,0 +1,30 @@
+[
+  {
+    "id": "supertrendPeriod",
+    "label": "Supertrend Period",
+    "type": "number",
+    "defaultValue": 10,
+    "required": true
+  },
+  {
+    "id": "multiplier",
+    "label": "Supertrend Multiplier",
+    "type": "number",
+    "defaultValue": 3.0,
+    "required": true
+  },
+  {
+    "id": "thresholdUp",
+    "label": "Threshold Up",
+    "type": "number",
+    "defaultValue": 1.0,
+    "required": true
+  },
+  {
+    "id": "thresholdDown",
+    "label": "Threshold Down",
+    "type": "number",
+    "defaultValue": 1.0,
+    "required": true
+  }
+]

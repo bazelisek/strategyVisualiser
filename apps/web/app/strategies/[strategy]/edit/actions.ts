@@ -1,6 +1,10 @@
 "use server";
 
-import { buildStrategyConfiguration, parseUserConfigOptions } from "@/util/strategies/configuration";
+import {
+  buildStrategyConfiguration,
+  parseStrategyRequirements,
+  parseUserConfigOptions,
+} from "@/util/strategies/configuration";
 import getStrategy from "@/util/strategies/getStrategy";
 import { patchStrategy } from "@/util/strategies/patchStrategy";
 import { getServerSession } from "@/auth/server";
@@ -46,12 +50,12 @@ export async function updateStrategy(strategyId: string, formData: FormData) {
   const configText = configFile ? await configFile.text() : "";
   const requirementsText = requirementsFile ? await requirementsFile.text() : '';
   const parsedConfig = configText ? parseUserConfigOptions(configText) : [];
-  const parsedRequirements = requirementsText ? JSON.parse(requirementsText) : {};
+  const parsedRequirements = requirementsText ? parseStrategyRequirements(requirementsText) : {};
   const finalConfig = configFile
     ? JSON.stringify(buildStrategyConfiguration(parsedConfig))
     : existingStrategy.configuration;
-const finalRequirements = requirementsFile
-    ? JSON.stringify(buildStrategyConfiguration(parsedRequirements))
+  const finalRequirements = requirementsFile
+    ? JSON.stringify(parsedRequirements)
     : existingStrategy.requirements;
 
   const { error } = await patchStrategy({
