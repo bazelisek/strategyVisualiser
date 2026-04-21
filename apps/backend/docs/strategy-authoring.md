@@ -1,6 +1,6 @@
 # Strategy authoring guide
 
-This document describes how **user-supplied Java strategies** run in Strategy Visualiser: what the backend prepares for each job, what your code must output, and what the web UI consumes.
+This document describes how **user-supplied Java strategies** run in Strategize: what the backend prepares for each job, what your code must output, and what the web UI consumes.
 
 Implementation references (for maintainers):
 

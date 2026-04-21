@@ -73,7 +73,7 @@ describe("VisualizeContent", () => {
   test("adds a tile immediately with defaults and renders it inline", async () => {
     render(<Harness />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Add Tile" }));
+    fireEvent.click(screen.getByRole("button", { name: "Analyze a Strategy" }));
 
     await waitFor(() => {
       expect(screen.getByTestId("tile-0")).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe("VisualizeContent", () => {
       <VisualizeContent id="viz-1" tiles={[]} onTilesChange={handleTilesChange} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Add Tile" }));
+    fireEvent.click(screen.getByRole("button", { name: "Analyze a Strategy" }));
 
     await waitFor(() => {
       expect(handleTilesChange).toHaveBeenCalledWith([
