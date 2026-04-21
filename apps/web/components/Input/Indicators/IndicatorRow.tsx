@@ -142,7 +142,7 @@ const IndicatorRow: React.FC<IndicatorRowProps> = ({ indicatorIndex }) => {
                       value={displayValue}
                       onChange={(e) => {
                         const parsed = Number(e.target.value);
-                        if (!Number.isFinite(parsed)) return;
+                        if (!parsed || !Number.isFinite(parsed)) return;
                         handleParameterChange(key, parsed);
                       }}
                     />
