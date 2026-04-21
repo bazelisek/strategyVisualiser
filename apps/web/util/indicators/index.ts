@@ -1,13 +1,21 @@
 import type { IChartApi } from "lightweight-charts";
 import type { candleData } from "../serverFetch";
 import { calculateCCISeriesData, createCCIGraph } from "./CCI";
-import { calculateOnBalanceVolumeData, createOBVGraph } from "./onBalanceVolume";
+import {
+  calculateOnBalanceVolumeData,
+  createOBVGraph,
+} from "./onBalanceVolume";
 import {
   calculateExponentialMovingAverageSeriesData,
   createEMAGraph,
 } from "./exponentialMovingAverage";
-import { calculateMovingAverageSeriesData, createMAGraph } from "./movingAverage";
+import {
+  calculateMovingAverageSeriesData,
+  createMAGraph,
+} from "./movingAverage";
 import { calculateSupertrendSeriesData, createSTGraph } from "./supertrend";
+import { calculateADXSeriesData, createADXGraph } from "./ADX";
+import { calculateATRSeriesData, createATRGraph } from "./ATR";
 
 export type IndicatorValue = Record<string, number | string>;
 
@@ -66,7 +74,7 @@ const indicators: IndicatorDefinition[] = [
       createMAGraph(
         chart,
         config as { maLength: number; color: string } | undefined,
-        candles
+        candles,
       );
     },
   },
@@ -97,8 +105,10 @@ const indicators: IndicatorDefinition[] = [
     createGraph: ({ mainChart, candles, config }) => {
       createSTGraph(
         mainChart,
-        config as { period: number; multiplier: number; color: string } | undefined,
-        candles
+        config as
+          | { period: number; multiplier: number; color: string }
+          | undefined,
+        candles,
       );
     },
   },
@@ -125,7 +135,7 @@ const indicators: IndicatorDefinition[] = [
       createEMAGraph(
         chart,
         config as { emaLength: number; color: string } | undefined,
-        candles
+        candles,
       );
     },
   },
@@ -147,7 +157,13 @@ const indicators: IndicatorDefinition[] = [
     },
     ui: { defaultChartIndex: 1 },
     calculateData: calculateCCISeriesData,
-    createGraph: ({ chart, candles, config, chartIndex, chartsWithCCILines }) => {
+    createGraph: ({
+      chart,
+      candles,
+      config,
+      chartIndex,
+      chartsWithCCILines,
+    }) => {
       if (!chart) return;
       const set = chartsWithCCILines;
       const addLines = !set?.has(chartIndex);
@@ -155,11 +171,38 @@ const indicators: IndicatorDefinition[] = [
         chart,
         config as { cciLength: number; color: string } | undefined,
         candles,
-        addLines
+        addLines,
       );
       if (set && addLines) {
         set.add(chartIndex);
       }
+    },
+  },
+  {
+    key: "averageDirectionalIndex",
+    displayName: "Average Directional Index",
+    parameters: {
+      adxLength: {
+        displayName: "ADX Length",
+        type: "number",
+        default: 20,
+        min: 1,
+      },
+      color: {
+        displayName: "Color",
+        type: "color",
+        default: "#7b29ff",
+      },
+    },
+    ui: { defaultChartIndex: 3 },
+    calculateData: calculateADXSeriesData,
+    createGraph: ({ chart, candles, config, chartIndex }) => {
+      if (!chart) return;
+      createADXGraph(
+        chart,
+        config as { adxLength: number; color: string } | undefined,
+        candles,
+      );
     },
   },
   {
@@ -176,14 +219,38 @@ const indicators: IndicatorDefinition[] = [
     calculateData: calculateOnBalanceVolumeData,
     createGraph: ({ chart, candles, config }) => {
       if (!chart) return;
-      createOBVGraph(
+      createOBVGraph(chart, config as { color: string } | undefined, candles);
+    },
+  },
+  {
+    key: "averageTrueRange",
+    displayName: "Average True Range",
+    parameters: {
+      atrLength: {
+        displayName: "ATR Length",
+        type: "number",
+        default: 14,
+        min: 1,
+      },
+      color: {
+        displayName: "Color",
+        type: "color",
+        default: "#ffaa00",
+      },
+    },
+    ui: { defaultChartIndex: 4 },
+    calculateData: calculateATRSeriesData,
+    createGraph: ({ chart, candles, config }) => {
+      if (!chart) return;
+
+      createATRGraph(
         chart,
-        config as { color: string } | undefined,
-        candles
+        config as { atrLength: number; color: string } | undefined,
+        candles,
       );
     },
   },
-] ;
+];
 
 export type IndicatorKey = (typeof indicators)[number]["key"];
 
@@ -194,15 +261,15 @@ export const indicatorDefinitionsByKey = indicatorDefinitions.reduce(
     acc[definition.key as IndicatorKey] = definition;
     return acc;
   },
-  {} as Record<IndicatorKey, IndicatorDefinition>
+  {} as Record<IndicatorKey, IndicatorDefinition>,
 );
 
 export const indicatorKeys = indicatorDefinitions.map(
-  (definition) => definition.key as IndicatorKey
+  (definition) => definition.key as IndicatorKey,
 );
 
 export const buildIndicatorDefaultValue = (
-  definition: IndicatorDefinition
+  definition: IndicatorDefinition,
 ): IndicatorValue => {
   const value: IndicatorValue = {};
   Object.entries(definition.parameters).forEach(([key, param]) => {
