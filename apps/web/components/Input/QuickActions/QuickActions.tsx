@@ -22,7 +22,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({ index }) => {
       <Stack sx={{ flexDirection: "row", justifyContent: "space-between" }}>
         <div>
           <StrategyButton index={index}>
-            {strategyName ?? `${tile?.strategy}`}
+            {strategyName || tile?.strategy || "Select strategy"}
           </StrategyButton>
         </div>
         <div>

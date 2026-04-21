@@ -21,6 +21,47 @@
   width: 100%;
 }
 
+.tabBar {
+  display: flex;
+  width: 100%;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.tabButton {
+  flex: 1;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(76, 175, 239, 0.35);
+  background: rgba(10, 20, 35, 0.55);
+  color: #d5e8ff;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.tabButton:hover:enabled {
+  transform: translateY(-1px);
+  border-color: rgba(76, 175, 239, 0.75);
+}
+
+.tabButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tabButtonActive {
+  background: rgba(76, 175, 239, 0.18);
+  border-color: rgba(76, 175, 239, 0.9);
+}
+
+.tabPanel {
+  width: 100%;
+  overflow: hidden;
+}
+
 .actions {
   display: flex;
   justify-content: flex-start;

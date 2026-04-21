@@ -115,7 +115,7 @@ const StrategyPerformanceOverview: React.FC<
         </Stack>
 
 <DropdownButton onClick={() => setOpen((p) => !p)}>
-          {strategyName ?? `Strategy ${strategy}`}
+          {strategyName || `Strategy ${strategy}`}
         </DropdownButton>
       </Sheet>
 

@@ -1,6 +1,5 @@
 .optionsListWrapper {
   position: absolute;
-  top: calc(100% + 0.2rem);
   left: 0;
   right: 0;
   margin: 0;
@@ -24,6 +23,15 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
 
   z-index: 3001;
+}
+
+/* 👇 NEW */
+.down {
+  top: calc(100% + 0.2rem);
+}
+
+.up {
+  bottom: calc(100% + 0.2rem);
 }
 
 .optionsList {

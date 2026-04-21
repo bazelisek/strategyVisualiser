@@ -1,18 +1,15 @@
 ﻿"use client";
 
 import classes from "./VisualizeContent.module.css";
-import { useState } from "react";
 import AddTile from "@/components/Tiling/AddTile";
 import Tile from "@/components/Tiling/Tile";
-import Modal from "@/components/Modal";
-import Form from "@/components/Input/Form/Form";
 import Preconfiguration from "@/components/Input/Preconfiguration";
 import { Grid } from "@mui/joy";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import { TileSearchParam } from "@/util/tilesSearchParams";
 import useIndicators from "@/hooks/useIndicators";
-import { useDispatch } from "react-redux";
-import { newIndicators } from "@/store/reduxStore";
+import { useDispatch, useSelector } from "react-redux";
+import { newIndicators, RootState } from "@/store/reduxStore";
 import { createIndicatorId } from "@/util/indicators/identity";
 import { toTileIndicator } from "@/util/indicators/serialization";
 import { persistIndicatorAdd } from "@/util/indicators/persistence";
@@ -31,28 +28,35 @@ const VisualizeContent = ({
   id,
 }: VisualizeContentProps) => {
   const tileCount = tiles.length;
-  const [isAddTileActive, setIsAddTileActive] = useState<boolean>(true);
   const tileArr: React.JSX.Element[] = [];
   const defaultsIndicators = useIndicators((indicators) =>
     indicators.filter((indicator) => indicator.index === 0),
   );
   const dispatch = useDispatch();
   const { visualizationId } = useTiles();
+  const config = useSelector((state: RootState) => state.config);
 
   for (let i = 0; i < tileCount; i++) {
     tileArr.push(<Tile index={i} key={i} />);
   }
 
+  const toUnixString = (value: string) => {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? ""
+      : String(Math.floor(date.getTime() / 1000));
+  };
+
   function handleAddTile() {
-    setIsAddTileActive(false);
-  }
-
-  function handleClose() {
-    setIsAddTileActive(true);
-  }
-
-  function handleSubmit(submittedData: TileSearchParam) {
-    const nextTiles: TileSearchParam[] = [...tiles, submittedData];
+    const nextTile: TileSearchParam = {
+      symbol: config.symbol.defaultValue,
+      strategy: config.strategy.defaultValue,
+      interval: config.interval.defaultValue,
+      period1: toUnixString(config.period1.defaultValue),
+      period2: toUnixString(config.period2.defaultValue),
+    };
+    const nextTiles: TileSearchParam[] = [...tiles, nextTile];
     onTilesChange(nextTiles);
     if (defaultsIndicators.length > 0) {
       const newTileIndex = nextTiles.length;
@@ -75,7 +79,6 @@ const VisualizeContent = ({
         });
       });
     }
-    handleClose();
   }
 
   return (
@@ -88,15 +91,7 @@ const VisualizeContent = ({
           <main id="main" className={classes.main}>
             <VisualizationName id={id} />
             <Preconfiguration />
-            <AddTile onClick={handleAddTile} active={isAddTileActive} />
-            <Modal
-              title="New Tile"
-              onClose={handleClose}
-              open={!isAddTileActive}
-              className={classes.modal}
-            >
-              <Form onClose={handleSubmit} index={tileCount + 1} />
-            </Modal>
+            <AddTile onClick={handleAddTile} />
             {tileCount > 0 && <div className={classes.tileGrid}>{tileArr}</div>}
           </main>
         </div>

@@ -9,6 +9,7 @@ interface CustomSelectProps {
   value: string;
   onChange: (value: string) => void;
   initialText: string;
+  direction?: "down" | "up"; // 👈 NEW
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -17,6 +18,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   options,
   mapping,
   initialText,
+  direction = "down", // 👈 default
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -31,11 +33,19 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
       <AnimatePresence mode="sync">
         {open && (
-          <DropdownBox onChange={(value: string) => {mapping ? onChange(options[mapping.indexOf(value)]):onChange(value)}} options={mapping ?? options} setOpen={setOpen}/>
+          <DropdownBox
+            direction={direction} // 👈 pass it
+            onChange={(value: string) => {
+              mapping
+                ? onChange(options[mapping.indexOf(value)])
+                : onChange(value);
+            }}
+            options={mapping ?? options}
+            setOpen={setOpen}
+          />
         )}
       </AnimatePresence>
     </div>
   );
 };
-
 export default CustomSelect;

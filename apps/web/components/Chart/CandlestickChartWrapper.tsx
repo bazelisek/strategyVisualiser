@@ -6,9 +6,10 @@ import classes from "./CandlestickChartWrapper.module.css";
 import { SeriesMarker, Time } from "lightweight-charts";
 import ShowModalButton from "../Input/Indicators/ShowModalButton";
 import { candleData } from "@/util/serverFetch";
-import {  Stack } from "@mui/joy";
+import { Stack } from "@mui/joy";
 import SymbolButton from "../Input/QuickActions/SymbolButton";
 import ChartLoading from "../common/ChartLoading";
+import Config from "../Input/QuickActions/Config";
 
 interface CandlestickChartWrapperProps {
   //searchParams: Promise<{ [key: string]: string | undefined }>;
@@ -22,6 +23,7 @@ interface CandlestickChartWrapperProps {
   };
   index: number;
   tileIndex: number;
+  handleBackToTileConfig?: () => void;
 }
 
 const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
@@ -30,6 +32,7 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
   transformedData,
   index,
   tileIndex,
+  handleBackToTileConfig
 }) => {
   // místo useRef:
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
@@ -66,7 +69,11 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
 
   return (
     <>
-      {loading && <div className="loading"><ChartLoading /></div>}
+      {loading && (
+        <div className="loading">
+          <ChartLoading />
+        </div>
+      )}
       {!loading && (
         <motion.div
           id="chart"
@@ -80,10 +87,17 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
           className={classes.div}
         >
           <ShowModalButton index={index} className={classes.button} />
-          <Stack width={"100%"} gap={2} direction={'row'} justifyContent={'flex-start'} alignItems={'center'}>
-            <SymbolButton index={tileIndex}>
+          <Stack
+            width={"100%"}
+            gap={2}
+            direction={"row"}
+            justifyContent={"flex-start"}
+            alignItems={"center"}
+          >
+            <Config onClick={handleBackToTileConfig} />
+            {/*<SymbolButton index={tileIndex}>
               {transformedData.symbol}
-            </SymbolButton>
+            </SymbolButton>*/}
             <h2 className={classes.title}>{transformedData.longName}</h2>
           </Stack>
           <CandlestickChart

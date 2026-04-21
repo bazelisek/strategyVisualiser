@@ -1,5 +1,80 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import ChartSection from "@/components/ChartSection";
+import React from "react";
+
+jest.mock("@mui/joy", () => {
+  const React = require("react");
+  return {
+    Autocomplete: ({ value, placeholder }: { value?: string | null; placeholder?: string }) => (
+      <input value={value ?? ""} placeholder={placeholder} readOnly />
+    ),
+    Button: ({
+      children,
+      onClick,
+      disabled,
+      loading,
+    }: {
+      children: React.ReactNode;
+      onClick?: () => void;
+      disabled?: boolean;
+      loading?: boolean;
+    }) => (
+      <button onClick={onClick} disabled={disabled || loading}>
+        {children}
+      </button>
+    ),
+    FormControl: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    FormHelperText: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    FormLabel: ({ children }: { children: React.ReactNode }) => <label>{children}</label>,
+    Input: ({
+      value,
+      onChange,
+      placeholder,
+      type,
+    }: {
+      value?: string;
+      onChange?: React.ChangeEventHandler<HTMLInputElement>;
+      placeholder?: string;
+      type?: string;
+    }) => (
+      <input value={value ?? ""} onChange={onChange} placeholder={placeholder} type={type} />
+    ),
+    Option: ({ children, value }: { children: React.ReactNode; value: string }) => (
+      <option value={value}>{children}</option>
+    ),
+    Select: ({
+      children,
+      value,
+      placeholder,
+      onChange,
+    }: {
+      children: React.ReactNode;
+      value?: string | null;
+      placeholder?: string;
+      onChange?: (_event: unknown, value: string | null) => void;
+    }) => (
+      <select
+        aria-label={placeholder}
+        value={value ?? ""}
+        onChange={(event) => onChange?.(event, event.target.value || null)}
+      >
+        <option value="">{placeholder ?? ""}</option>
+        {children}
+      </select>
+    ),
+    Sheet: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Typography: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  };
+});
+
+jest.mock("@mui/x-date-pickers/LocalizationProvider", () => ({
+  LocalizationProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+jest.mock("@mui/x-date-pickers/DateTimePicker", () => ({
+  DateTimePicker: () => <div>Date picker</div>,
+}));
 
 const mockRunCalculation = jest.fn(async () => undefined);
 const mockUseChartDataState = {
@@ -31,6 +106,16 @@ jest.mock("@/hooks/useChartData", () => ({
   useChartData: () => mockUseChartDataState,
 }));
 
+jest.mock("@/util/strategies/strategies", () => ({
+  getAvailableStrategies: jest.fn(async () => [
+    {
+      id: 12,
+      name: "Momentum",
+      requirements: "{}",
+    },
+  ]),
+}));
+
 jest.mock("@/util/markers", () => ({
   getTradeMarkers: () => [],
 }));
@@ -47,7 +132,19 @@ jest.mock("@/components/StrategyPerformanceOverview", () => {
   };
 });
 
+jest.mock("@/components/StrategyConsoleCollapsible", () => {
+  return function MockConsole({
+    consoleOutput,
+  }: {
+    consoleOutput: string;
+  }) {
+    return <div>{consoleOutput}</div>;
+  };
+});
+
 describe("ChartSection", () => {
+  const renderChartSection = () => render(<ChartSection index={0} />);
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseChartDataState.error = "";
@@ -81,8 +178,13 @@ describe("ChartSection", () => {
   });
 
   test("renders config form and calls runCalculation", async () => {
-    render(<ChartSection index={0} />);
+    renderChartSection();
 
+    await waitFor(() => {
+      expect(screen.getByText("Configure tile")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
     await waitFor(() => {
       expect(screen.getByText("Configure strategy run")).toBeInTheDocument();
     });
@@ -105,10 +207,35 @@ describe("ChartSection", () => {
   test("shows chart after successful run state", async () => {
     mockUseChartDataState.stage = "success";
     mockUseChartDataState.strategyData = [{ time: 1700000000, amount: 5 }];
-    render(<ChartSection index={0} />);
+    renderChartSection();
 
     await waitFor(() => {
       expect(screen.getByTestId("chart-wrapper")).toBeInTheDocument();
+    });
+  });
+
+  test("shows chart, analysis, and console after a successful calculation", async () => {
+    const view = renderChartSection();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("Configure strategy run")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Calculate strategy" }));
+    await waitFor(() => {
+      expect(mockRunCalculation).toHaveBeenCalledTimes(1);
+    });
+
+    mockUseChartDataState.stage = "success";
+    mockUseChartDataState.strategyData = [{ time: 1700000000, amount: 5 }];
+    mockUseChartDataState.consoleOutput = "Run completed";
+    view.rerender(<ChartSection index={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("chart-wrapper")).toBeInTheDocument();
+      expect(screen.getByTestId("performance-overview")).toBeInTheDocument();
+      expect(screen.getByText("Run completed")).toBeInTheDocument();
     });
   });
 
@@ -118,7 +245,12 @@ describe("ChartSection", () => {
     mockUseChartDataState.consoleOutput =
       "[strategy-runner] Compiling StrategyMain.java\nTick 1";
 
-    render(<ChartSection index={0} />);
+    renderChartSection();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("Configure strategy run")).toBeInTheDocument();
+    });
 
     await waitFor(() => {
       expect(screen.getByText("Strategy run log")).toBeInTheDocument();
@@ -132,10 +264,15 @@ describe("ChartSection", () => {
     mockUseChartDataState.loading = true;
     mockUseChartDataState.consoleOutput = "";
 
-    render(<ChartSection index={0} />);
+    renderChartSection();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("Configure strategy run")).toBeInTheDocument();
+    });
 
     await waitFor(() => {
-      expect(screen.getByText("Submitting job…")).toBeInTheDocument();
+      expect(screen.getByText("Submitting job...")).toBeInTheDocument();
     });
   });
 });

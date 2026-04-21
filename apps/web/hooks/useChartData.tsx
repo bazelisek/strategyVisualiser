@@ -10,19 +10,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export function useChartData(
-  {
-    symbol,
-    interval,
-    period1,
-    period2,
-    strategy,
-  }: {
-    symbol: string;
-    interval: string;
-    period2: number;
-    period1: number;
-    strategy: string;
-  },
+  params:
+    | {
+        symbol: string;
+        interval: string;
+        period2: number;
+        period1: number;
+        strategy: string;
+      }
+    | null,
   redirectPathOnInvalid: string
 ): {
   consoleOutput: string;
@@ -38,6 +34,11 @@ export function useChartData(
   };
   runCalculation: (configOverrides: Record<string, unknown>) => Promise<void>;
 } {
+  const symbol = params?.symbol ?? "";
+  const interval = params?.interval ?? "";
+  const period1 = params?.period1 ?? 0;
+  const period2 = params?.period2 ?? 0;
+  const strategy = params?.strategy ?? "";
   const router = useRouter();
   const [consoleOutput, setConsoleOutput] = useState("");
   const [error, setError] = useState("");
@@ -56,6 +57,16 @@ export function useChartData(
   >([]);
 
   useEffect(() => {
+    if (!params) {
+      setError("");
+      setStatusMessage("");
+      setConsoleOutput("");
+      setStage("configuring");
+      setLoading(false);
+      setTransformedData({ longName: "", symbol: "", candles: [] });
+      setStrategyData([]);
+      return;
+    }
     if (!interval || !period1 || !period2 || !symbol) {
       router.push(redirectPathOnInvalid);
     }
@@ -77,7 +88,7 @@ export function useChartData(
       return; // Don't fetch invalid data
     }
     setStage("configuring");
-  }, [symbol, interval, period1, period2, strategy, redirectPathOnInvalid, router]);
+  }, [interval, params, period1, period2, redirectPathOnInvalid, router, strategy, symbol]);
 
   async function pollJobUntilFinished(jobId: number) {
     const timeoutMs = 60000*20;
