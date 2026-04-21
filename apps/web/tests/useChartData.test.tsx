@@ -73,10 +73,14 @@ describe("useChartData", () => {
       await result.current.runCalculation({ lookback: 14 });
     });
 
-    expect(result.current.error).toBe("");
-    expect(result.current.stage).toBe("success");
-    expect(result.current.consoleOutput).toBe("[strategy-runner] Starting StrategyMain");
-    expect(result.current.transformedData.symbol).toBe("AAPL");
+    await waitFor(() => {
+      expect(result.current.error).toBe("");
+      expect(result.current.stage).toBe("success");
+      expect(result.current.consoleOutput).toBe(
+        "[strategy-runner] Starting StrategyMain",
+      );
+      expect(result.current.transformedData.symbol).toBe("AAPL");
+    });
   });
 
   test("runCalculation handles analyze error", async () => {
@@ -156,7 +160,12 @@ describe("useChartData", () => {
       await result.current.runCalculation({});
     });
 
-    expect(result.current.consoleOutput).toContain("Compiling StrategyMain.java");
-    expect(result.current.consoleOutput).toContain("Starting StrategyMain");
+    await waitFor(() => {
+      expect(result.current.stage).toBe("success");
+      expect(result.current.consoleOutput).toContain(
+        "Compiling StrategyMain.java",
+      );
+      expect(result.current.consoleOutput).toContain("Starting StrategyMain");
+    });
   });
 });

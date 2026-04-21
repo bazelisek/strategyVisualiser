@@ -205,9 +205,18 @@ describe("ChartSection", () => {
   });
 
   test("shows chart after successful run state", async () => {
+    const view = renderChartSection();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("Configure strategy run")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Calculate strategy" }));
+
     mockUseChartDataState.stage = "success";
     mockUseChartDataState.strategyData = [{ time: 1700000000, amount: 5 }];
-    renderChartSection();
+    view.rerender(<ChartSection index={0} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("chart-wrapper")).toBeInTheDocument();

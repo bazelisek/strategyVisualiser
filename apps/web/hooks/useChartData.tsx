@@ -39,6 +39,7 @@ export function useChartData(
   const period1 = params?.period1 ?? 0;
   const period2 = params?.period2 ?? 0;
   const strategy = params?.strategy ?? "";
+  const hasParams = params !== null;
   const router = useRouter();
   const [consoleOutput, setConsoleOutput] = useState("");
   const [error, setError] = useState("");
@@ -57,7 +58,7 @@ export function useChartData(
   >([]);
 
   useEffect(() => {
-    if (!params) {
+    if (!hasParams) {
       setError("");
       setStatusMessage("");
       setConsoleOutput("");
@@ -88,7 +89,16 @@ export function useChartData(
       return; // Don't fetch invalid data
     }
     setStage("configuring");
-  }, [interval, params, period1, period2, redirectPathOnInvalid, router, strategy, symbol]);
+  }, [
+    hasParams,
+    interval,
+    period1,
+    period2,
+    redirectPathOnInvalid,
+    router,
+    strategy,
+    symbol,
+  ]);
 
   async function pollJobUntilFinished(jobId: number) {
     const timeoutMs = 60000*20;
