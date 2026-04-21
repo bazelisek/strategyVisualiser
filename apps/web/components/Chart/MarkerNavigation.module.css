@@ -6,4 +6,7 @@
 }
 .div button:disabled {
     cursor: not-allowed;
+    color: grey;
+    border-color: grey;
+    background-color: var(--background-dark);
 }

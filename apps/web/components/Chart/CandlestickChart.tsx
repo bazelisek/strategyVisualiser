@@ -24,6 +24,7 @@ import {
   IndicatorGraphContext,
 } from "@/util/indicators";
 import AnimatedDate from "../blocks/AnimatedDate";
+import { Typography } from "@mui/joy";
 
 interface CandlestickChartProps {
   width: number;
@@ -327,7 +328,7 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
             </div>
           </>
         ) : (
-          <>Click a marker to select it</>
+          <Typography sx={{color: 'var(--accent)', opacity: 0.8}}>Click a marker to select it</Typography>
         )}
       </div>
 
