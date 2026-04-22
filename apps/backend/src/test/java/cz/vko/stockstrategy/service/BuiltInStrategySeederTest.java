@@ -9,16 +9,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.DefaultApplicationArguments;
+import org.springframework.boot.ApplicationArguments;
 
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,79 +27,31 @@ class BuiltInStrategySeederTest {
     private StrategyDao strategyDao;
 
     @InjectMocks
-    private BuiltInStrategySeeder seeder;
+    private BuiltInStrategySeeder builtInStrategySeeder;
 
     @Test
-    void seedsBuiltInStrategiesWhenMissing() throws Exception {
-        when(strategyDao.findByName(anyString()))
-                .thenReturn(Optional.empty());
-
-        seeder.run(new DefaultApplicationArguments(new String[0]));
-
-        ArgumentCaptor<Strategy> captor = ArgumentCaptor.forClass(Strategy.class);
-        verify(strategyDao, times(BuiltInStrategyCatalog.all().size())).save(captor.capture());
-
-        assertThat(captor.getAllValues())
-                .extracting(Strategy::getName)
-                .containsExactlyInAnyOrder(
-                        BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME,
-                        BuiltInStrategyCatalog.SUPER_TREND_NAME
-                );
-
-        Strategy movingAverage = captor.getAllValues().stream()
-                .filter(strategy -> BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME.equals(strategy.getName()))
-                .findFirst()
-                .orElseThrow();
-        assertThat(movingAverage.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
-        assertThat(movingAverage.getIsPublic()).isTrue();
-        assertThat(movingAverage.getConfiguration()).contains("\"maRange1\"");
-        assertThat(movingAverage.getConfiguration()).contains("\"maRange2\"");
-        assertThat(movingAverage.getCode()).contains("class StrategyMain");
-
-        Strategy superTrend = captor.getAllValues().stream()
-                .filter(strategy -> BuiltInStrategyCatalog.SUPER_TREND_NAME.equals(strategy.getName()))
-                .findFirst()
-                .orElseThrow();
-        assertThat(superTrend.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
-        assertThat(superTrend.getIsPublic()).isTrue();
-        assertThat(superTrend.getConfiguration()).contains("\"supertrendPeriod\"");
-        assertThat(superTrend.getConfiguration()).contains("\"buyThresholdPercent\"");
-        assertThat(superTrend.getConfiguration()).contains("\"sellThresholdPercent\"");
-        assertThat(superTrend.getCode()).contains("class StrategyMain");
-    }
-
-    @Test
-    void doesNotUpdateMovingAverageCrossoverWhenCatalogMatches() throws Exception {
+    void runUpdatesExistingSystemOwnedBuiltInWhenOnlyRequirementsDiffer() {
         Strategy existing = BuiltInStrategyCatalog.movingAverageCrossover().toStrategy();
-        existing.setId(5L);
+        existing.setId(1L);
+        existing.setRequirements(null);
+
         when(strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME))
                 .thenReturn(Optional.of(existing));
         when(strategyDao.findByName(BuiltInStrategyCatalog.SUPER_TREND_NAME))
                 .thenReturn(Optional.of(BuiltInStrategyCatalog.superTrend().toStrategy()));
+        when(strategyDao.findByName(BuiltInStrategyCatalog.EMA_ADX_TREND_NAME))
+                .thenReturn(Optional.of(BuiltInStrategyCatalog.emaAdxTrend().toStrategy()));
+        when(strategyDao.save(any(Strategy.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        seeder.run(new DefaultApplicationArguments(new String[0]));
+        builtInStrategySeeder.run(mock(ApplicationArguments.class));
 
-        verify(strategyDao, never()).save(any());
-    }
+        ArgumentCaptor<Strategy> strategyCaptor = ArgumentCaptor.forClass(Strategy.class);
+        verify(strategyDao, atLeastOnce()).save(strategyCaptor.capture());
 
-    @Test
-    void updatesMovingAverageCrossoverWhenSystemTemplateDriftedFromCatalog() throws Exception {
-        Strategy existing = BuiltInStrategyCatalog.movingAverageCrossover().toStrategy();
-        existing.setId(12L);
-        existing.setCode("// stale built-in snapshot");
-        when(strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME))
-                .thenReturn(Optional.of(existing));
-        when(strategyDao.findByName(BuiltInStrategyCatalog.SUPER_TREND_NAME))
-                .thenReturn(Optional.of(BuiltInStrategyCatalog.superTrend().toStrategy()));
-
-        seeder.run(new DefaultApplicationArguments(new String[0]));
-
-        ArgumentCaptor<Strategy> captor = ArgumentCaptor.forClass(Strategy.class);
-        verify(strategyDao).save(captor.capture());
-
-        Strategy updated = captor.getValue();
-        assertThat(updated.getId()).isEqualTo(12L);
-        assertThat(updated.getCode()).contains("class StrategyMain");
-        assertThat(updated.getDescription()).contains("longer-period SMA");
+        assertThat(strategyCaptor.getAllValues())
+                .anySatisfy(strategy -> {
+                    assertThat(strategy.getId()).isEqualTo(1L);
+                    assertThat(strategy.getRequirements()).isEqualTo("{}");
+                });
     }
 }

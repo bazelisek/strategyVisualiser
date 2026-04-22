@@ -33,13 +33,15 @@ public class BuiltInStrategySeeder implements ApplicationRunner {
             Strategy template = definition.toStrategy();
             if (Objects.equals(existing.getCode(), template.getCode())
                     && Objects.equals(existing.getDescription(), template.getDescription())
-                    && Objects.equals(existing.getConfiguration(), template.getConfiguration())) {
+                    && Objects.equals(existing.getConfiguration(), template.getConfiguration())
+                    && Objects.equals(existing.getRequirements(), template.getRequirements())) {
                 continue;
             }
 
             existing.setDescription(template.getDescription());
             existing.setCode(template.getCode());
             existing.setConfiguration(template.getConfiguration());
+            existing.setRequirements(template.getRequirements());
             strategyDao.save(existing);
         }
     }

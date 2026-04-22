@@ -1,0 +1,44 @@
+[
+  {
+    "id": "fastEmaPeriod",
+    "label": "Fast EMA Period",
+    "type": "number",
+    "defaultValue": 20,
+    "required": true
+  },
+  {
+    "id": "slowEmaPeriod",
+    "label": "Slow EMA Period",
+    "type": "number",
+    "defaultValue": 50,
+    "required": true
+  },
+  {
+    "id": "adxPeriod",
+    "label": "ADX Period",
+    "type": "number",
+    "defaultValue": 14,
+    "required": true
+  },
+  {
+    "id": "adxThreshold",
+    "label": "ADX Threshold",
+    "type": "number",
+    "defaultValue": 20,
+    "required": true
+  },
+  {
+    "id": "atrPeriod",
+    "label": "ATR Period",
+    "type": "number",
+    "defaultValue": 14,
+    "required": true
+  },
+  {
+    "id": "atrMultiplier",
+    "label": "ATR Multiplier",
+    "type": "number",
+    "defaultValue": 3.0,
+    "required": true
+  }
+]

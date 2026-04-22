@@ -8,13 +8,14 @@ import {
   buildStrategyConfiguration,
   ConfigOption,
   isConfigOptions,
+  UNIVERSE_CONFIG_ID,
 } from "@/util/strategies/configuration";
 import { parseStrategyId } from "@/util/strategies/strategyId";
 import {
   getAvailableStrategies,
   type Strategy as StrategyType,
 } from "@/util/strategies/strategies";
-import { symbols } from "@/util/symbols";
+import { getSymbolDisplayLabel, symbols } from "@/util/symbols";
 import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
 import StrategyConsoleCollapsible from "./StrategyConsoleCollapsible";
 import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
@@ -230,6 +231,18 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
         setConfigOptions(mergedOptions);
         setFormValues(
           mergedOptions.reduce<Record<string, unknown>>((acc, option) => {
+            const hasExplicitMultiSelectDefault =
+              option.type === "multi-select" &&
+              Array.isArray(option.defaultValue) &&
+              option.defaultValue.length > 0;
+            if (option.id === UNIVERSE_CONFIG_ID) {
+              acc[option.id] = hasExplicitMultiSelectDefault
+                ? option.defaultValue
+                : symbol
+                  ? [symbol]
+                  : [];
+              return acc;
+            }
             acc[option.id] =
               option.defaultValue ?? (option.type === "multi-select" ? [] : "");
             return acc;
@@ -252,6 +265,24 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
       isActive = false;
     };
   }, [strategyId]);
+
+  useEffect(() => {
+    if (!symbol) {
+      return;
+    }
+    setFormValues((prev) => {
+      const currentUniverse = Array.isArray(prev[UNIVERSE_CONFIG_ID])
+        ? (prev[UNIVERSE_CONFIG_ID] as string[])
+        : [];
+      if (currentUniverse.length > 0) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [UNIVERSE_CONFIG_ID]: [symbol],
+      };
+    });
+  }, [symbol]);
 
   const tileValidationErrors = useMemo(() => {
     const errors: string[] = [];
@@ -500,6 +531,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
           <FormLabel>Symbol</FormLabel>
           <CustomSelect
             options={availableSymbols}
+            mapping={availableSymbols.map((item) => getSymbolDisplayLabel(item))}
             value={symbol || ""}
             onChange={(newValue) =>
               handleTileValueChange("symbol", newValue ?? "")

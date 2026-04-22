@@ -36,12 +36,15 @@ class BuiltInStrategyIntegrationTest {
                 .orElseThrow(() -> new AssertionError("Built-in strategy was not seeded"));
         Strategy superTrend = strategyDao.findByName(BuiltInStrategyCatalog.SUPER_TREND_NAME)
                 .orElseThrow(() -> new AssertionError("SuperTrend built-in strategy was not seeded"));
+        Strategy emaAdxTrend = strategyDao.findByName(BuiltInStrategyCatalog.EMA_ADX_TREND_NAME)
+                .orElseThrow(() -> new AssertionError("EMA ADX Trend built-in strategy was not seeded"));
 
         assertThat(movingAverage.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
         assertThat(movingAverage.getIsPublic()).isTrue();
         assertThat(movingAverage.getConfiguration()).contains("\"maRange1\"");
         assertThat(movingAverage.getConfiguration()).contains("\"maRange2\"");
         assertThat(movingAverage.getCode()).contains("class StrategyMain");
+        assertThat(movingAverage.getRequirements()).isEqualTo("{}");
 
         assertThat(superTrend.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
         assertThat(superTrend.getIsPublic()).isTrue();
@@ -50,6 +53,17 @@ class BuiltInStrategyIntegrationTest {
         assertThat(superTrend.getConfiguration()).contains("\"buyThresholdPercent\"");
         assertThat(superTrend.getConfiguration()).contains("\"sellThresholdPercent\"");
         assertThat(superTrend.getCode()).contains("class StrategyMain");
+        assertThat(superTrend.getRequirements()).isEqualTo("{}");
+
+        assertThat(emaAdxTrend.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
+        assertThat(emaAdxTrend.getIsPublic()).isTrue();
+        assertThat(emaAdxTrend.getConfiguration()).contains("\"fastEmaPeriod\"");
+        assertThat(emaAdxTrend.getConfiguration()).contains("\"slowEmaPeriod\"");
+        assertThat(emaAdxTrend.getConfiguration()).contains("\"adxThreshold\"");
+        assertThat(emaAdxTrend.getConfiguration()).contains("\"atrMultiplier\"");
+        assertThat(emaAdxTrend.getCode()).contains("class StrategyMain");
+        assertThat(emaAdxTrend.getRequirements()).contains("\"interval\"");
+        assertThat(emaAdxTrend.getRequirements()).contains("\"blacklist\"");
 
         ResponseEntity<StrategyDTO[]> response = restTemplate.getForEntity(
                 "http://localhost:" + port + "/api/strategies",
@@ -62,7 +76,8 @@ class BuiltInStrategyIntegrationTest {
                 .extracting(StrategyDTO::getName)
                 .contains(
                         BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME,
-                        BuiltInStrategyCatalog.SUPER_TREND_NAME
+                        BuiltInStrategyCatalog.SUPER_TREND_NAME,
+                        BuiltInStrategyCatalog.EMA_ADX_TREND_NAME
                 );
     }
 }

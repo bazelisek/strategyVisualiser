@@ -53,6 +53,7 @@ class StrategyControllerTest {
         first.setId(1L);
         first.setName("Momentum");
         first.setDescription("Trend following");
+        first.setRequirements("{\"interval\":{\"blacklist\":[\"1m\"]}}");
         first.setCreatedAt(LocalDateTime.of(2026, 4, 2, 18, 0));
         first.setUpdatedAt(LocalDateTime.of(2026, 4, 2, 18, 5));
 
@@ -69,6 +70,7 @@ class StrategyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].name").value("Momentum"))
+                .andExpect(jsonPath("$[0].requirements").value("{\"interval\":{\"blacklist\":[\"1m\"]}}"))
                 .andExpect(jsonPath("$[1].id").value(2))
                 .andExpect(jsonPath("$[1].name").value("Mean Reversion"));
     }

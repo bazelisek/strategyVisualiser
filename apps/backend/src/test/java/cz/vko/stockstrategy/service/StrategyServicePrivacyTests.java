@@ -144,6 +144,7 @@ class StrategyServicePrivacyTests {
         // Arrange
         String ownerEmail = "owner@example.com";
         Strategy strategy = createStrategy(3L, "Private Strategy", ownerEmail, false);
+        strategy.setRequirements("{\"symbol\":{\"whitelist\":[\"AAPL\"]}}");
         
         when(strategyDao.findByOwnerEmail(ownerEmail))
                 .thenReturn(List.of(strategy));
@@ -158,6 +159,7 @@ class StrategyServicePrivacyTests {
         assertThat(dto.getIsPublic()).isFalse();
         assertThat(dto.getId()).isEqualTo(3L);
         assertThat(dto.getName()).isEqualTo("Private Strategy");
+        assertThat(dto.getRequirements()).isEqualTo("{\"symbol\":{\"whitelist\":[\"AAPL\"]}}");
     }
 
     @Test

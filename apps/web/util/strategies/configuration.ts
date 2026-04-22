@@ -24,7 +24,7 @@ export function createUniverseConfigOption(): ConfigOption {
     label: "Universe",
     type: "multi-select",
     options: [...symbols],
-    defaultValue: [...symbols],
+    defaultValue: [],
   };
 }
 

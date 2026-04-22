@@ -1,102 +1,50 @@
-export const symbols = [
-  "AAPL",
-  "ABNB",
-  "ADBE",
-  "ADI",
-  "ADP",
-  "ADSK",
-  "AEP",
-  "AMAT",
-  "AMD",
-  "AMGN",
-  "AMZN",
-  "APP",
-  "ARM",
-  "ASML",
-  "AVGO",
-  "AXON",
-  "AZN",
-  "BIIB",
-  "BKNG",
-  "BKR",
-  "CCEP",
-  "CDNS",
-  "CDW",
-  "CEG",
-  "CHTR",
-  "CMCSA",
-  "COST",
-  "CPRT",
-  "CRWD",
-  "CSCO",
-  "CSGP",
-  "CSX",
-  "CTAS",
-  "CTSH",
-  "DASH",
-  "DDOG",
-  "DXCM",
-  "EA",
-  "EXC",
-  "FANG",
-  "FAST",
-  "FTNT",
-  "GEHC",
-  "GFS",
-  "GILD",
-  "GOOG",
-  "GOOGL",
-  "HON",
-  "IDXX",
-  "INTC",
-  "INTU",
-  "ISRG",
-  "KDP",
-  "KHC",
-  "KLAC",
-  "LIN",
-  "LRCX",
-  "LULU",
-  "MAR",
-  "MCHP",
-  "MDB",
-  "MDLZ",
-  "MELI",
-  "META",
-  "MNST",
-  "MRVL",
-  "MSFT",
-  "MSTR",
-  "MU",
-  "NFLX",
-  "NVDA",
-  "NXPI",
-  "ODFL",
-  "ON",
-  "ORLY",
-  "PANW",
-  "PAYX",
-  "PCAR",
-  "PDD",
-  "PEP",
-  "PLTR",
-  "PYPL",
-  "QCOM",
-  "REGN",
-  "ROP",
-  "ROST",
-  "SBUX",
-  "SNPS",
-  "TEAM",
-  "TMUS",
-  "TSLA",
-  "TTD",
-  "TTWO",
-  "TXN",
-  "VRSK",
-  "VRTX",
-  "WBD",
-  "WDAY",
-  "XEL",
-  "ZS",
-];
+import assetUniverseSnapshot from "./assetUniverseSnapshot.json";
+
+type AssetType = "equity" | "crypto";
+
+export type AssetUniverseEntry = {
+  symbol: string;
+  name: string;
+  type: AssetType;
+  categories: string[];
+  country?: string;
+  sector?: string;
+  source: string;
+};
+
+type AssetUniverseSnapshot = {
+  snapshotDate: string;
+  validation: {
+    provider: string;
+    interval: string;
+    from: string;
+    to: string;
+    validatedAssetCount: number;
+    notes: string;
+  };
+  sources: Array<{
+    id: string;
+    label: string;
+    url: string;
+    selection: string;
+    assetCount: number;
+  }>;
+  assets: AssetUniverseEntry[];
+};
+
+export const assetUniverseData =
+  assetUniverseSnapshot as AssetUniverseSnapshot;
+export const assetUniverse = assetUniverseData.assets;
+export const symbols = assetUniverse.map((asset) => asset.symbol);
+
+export const symbolDisplayLabelByTicker = Object.fromEntries(
+  assetUniverse.map((asset) => [asset.symbol, `${asset.symbol} - ${asset.name}`]),
+) as Record<string, string>;
+
+export const symbolSearchLabels = assetUniverse.map(
+  (asset) => symbolDisplayLabelByTicker[asset.symbol],
+);
+
+export function getSymbolDisplayLabel(symbol: string): string {
+  return symbolDisplayLabelByTicker[symbol] ?? symbol;
+}

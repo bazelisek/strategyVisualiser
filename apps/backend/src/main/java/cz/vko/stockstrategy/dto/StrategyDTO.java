@@ -12,6 +12,7 @@ public class StrategyDTO {
     private Long id;
     private String name;
     private String description;
+    private String requirements;
     private String ownerEmail;
     private Boolean isPublic;
     private LocalDateTime createdAt;

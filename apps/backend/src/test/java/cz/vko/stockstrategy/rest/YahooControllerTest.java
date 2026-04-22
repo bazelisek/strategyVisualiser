@@ -16,6 +16,7 @@ import java.util.List;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -84,5 +85,23 @@ class YahooControllerTest {
                 LocalDate.of(2026, 4, 1),
                 LocalDate.of(2026, 4, 2)
         );
+    }
+
+    @Test
+    void getStockDataReturnsBadRequestForInvalidSymbol() throws Exception {
+        when(yahooFinanceService.getStockData(
+                "BAD-USD",
+                "1d",
+                LocalDate.of(2026, 4, 1),
+                LocalDate.of(2026, 4, 2)
+        )).thenThrow(new IllegalArgumentException("No data found for BAD-USD"));
+
+        mockMvc.perform(get("/api/yahoo/BAD-USD")
+                        .param("interval", "1d")
+                        .param("from", "2026-04-01")
+                        .param("to", "2026-04-02"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.error").value("No data found for BAD-USD"));
     }
 }

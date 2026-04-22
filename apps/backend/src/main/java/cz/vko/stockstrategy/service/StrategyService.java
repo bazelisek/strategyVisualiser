@@ -124,6 +124,7 @@ public class StrategyService {
         dto.setId(strategy.getId());
         dto.setName(strategy.getName());
         dto.setDescription(strategy.getDescription());
+        dto.setRequirements(strategy.getRequirements());
         dto.setOwnerEmail(strategy.getOwnerEmail());
         dto.setIsPublic(strategy.getIsPublic());
         dto.setCreatedAt(strategy.getCreatedAt());

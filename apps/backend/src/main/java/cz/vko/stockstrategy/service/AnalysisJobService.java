@@ -53,9 +53,12 @@ public class AnalysisJobService {
 
         AnalyzeStrategyRequestDTO effectiveRequest = request == null ? new AnalyzeStrategyRequestDTO() : request;
         validateDateRange(effectiveRequest.getFromDate(), effectiveRequest.getToDate());
-        ResolvedStrategyConfiguration resolvedConfiguration = resolveConfiguration(
-                strategy.get().getConfiguration(),
-                effectiveRequest.getConfig()
+        ResolvedStrategyConfiguration resolvedConfiguration = withUniverseFallback(
+                resolveConfiguration(
+                        strategy.get().getConfiguration(),
+                        effectiveRequest.getConfig()
+                ),
+                effectiveRequest.getSymbol()
         );
         String configSignature = buildConfigSignature(strategyId, resolvedConfiguration.executionConfigurationJson());
 
@@ -253,6 +256,35 @@ public class AnalysisJobService {
         );
     }
 
+    private ResolvedStrategyConfiguration withUniverseFallback(
+            ResolvedStrategyConfiguration resolvedConfiguration,
+            String fallbackSymbol
+    ) {
+        if (resolvedConfiguration == null
+                || resolvedConfiguration.universe() == null
+                || !resolvedConfiguration.universe().isEmpty()
+                || fallbackSymbol == null
+                || fallbackSymbol.isBlank()) {
+            return resolvedConfiguration;
+        }
+
+        try {
+            JsonNode parsed = objectMapper.readTree(resolvedConfiguration.executionConfigurationJson());
+            ObjectNode executionConfiguration = parsed != null && parsed.isObject()
+                    ? (ObjectNode) parsed.deepCopy()
+                    : objectMapper.createObjectNode();
+            ArrayNode universeNode = objectMapper.createArrayNode();
+            universeNode.add(fallbackSymbol.trim());
+            executionConfiguration.set("universe", universeNode);
+            return new ResolvedStrategyConfiguration(
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(executionConfiguration),
+                    List.of(fallbackSymbol.trim())
+            );
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Unable to apply symbol fallback to strategy configuration.", e);
+        }
+    }
+
     private List<String> loadUniverse(List<String> rawUniverse) {
         return rawUniverse.stream()
                 .filter(symbol -> symbol != null && !symbol.isBlank())
@@ -290,20 +322,24 @@ public class AnalysisJobService {
         List<StockData> stockData = new ArrayList<>();
         for (String symbol : symbols) {
             if (fromDate != null && toDate != null) {
-                List<StockData> symbolData = stockDataService.getStockData(symbol, "D", fromDate, toDate);
-                // Fetch from Yahoo when the DB has no data at all, or when the data it returned
-                // does not fully cover the requested date range (partial coverage).  Partial
-                // coverage happens when, for example, only the first half of the requested
-                // interval was previously imported.  We always save whatever Yahoo returns so
-                // that subsequent requests can benefit from the cached rows.
-                if (symbolData.isEmpty() || !coversFullRange(symbolData, fromDate, toDate)) {
+                List<StockData> cachedData = stockDataService.getStockData(symbol, "D", fromDate, toDate);
+                try {
                     List<StockData> yahooData = yahooFinanceService.getStockData(symbol, "1d", fromDate, toDate);
                     if (!yahooData.isEmpty()) {
                         stockDataService.saveIfMissing(yahooData);
-                        symbolData = stockDataService.getStockData(symbol, "D", fromDate, toDate);
+                        stockData.addAll(yahooData);
+                        continue;
+                    }
+                } catch (IllegalArgumentException yahooException) {
+                    if (cachedData.isEmpty() || !coversFullRange(cachedData, fromDate, toDate)) {
+                        throw yahooException;
                     }
                 }
-                stockData.addAll(symbolData);
+
+                if (cachedData.isEmpty() || !coversFullRange(cachedData, fromDate, toDate)) {
+                    throw new IllegalArgumentException("No market data found for symbol " + symbol + ".");
+                }
+                stockData.addAll(cachedData);
             } else {
                 stockData.addAll(stockDataService.getStockData(symbol));
             }

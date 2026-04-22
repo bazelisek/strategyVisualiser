@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -134,6 +135,30 @@ class AnalysisJobServiceTest {
     }
 
     @Test
+    void createAnalysisJobFallsBackToRequestedSymbolWhenUniverseIsMissing() {
+        Strategy strategy = new Strategy();
+        strategy.setId(19L);
+        strategy.setConfiguration("""
+                [
+                  {"id":"lookback","type":"number","defaultValue":20}
+                ]
+                """);
+        when(strategyDao.findById(19L)).thenReturn(Optional.of(strategy));
+        when(analysisJobDao.findCompletedByExactRange(eq(19L), any(), any(), any())).thenReturn(Optional.empty());
+        when(analysisJobDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AnalyzeStrategyRequestDTO request = new AnalyzeStrategyRequestDTO();
+        request.setSymbol("BTC-USD");
+
+        analysisJobService.createAnalysisJob(19L, request);
+
+        ArgumentCaptor<AnalysisJob> captor = ArgumentCaptor.forClass(AnalysisJob.class);
+        verify(analysisJobDao).save(captor.capture());
+        assertThat(captor.getValue().getConfigPayload()).contains("\"universe\"");
+        assertThat(captor.getValue().getConfigPayload()).contains("BTC-USD");
+    }
+
+    @Test
     void getJobByIdFiltersTradeArraysBySymbol() throws Exception {
         AnalysisJob job = new AnalysisJob();
         job.setId(77L);
@@ -163,6 +188,34 @@ class AnalysisJobServiceTest {
                 });
     }
 
+    @Test
+    void loadStockDataPrefersFreshYahooRowsForRangedRequests() {
+        LocalDate fromDate = LocalDate.parse("2024-01-02");
+        LocalDate toDate = LocalDate.parse("2024-01-03");
+        StockData cachedRow = stockRow("AAPL", "D", fromDate, LocalTime.of(9, 30), "187.15");
+        StockData yahooRow = stockRow("AAPL", "1d", fromDate, LocalTime.of(14, 30), "187.15");
+
+        when(stockDataService.getStockData("AAPL", "D", fromDate, toDate))
+                .thenReturn(List.of(cachedRow));
+        when(yahooFinanceService.getStockData("AAPL", "1d", fromDate, toDate))
+                .thenReturn(List.of(yahooRow));
+
+        @SuppressWarnings("unchecked")
+        List<StockData> rows = (List<StockData>) ReflectionTestUtils.invokeMethod(
+                analysisJobService,
+                "loadStockData",
+                List.of("AAPL"),
+                fromDate,
+                toDate
+        );
+
+        assertThat(rows).singleElement().satisfies(row -> {
+            assertThat(row.getTradeTime()).isEqualTo(LocalTime.of(14, 30));
+            assertThat(row.getPeriod()).isEqualTo("1d");
+        });
+        verify(stockDataService).saveIfMissing(List.of(yahooRow));
+    }
+
     private Strategy strategyWithConfiguration() {
         Strategy strategy = new Strategy();
         strategy.setId(9L);
@@ -185,5 +238,19 @@ class AnalysisJobServiceTest {
         job.setRangeEnd(to);
         job.setCompletedAt(LocalDateTime.now());
         return job;
+    }
+
+    private StockData stockRow(String ticker, String period, LocalDate date, LocalTime time, String price) {
+        StockData stockData = new StockData();
+        stockData.setTicker(ticker);
+        stockData.setPeriod(period);
+        stockData.setTradeDate(date);
+        stockData.setTradeTime(time);
+        stockData.setOpen(new BigDecimal(price));
+        stockData.setHigh(new BigDecimal(price));
+        stockData.setLow(new BigDecimal(price));
+        stockData.setClose(new BigDecimal(price));
+        stockData.setVolume(1L);
+        return stockData;
     }
 }

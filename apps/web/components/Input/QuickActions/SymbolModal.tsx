@@ -2,7 +2,7 @@
 import React, { useState, useEffect, ReactNode } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import QuickActionsModal from "./QuickActionsModal";
-import { symbols } from "@/util/symbols";
+import { assetUniverse, getSymbolDisplayLabel } from "@/util/symbols";
 import { motion } from "framer-motion";
 import { RootState, setModal } from "@/store/reduxStore";
 import { useTiles } from "@/hooks/useTiles";
@@ -36,9 +36,13 @@ const SymbolModal: React.FC<SymbolModalProps> = ({index}) => {
   }, [search]);
 
   // filter only when debouncedSearch changes
-  const filteredSymbols = symbols.filter((s) =>
-    s.toLowerCase().includes(debouncedSearch.toLowerCase())
-  );
+  const filteredSymbols = assetUniverse.filter((asset) => {
+    const query = debouncedSearch.toLowerCase();
+    return (
+      asset.symbol.toLowerCase().includes(query) ||
+      asset.name.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <QuickActionsModal index={index} open={open} heading="Symbol">
@@ -59,10 +63,10 @@ const SymbolModal: React.FC<SymbolModalProps> = ({index}) => {
         }}
         layout
       >
-        {filteredSymbols.map((symbol) => (
+        {filteredSymbols.map((asset) => (
           <motion.li
             layout
-            key={symbol}
+            key={asset.symbol}
             variants={{
               hidden: { opacity: 0, scale: 0.5 },
               visible: {
@@ -76,9 +80,9 @@ const SymbolModal: React.FC<SymbolModalProps> = ({index}) => {
               backgroundColor: "var(--accent)",
               color: "var(--background-dark)",
             }}
-            onClick={() => handleSymbolClick(symbol)}
+            onClick={() => handleSymbolClick(asset.symbol)}
           >
-            {symbol}
+            {getSymbolDisplayLabel(asset.symbol)}
           </motion.li>
         ))}
       </motion.ul>

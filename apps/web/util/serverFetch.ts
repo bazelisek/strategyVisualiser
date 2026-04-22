@@ -31,24 +31,31 @@ export async function getCandlestickChartData({
     const yahooRes = await fetch(
       `/api/yahoo/${encodeURIComponent(symbol)}?interval=${encodeURIComponent(interval)}&from=${fromIso}&to=${toIso}`
     );
+    const yahooPayload = (await yahooRes.json().catch(() => null)) as
+      | Array<{
+          ticker: string;
+          tradeDate: string;
+          tradeTime?: string;
+          open: number;
+          high: number;
+          low: number;
+          close: number;
+          volume: number;
+        }>
+      | { error?: string }
+      | null;
     if (yahooRes.ok) {
-      const yahooRows = (await yahooRes.json()) as Array<{
-        ticker: string;
-        tradeDate: string;
-        tradeTime?: string;
-        open: number;
-        high: number;
-        low: number;
-        close: number;
-        volume: number;
-      }>;
+      const yahooRows = Array.isArray(yahooPayload) ? yahooPayload : [];
       const transformedData = transformRowsToCandles(yahooRows);
       if (transformedData.candles.length > 0) {
         return { data: transformedData, error: null };
       }
       yahooError = "No candlestick data available.";
     } else {
-      yahooError = "Unable to fetch candlestick data.";
+      yahooError =
+        yahooPayload && !Array.isArray(yahooPayload) && yahooPayload.error
+          ? yahooPayload.error
+          : "Unable to fetch candlestick data.";
     }
   } catch {
     // Fall back to imported backend data below.

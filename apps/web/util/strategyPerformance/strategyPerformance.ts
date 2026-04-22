@@ -33,7 +33,7 @@ export function getStrategyPerformance(
 
   if (strategyData.length === 0) return { error: "No buy/sell data." };
 
-  strategyData = strategyData.sort((point) => point.time);
+  strategyData = strategyData.sort((a, b) => a.time - b.time);
   const buys = strategyData.filter((point) => point.amount > 0);
   const sells = strategyData.filter((point) => point.amount < 0);
   const flatBuys: { time: number }[] = buys
@@ -71,18 +71,31 @@ export function getStrategyPerformance(
   let buyIndex = 0;
   let sellIndex = 0;
   for (let i = 0; i < totalBuys; i++) {
-    while (opens[buyIndex].time < flatBuys[i].time) {
+    while (buyIndex < opens.length-1 && opens[buyIndex].time < flatBuys[i].time) {
       buyIndex++;
     }
-    if (opens[buyIndex].time !== flatBuys[i].time)
+    if (buyIndex < opens.length) {
+      console.log("flatBuys: " + flatBuys[i].time);
+      console.log("opens(buy): " + opens[buyIndex].time);
+    }
+
+    if (buyIndex >= opens.length || opens[buyIndex].time !== flatBuys[i].time) {
+      console.error("MISMATCH: " + opens[buyIndex].time + ", " + flatBuys[i].time);
       return { error: "Candle and strategy times are not matching." };
+    }
     const buyPrice = opens[buyIndex].value;
 
     while (opens[sellIndex].time < flatSells[i].time) {
       sellIndex++;
     }
-    if (opens[sellIndex].time !== flatSells[i].time)
+    if (sellIndex < opens.length) {
+      console.log("flatSells: " + flatSells[i].time);
+      console.log("opens(sell): " + opens[sellIndex].time);
+    }
+    if (opens[sellIndex].time !== flatSells[i].time) {
+      console.error("MISMATCH: " + opens[sellIndex].time + ", " + flatSells[i].time);
       return { error: "Candle and strategy times are not matching." };
+    }
     const sellPrice = opens[sellIndex].value;
     trades.push({
       buy: buyPrice,
@@ -93,7 +106,7 @@ export function getStrategyPerformance(
     });
   }
 
-  const sortedTrades = trades.sort((trade) => trade.result);
+  const sortedTrades = trades.sort((a, b) => a.result - b.result);
   const bestTrade: Trade | undefined = sortedTrades.at(-1);
   const worstTrade: Trade | undefined = sortedTrades[0];
   if (!bestTrade || !worstTrade) return { error: "Trades not found" };

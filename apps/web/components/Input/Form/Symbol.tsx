@@ -1,7 +1,7 @@
 import React, { ReactNode } from "react";
 import AnimationWrapper from "./AnimationWrapper";
 import CustomSelect from "./CustomSelect";
-import { symbols } from "@/util/symbols";
+import { getSymbolDisplayLabel, symbols } from "@/util/symbols";
 import { Strategy } from "@/util/strategies/strategies";
 import { Requirements } from "./Form";
 
@@ -46,6 +46,7 @@ const Symbol: React.FC<SymbolProps> = ({
             } as React.ChangeEvent<HTMLInputElement | HTMLSelectElement>)
           }
           options={availableSymbols}
+          mapping={availableSymbols.map((symbol) => getSymbolDisplayLabel(symbol))}
           value={value}
           initialText="Plese select a symbol"
         />

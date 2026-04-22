@@ -4,7 +4,7 @@ export function getTradeMarkers(fetchData: { time: number; amount: number }[]) {
   return fetchData.map(({ time, amount }, index): SeriesMarker<Time> => ({
     id: `${time}-${index}-${amount < 0 ? "sell" : "buy"}`,
     time: time as Time,
-    position: amount < 0 ? "belowBar" : "aboveBar",
+    position: amount < 0 ? "aboveBar" : "belowBar",
     shape: amount < 0 ? "arrowDown" : "arrowUp",
     color: amount < 0 ? "#F7525F" : "#22AB94",
     text: `${amount < 0 ? "Sell" : "Buy"} ${Math.abs(amount)}`,
