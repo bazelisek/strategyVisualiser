@@ -111,10 +111,11 @@ const Header: React.FC<HeaderProps> = () => {
               )}
               <User user={session.user} />
               <Button
-                variant="solid"
+                variant="outlined"
                 size="sm"
                 color="danger"
                 onClick={handleLogout}
+                sx={{":hover": {color: '#ffffff'}}}
               >
                 Logout
               </Button>

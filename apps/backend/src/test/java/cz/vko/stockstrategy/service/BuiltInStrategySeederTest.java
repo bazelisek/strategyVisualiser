@@ -14,9 +14,11 @@ import org.springframework.boot.DefaultApplicationArguments;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,22 +32,42 @@ class BuiltInStrategySeederTest {
     private BuiltInStrategySeeder seeder;
 
     @Test
-    void seedsMovingAverageCrossoverStrategyWhenMissing() throws Exception {
-        when(strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME))
+    void seedsBuiltInStrategiesWhenMissing() throws Exception {
+        when(strategyDao.findByName(anyString()))
                 .thenReturn(Optional.empty());
 
         seeder.run(new DefaultApplicationArguments(new String[0]));
 
         ArgumentCaptor<Strategy> captor = ArgumentCaptor.forClass(Strategy.class);
-        verify(strategyDao).save(captor.capture());
+        verify(strategyDao, times(BuiltInStrategyCatalog.all().size())).save(captor.capture());
 
-        Strategy saved = captor.getValue();
-        assertThat(saved.getName()).isEqualTo(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME);
-        assertThat(saved.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
-        assertThat(saved.getIsPublic()).isTrue();
-        assertThat(saved.getConfiguration()).contains("\"maRange1\"");
-        assertThat(saved.getConfiguration()).contains("\"maRange2\"");
-        assertThat(saved.getCode()).contains("class StrategyMain");
+        assertThat(captor.getAllValues())
+                .extracting(Strategy::getName)
+                .containsExactlyInAnyOrder(
+                        BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME,
+                        BuiltInStrategyCatalog.SUPER_TREND_NAME
+                );
+
+        Strategy movingAverage = captor.getAllValues().stream()
+                .filter(strategy -> BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME.equals(strategy.getName()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(movingAverage.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
+        assertThat(movingAverage.getIsPublic()).isTrue();
+        assertThat(movingAverage.getConfiguration()).contains("\"maRange1\"");
+        assertThat(movingAverage.getConfiguration()).contains("\"maRange2\"");
+        assertThat(movingAverage.getCode()).contains("class StrategyMain");
+
+        Strategy superTrend = captor.getAllValues().stream()
+                .filter(strategy -> BuiltInStrategyCatalog.SUPER_TREND_NAME.equals(strategy.getName()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(superTrend.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
+        assertThat(superTrend.getIsPublic()).isTrue();
+        assertThat(superTrend.getConfiguration()).contains("\"supertrendPeriod\"");
+        assertThat(superTrend.getConfiguration()).contains("\"buyThresholdPercent\"");
+        assertThat(superTrend.getConfiguration()).contains("\"sellThresholdPercent\"");
+        assertThat(superTrend.getCode()).contains("class StrategyMain");
     }
 
     @Test
@@ -54,6 +76,8 @@ class BuiltInStrategySeederTest {
         existing.setId(5L);
         when(strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME))
                 .thenReturn(Optional.of(existing));
+        when(strategyDao.findByName(BuiltInStrategyCatalog.SUPER_TREND_NAME))
+                .thenReturn(Optional.of(BuiltInStrategyCatalog.superTrend().toStrategy()));
 
         seeder.run(new DefaultApplicationArguments(new String[0]));
 
@@ -67,6 +91,8 @@ class BuiltInStrategySeederTest {
         existing.setCode("// stale built-in snapshot");
         when(strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME))
                 .thenReturn(Optional.of(existing));
+        when(strategyDao.findByName(BuiltInStrategyCatalog.SUPER_TREND_NAME))
+                .thenReturn(Optional.of(BuiltInStrategyCatalog.superTrend().toStrategy()));
 
         seeder.run(new DefaultApplicationArguments(new String[0]));
 

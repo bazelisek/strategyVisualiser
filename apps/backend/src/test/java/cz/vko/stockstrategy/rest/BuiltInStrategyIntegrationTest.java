@@ -31,15 +31,25 @@ class BuiltInStrategyIntegrationTest {
     private TestRestTemplate restTemplate;
 
     @Test
-    void applicationStartupSeedsMovingAverageCrossoverStrategy() {
-        Strategy strategy = strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME)
+    void applicationStartupSeedsBuiltInStrategies() {
+        Strategy movingAverage = strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME)
                 .orElseThrow(() -> new AssertionError("Built-in strategy was not seeded"));
+        Strategy superTrend = strategyDao.findByName(BuiltInStrategyCatalog.SUPER_TREND_NAME)
+                .orElseThrow(() -> new AssertionError("SuperTrend built-in strategy was not seeded"));
 
-        assertThat(strategy.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
-        assertThat(strategy.getIsPublic()).isTrue();
-        assertThat(strategy.getConfiguration()).contains("\"maRange1\"");
-        assertThat(strategy.getConfiguration()).contains("\"maRange2\"");
-        assertThat(strategy.getCode()).contains("class StrategyMain");
+        assertThat(movingAverage.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
+        assertThat(movingAverage.getIsPublic()).isTrue();
+        assertThat(movingAverage.getConfiguration()).contains("\"maRange1\"");
+        assertThat(movingAverage.getConfiguration()).contains("\"maRange2\"");
+        assertThat(movingAverage.getCode()).contains("class StrategyMain");
+
+        assertThat(superTrend.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
+        assertThat(superTrend.getIsPublic()).isTrue();
+        assertThat(superTrend.getConfiguration()).contains("\"supertrendPeriod\"");
+        assertThat(superTrend.getConfiguration()).contains("\"supertrendMultiplier\"");
+        assertThat(superTrend.getConfiguration()).contains("\"buyThresholdPercent\"");
+        assertThat(superTrend.getConfiguration()).contains("\"sellThresholdPercent\"");
+        assertThat(superTrend.getCode()).contains("class StrategyMain");
 
         ResponseEntity<StrategyDTO[]> response = restTemplate.getForEntity(
                 "http://localhost:" + port + "/api/strategies",
@@ -50,6 +60,9 @@ class BuiltInStrategyIntegrationTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(Arrays.stream(response.getBody()))
                 .extracting(StrategyDTO::getName)
-                .contains(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME);
+                .contains(
+                        BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME,
+                        BuiltInStrategyCatalog.SUPER_TREND_NAME
+                );
     }
 }

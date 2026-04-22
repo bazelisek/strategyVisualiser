@@ -2,6 +2,9 @@
   --background-dark: #121212;
   --background-light: #1e1e2a;
   --background: var(--background-dark);
+  --app-background-dark: #050d14;
+  --app-background-mid: #060f18;
+  --app-background-light: #08121b;
   --foreground: #e0e0e0;
   --primary: #4cafef;
   --accent: #4cafef;
@@ -24,10 +27,11 @@
 html,
 body {
   max-width: 100vw;
+  min-height: 100%;
   overflow-x: hidden;
   margin: 0;
   padding: 0;
-  background: var(--background);
+  background: var(--app-background-dark);
   color: var(--foreground);
   font-family: var(--font-base);
   -webkit-font-smoothing: antialiased;
@@ -36,6 +40,47 @@ body {
 
 html {
   scroll-behavior: smooth;
+}
+
+body {
+  position: relative;
+  isolation: isolate;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: -2;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(34, 197, 214, 0.08), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(59, 130, 246, 0.1), transparent 30%),
+    linear-gradient(
+      180deg,
+      var(--app-background-light) 0%,
+      var(--app-background-mid) 34%,
+      var(--app-background-dark) 100%
+    );
+}
+
+body::after {
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.88) 0%,
+    rgba(0, 0, 0, 0.68) 40%,
+    rgba(0, 0, 0, 0.28) 72%,
+    transparent 100%
+  );
 }
 
 * {
@@ -106,6 +151,5 @@ button:hover {
   align-items: center;
   justify-content: center;
   padding: 2.5rem 1.5rem 3rem;
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 55%),
-    var(--background);
+  background: radial-gradient(circle at top, rgba(120, 190, 255, 0.07), transparent 55%);
 }

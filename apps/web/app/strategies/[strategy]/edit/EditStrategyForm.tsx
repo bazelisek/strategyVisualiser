@@ -84,7 +84,7 @@ export default function EditStrategyForm({
           />
           <JSONOptions
             onConfigUpload={() => {}}
-            name="strategyConfig"
+            name="strategyRequirements"
             resetTrigger={resetTrigger}
             label="Requirements"
           />

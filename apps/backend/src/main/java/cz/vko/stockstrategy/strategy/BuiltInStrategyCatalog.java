@@ -11,11 +11,16 @@ public final class BuiltInStrategyCatalog {
 
     public static final String SYSTEM_OWNER_EMAIL = "system@strategy.local";
     public static final String MOVING_AVERAGE_CROSSOVER_NAME = "Moving Average Crossover";
+    public static final String SUPER_TREND_NAME = "SuperTrend";
 
     private static final String MOVING_AVERAGE_CROSSOVER_SOURCE_PATH =
             "built-in-strategies/moving-average-crossover/StrategyMain.java";
     private static final String MOVING_AVERAGE_CROSSOVER_CONFIGURATION_PATH =
             "built-in-strategies/moving-average-crossover/configuration.json";
+    private static final String SUPER_TREND_SOURCE_PATH =
+            "built-in-strategies/supertrend/StrategyMain.java";
+    private static final String SUPER_TREND_CONFIGURATION_PATH =
+            "built-in-strategies/supertrend/configuration.json";
 
     private static final BuiltInStrategyDefinition MOVING_AVERAGE_CROSSOVER = new BuiltInStrategyDefinition(
             MOVING_AVERAGE_CROSSOVER_NAME,
@@ -26,16 +31,29 @@ public final class BuiltInStrategyCatalog {
             SYSTEM_OWNER_EMAIL,
             true
     );
+    private static final BuiltInStrategyDefinition SUPER_TREND = new BuiltInStrategyDefinition(
+            SUPER_TREND_NAME,
+            "Computes SuperTrend with JavaScript-parity ATR, band, and state transitions, then opens and closes "
+                    + "a single long position when the raw SuperTrend value moves above or below configured thresholds.",
+            readResource(SUPER_TREND_SOURCE_PATH),
+            readResource(SUPER_TREND_CONFIGURATION_PATH),
+            SYSTEM_OWNER_EMAIL,
+            true
+    );
 
     private BuiltInStrategyCatalog() {
     }
 
     public static List<BuiltInStrategyDefinition> all() {
-        return List.of(MOVING_AVERAGE_CROSSOVER);
+        return List.of(MOVING_AVERAGE_CROSSOVER, SUPER_TREND);
     }
 
     public static BuiltInStrategyDefinition movingAverageCrossover() {
         return MOVING_AVERAGE_CROSSOVER;
+    }
+
+    public static BuiltInStrategyDefinition superTrend() {
+        return SUPER_TREND;
     }
 
     private static String readResource(String resourcePath) {

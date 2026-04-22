@@ -21,7 +21,7 @@ export function calculateSupertrendSeriesData(
   });
   const result = candleData.map((candle, index) => ({
     time: candle.time as UTCTimestamp,
-    value: supertrendData[index],
+    value: index < period ? undefined : supertrendData[index - period],
   }));
   return result;
 }

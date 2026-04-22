@@ -72,27 +72,8 @@ export function isConfigOptions(value: unknown): value is ConfigOptions {
   return Array.isArray(value) && value.every(isConfigOption);
 }
 
-function hasReservedConfigId(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.some(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        "id" in item &&
-        item.id === UNIVERSE_CONFIG_ID
-    )
-  );
-}
-
 export function parseUserConfigOptions(configText: string): ConfigOptions {
   const parsedConfig: unknown = JSON.parse(configText);
-
-  if (hasReservedConfigId(parsedConfig)) {
-    throw new Error(
-      `Configuration option id "${UNIVERSE_CONFIG_ID}" is reserved.`
-    );
-  }
 
   if (!isConfigOptions(parsedConfig)) {
     throw new Error("Invalid configuration file structure.");
@@ -101,10 +82,40 @@ export function parseUserConfigOptions(configText: string): ConfigOptions {
   return parsedConfig;
 }
 
+function mergeUniverseConfigOption(
+  uploadedUniverseConfig?: ConfigOption
+): ConfigOption {
+  const defaultUniverseConfig = createUniverseConfigOption();
+
+  if (!uploadedUniverseConfig) {
+    return defaultUniverseConfig;
+  }
+
+  return {
+    ...defaultUniverseConfig,
+    ...uploadedUniverseConfig,
+    id: UNIVERSE_CONFIG_ID,
+    type: "multi-select",
+    options: uploadedUniverseConfig.options ?? defaultUniverseConfig.options,
+    defaultValue:
+      uploadedUniverseConfig.defaultValue ?? defaultUniverseConfig.defaultValue,
+  };
+}
+
 export function buildStrategyConfiguration(
   configOptions: ConfigOptions = []
 ): ConfigOptions {
-  return [createUniverseConfigOption(), ...configOptions];
+  const uploadedUniverseConfig = configOptions.find(
+    (option) => option.id === UNIVERSE_CONFIG_ID
+  );
+  const userDefinedConfigOptions = configOptions.filter(
+    (option) => option.id !== UNIVERSE_CONFIG_ID
+  );
+
+  return [
+    mergeUniverseConfigOption(uploadedUniverseConfig),
+    ...userDefinedConfigOptions,
+  ];
 }
 
 export function parseStrategyRequirements(text: string): Requirements {

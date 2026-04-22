@@ -1,0 +1,30 @@
+[
+  {
+    "id": "supertrendPeriod",
+    "label": "SuperTrend Period",
+    "type": "number",
+    "defaultValue": 10,
+    "required": true
+  },
+  {
+    "id": "supertrendMultiplier",
+    "label": "SuperTrend Multiplier",
+    "type": "number",
+    "defaultValue": 3.0,
+    "required": true
+  },
+  {
+    "id": "buyThresholdPercent",
+    "label": "Buy Threshold Percent",
+    "type": "number",
+    "defaultValue": 1.0,
+    "required": true
+  },
+  {
+    "id": "sellThresholdPercent",
+    "label": "Sell Threshold Percent",
+    "type": "number",
+    "defaultValue": 1.0,
+    "required": true
+  }
+]

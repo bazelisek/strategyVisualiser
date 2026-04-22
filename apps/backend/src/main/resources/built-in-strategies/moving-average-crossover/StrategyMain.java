@@ -40,15 +40,7 @@ public class StrategyMain {
 
         Map<String, List<BarPoint>> barsBySymbol = loadBars(
             resolveInputPath("STRATEGY_STOCK_DATA_FILE", "stock-data.csv"));
-    
-        System.out.println("Loaded symbols:");
-        
-        for (String symbol : barsBySymbol.keySet()) {
-            System.out.println(symbol);
-        }
-        for (BarPoint point : barsBySymbol.getOrDefault("GOOG", List.of())) {
-            System.out.println(point);
-        }
+
         ObjectNode result = MAPPER.createObjectNode();
         ArrayNode trades = result.putArray("trades");
 

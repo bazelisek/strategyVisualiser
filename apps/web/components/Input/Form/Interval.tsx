@@ -21,7 +21,7 @@ const Interval: React.FC<IntervalProps> = ({
   children,
   requirements
 }) => {
-  const finalAvailableIntervals = requirements.symbol?.whitelist
+  const finalAvailableIntervals = requirements.interval?.whitelist
       ? availableIntervals.filter((interval) =>
           requirements.interval?.whitelist?.includes(interval),
         )

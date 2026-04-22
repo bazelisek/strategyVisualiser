@@ -14,8 +14,8 @@ export function checkFormValidity(formData: {
 
   if (!symbol.value) return "Symbol cannot be empty";
 
-  const from = new Date(Number(period1.value));
-  const to = new Date(Number(period2.value));
+  const from = normalizeToDate(period1.value);
+  const to = normalizeToDate(period2.value);
 
   if (isNaN(from.getTime()) || isNaN(to.getTime())) {
     return "Invalid date format";
@@ -33,6 +33,16 @@ export function checkFormValidity(formData: {
   }
 
   return "";
+}
+
+function normalizeToDate(value: number | string): Date {
+  const numericValue = Number(value);
+  if (Number.isFinite(numericValue)) {
+    // Tile params are stored as Unix seconds, while some form states use milliseconds/ISO strings.
+    return new Date(numericValue < 1_000_000_000_000 ? numericValue * 1000 : numericValue);
+  }
+
+  return new Date(value);
 }
 
 export function getValidIntervals(from: Date, to: Date): string[] {

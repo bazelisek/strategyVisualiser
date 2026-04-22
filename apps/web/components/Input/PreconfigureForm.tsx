@@ -1,4 +1,4 @@
-﻿import React, { ReactNode, useEffect, useState } from "react";
+﻿import React, { ReactNode, useEffect, useMemo, useState } from "react";
 import Modal from "../Modal";
 import { motion } from "framer-motion";
 import classes from "./PreconfigureForm.module.css";
@@ -61,26 +61,57 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
     setTiles(nextTiles);
   }
 
-  const availableIntervals =
-    formData.period1.defaultValue && formData.period2.defaultValue
-      ? getValidIntervals(
-          new Date(formData.period1.defaultValue),
-          new Date(formData.period2.defaultValue),
-        )
-      : [
-          "1m",
-          "2m",
-          "5m",
-          "15m",
-          "30m",
-          "60m",
-          "90m",
-          "1d",
-          "5d",
-          "1wk",
-          "1mo",
-          "3mo",
-        ];
+  const availableIntervals = useMemo(
+    () =>
+      formData.period1.defaultValue && formData.period2.defaultValue
+        ? getValidIntervals(
+            new Date(formData.period1.defaultValue),
+            new Date(formData.period2.defaultValue),
+          )
+        : [
+            "1m",
+            "2m",
+            "5m",
+            "15m",
+            "30m",
+            "60m",
+            "90m",
+            "1d",
+            "5d",
+            "1wk",
+            "1mo",
+            "3mo",
+          ],
+    [formData.period1.defaultValue, formData.period2.defaultValue],
+  );
+
+  const filteredIntervals = useMemo(() => {
+    if (requirements.interval?.whitelist?.length) {
+      return availableIntervals.filter((interval) =>
+        requirements.interval.whitelist?.includes(interval),
+      );
+    }
+    if (requirements.interval?.blacklist?.length) {
+      return availableIntervals.filter(
+        (interval) => !requirements.interval?.blacklist?.includes(interval),
+      );
+    }
+    return availableIntervals;
+  }, [
+    availableIntervals,
+    requirements.interval?.blacklist,
+    requirements.interval?.whitelist,
+  ]);
+
+  useEffect(() => {
+    const currentInterval = formData.interval.defaultValue;
+    if (currentInterval && !filteredIntervals.includes(currentInterval)) {
+      setFormData((prev) => ({
+        ...prev,
+        interval: { ...prev.interval, defaultValue: "" },
+      }));
+    }
+  }, [filteredIntervals, formData.interval.defaultValue]);
 
   return (
     <>
@@ -129,7 +160,7 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
             <Interval
               value={formData.interval.defaultValue}
               onChange={handleChange}
-              availableIntervals={availableIntervals}
+              availableIntervals={filteredIntervals}
               handleContinue={() => {}}
               requirements={requirements}
             />

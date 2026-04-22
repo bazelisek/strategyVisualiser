@@ -3,7 +3,6 @@ import ChartSection from "@/components/ChartSection";
 import React from "react";
 
 jest.mock("@mui/joy", () => {
-  const React = require("react");
   return {
     Autocomplete: ({ value, placeholder }: { value?: string | null; placeholder?: string }) => (
       <input value={value ?? ""} placeholder={placeholder} readOnly />
@@ -77,6 +76,13 @@ jest.mock("@mui/x-date-pickers/DateTimePicker", () => ({
 }));
 
 const mockRunCalculation = jest.fn(async () => undefined);
+const mockGetAvailableStrategies = jest.fn(async () => [
+  {
+    id: 12,
+    name: "Momentum",
+    requirements: "{}",
+  },
+]);
 const mockUseChartDataState = {
   strategyData: [] as { time: number; amount: number }[],
   loading: false,
@@ -88,17 +94,25 @@ const mockUseChartDataState = {
   consoleOutput: "",
 };
 
+const mockTiles = [
+  {
+    symbol: "AAPL",
+    interval: "1d",
+    period1: "1700000000",
+    period2: "1700003600",
+    strategy: "12:Momentum",
+  },
+];
+const mockUpdateTile = jest.fn(
+  (index: number, patch: Partial<(typeof mockTiles)[number]>) => {
+    mockTiles[index] = { ...mockTiles[index], ...patch };
+  },
+);
+
 jest.mock("@/hooks/useTiles", () => ({
   useTiles: () => ({
-    tiles: [
-      {
-        symbol: "AAPL",
-        interval: "1d",
-        period1: "1700000000",
-        period2: "1700003600",
-        strategy: "12:Momentum",
-      },
-    ],
+    tiles: mockTiles,
+    updateTile: mockUpdateTile,
   }),
 }));
 
@@ -107,13 +121,8 @@ jest.mock("@/hooks/useChartData", () => ({
 }));
 
 jest.mock("@/util/strategies/strategies", () => ({
-  getAvailableStrategies: jest.fn(async () => [
-    {
-      id: 12,
-      name: "Momentum",
-      requirements: "{}",
-    },
-  ]),
+  getAvailableStrategies: (...args: unknown[]) =>
+    mockGetAvailableStrategies(...args),
 }));
 
 jest.mock("@/util/markers", () => ({
@@ -147,6 +156,20 @@ describe("ChartSection", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetAvailableStrategies.mockResolvedValue([
+      {
+        id: 12,
+        name: "Momentum",
+        requirements: "{}",
+      },
+    ]);
+    mockTiles[0] = {
+      symbol: "AAPL",
+      interval: "1d",
+      period1: "1700000000",
+      period2: "1700003600",
+      strategy: "12:Momentum",
+    };
     mockUseChartDataState.error = "";
     mockUseChartDataState.loading = false;
     mockUseChartDataState.stage = "configuring";
@@ -175,6 +198,36 @@ describe("ChartSection", () => {
         ]),
       }),
     }) as unknown as typeof fetch;
+  });
+
+  test("clears a blacklisted interval from the tile state", async () => {
+    mockTiles[0] = {
+      symbol: "AAPL",
+      interval: "3mo",
+      period1: "1700000000",
+      period2: "1860000000",
+      strategy: "12:Momentum",
+    };
+    mockGetAvailableStrategies.mockResolvedValue([
+      {
+        id: 12,
+        name: "Momentum",
+        requirements: JSON.stringify({
+          interval: { blacklist: ["1mo", "3mo"] },
+        }),
+      },
+    ]);
+
+    const view = renderChartSection();
+
+    await waitFor(() => {
+      expect(mockUpdateTile).toHaveBeenCalledWith(0, { interval: "" });
+    });
+
+    view.rerender(<ChartSection index={0} />);
+
+    expect(screen.getByText("Select an interval")).toBeInTheDocument();
+    expect(screen.queryByText("3mo")).not.toBeInTheDocument();
   });
 
   test("renders config form and calls runCalculation", async () => {

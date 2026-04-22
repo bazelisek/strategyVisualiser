@@ -121,8 +121,10 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   const toDate = toDateFromSeconds(period2);
   const period1Num = Number(period1);
   const period2Num = Number(period2);
-  const validIntervals =
-    fromDate && toDate ? getValidIntervals(fromDate, toDate) : [];
+  const validIntervals = useMemo(
+    () => (fromDate && toDate ? getValidIntervals(fromDate, toDate) : []),
+    [fromDate, toDate],
+  );
 
   const handleBackToTileConfig = () => {
     setIsConfigReady(false);
@@ -160,6 +162,23 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     requirements.interval?.whitelist,
     validIntervals,
   ]);
+
+  useEffect(() => {
+    if (symbol && availableSymbols.length > 0 && !availableSymbols.includes(symbol)) {
+      updateTile(index, { symbol: "" });
+    }
+  }, [availableSymbols, index, symbol, updateTile]);
+
+  useEffect(() => {
+    if (
+      interval &&
+      fromDate &&
+      toDate &&
+      !availableIntervals.includes(interval)
+    ) {
+      updateTile(index, { interval: "" });
+    }
+  }, [availableIntervals, fromDate, index, interval, toDate, updateTile]);
 
   useEffect(() => {
     let isActive = true;

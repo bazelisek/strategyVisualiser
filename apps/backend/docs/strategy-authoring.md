@@ -167,7 +167,6 @@ The UI expects `configuration` to be a **JSON array** of options with fields suc
 Authors hand-writing JSON should:
 
 - Include an option with `"id": "universe"` and a `defaultValue` string array of tickers **unless** you rely solely on legacy configuration (§5.2).
-- Avoid duplicate semantics: the UI reserves `universe`; user-authored uploads cannot declare another `universe` option (`parseUserConfigOptions`).
 
 ### 5.2 Legacy object format
 
