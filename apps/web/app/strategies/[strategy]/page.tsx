@@ -26,7 +26,7 @@ const Page = async ({ params }: { params: Promise<{ strategy: string }> }) => {
             p: 4,
             borderRadius: 20,
             m: 4,
-            width: { xs: "100%", sm: "90%" },
+            width: { xs: "90%", sm: "60%" },
           }}
         >
           {isOwner && (
