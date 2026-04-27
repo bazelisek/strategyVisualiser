@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import React, { ReactNode, useState } from "react";
 import classes from "./DropdownButton.module.css";
+import { Stack } from "@mui/joy";
 
 interface DropdownButtonProps {
   children?: ReactNode;
@@ -16,8 +17,21 @@ const DropdownButton: React.FC<DropdownButtonProps> = (props) => {
 
   return (
     <button className={classes.button} onClick={handleClick}>
-      {props.children}
-      <motion.span animate={{ rotate: rotation }}>&#9660;</motion.span>
+      {props.children ? (
+        <>
+          {props.children}
+          <motion.span animate={{ rotate: rotation }}>&#9660;</motion.span>
+        </>
+      ) : (
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent={"center"}
+        >
+          <motion.span animate={{ rotate: rotation }}>&#9660;</motion.span>
+        </Stack>
+      )}
     </button>
   );
 };

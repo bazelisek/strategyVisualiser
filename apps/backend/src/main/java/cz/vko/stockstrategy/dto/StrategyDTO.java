@@ -12,6 +12,8 @@ public class StrategyDTO {
     private Long id;
     private String name;
     private String description;
+    private String entryFile;
+    private String runtime;
     private String requirements;
     private String ownerEmail;
     private Boolean isPublic;

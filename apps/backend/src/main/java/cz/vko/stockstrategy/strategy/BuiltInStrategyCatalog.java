@@ -1,6 +1,8 @@
 package cz.vko.stockstrategy.strategy;
 
 import cz.vko.stockstrategy.model.Strategy;
+import cz.vko.stockstrategy.model.StrategySourceFile;
+import cz.vko.stockstrategy.service.StrategySourceFiles;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -105,6 +107,9 @@ public final class BuiltInStrategyCatalog {
             strategy.setName(name);
             strategy.setDescription(description);
             strategy.setCode(code);
+            strategy.setSourceFiles(List.of(new StrategySourceFile(StrategySourceFiles.DEFAULT_JAVA_ENTRY_FILE, code)));
+            strategy.setEntryFile(StrategySourceFiles.DEFAULT_JAVA_ENTRY_FILE);
+            strategy.setRuntime(StrategySourceFiles.JAVA_RUNTIME);
             strategy.setConfiguration(configuration);
             strategy.setRequirements(requirements);
             strategy.setOwnerEmail(ownerEmail);

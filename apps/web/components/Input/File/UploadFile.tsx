@@ -7,10 +7,17 @@ interface UploadFileProps {
   name?: string;
   displayName: string;
   accept: string;
-  onChange: ChangeEventHandler<HTMLInputElement>
+  onChange: ChangeEventHandler<HTMLInputElement>;
+  multiple?: boolean;
 }
 
-const UploadFile: React.FC<UploadFileProps> = ({accept, name, displayName, onChange}) => {
+const UploadFile: React.FC<UploadFileProps> = ({
+  accept,
+  name,
+  displayName,
+  onChange,
+  multiple,
+}) => {
   return (
     <div style={{ position: 'relative', display: 'inline-flex' }}>
       <Button
@@ -25,6 +32,7 @@ const UploadFile: React.FC<UploadFileProps> = ({accept, name, displayName, onCha
         id={name}
         name={name}
         accept={accept}
+        multiple={multiple}
         onChange={onChange}
         style={{
           position: 'absolute',

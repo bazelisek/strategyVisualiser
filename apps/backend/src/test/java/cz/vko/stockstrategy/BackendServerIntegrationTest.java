@@ -128,12 +128,12 @@ class BackendServerIntegrationTest {
             Consumer<String> outputListener = invocation.getArgument(1, Consumer.class);
             capturedRequest.set(request);
 
-            assertTrue(Files.exists(request.sourceFile()));
+            assertTrue(Files.exists(request.entrySourceFile()));
             assertTrue(Files.exists(request.configFile()));
             assertTrue(Files.exists(request.stockDataFile()));
             assertTrue(Files.exists(request.jobContextFile()));
 
-            String source = Files.readString(request.sourceFile());
+            String source = Files.readString(request.entrySourceFile());
             JsonNode config = objectMapper.readTree(Files.readString(request.configFile()));
             List<String> csvLines = Files.readAllLines(request.stockDataFile());
             JsonNode jobContext = objectMapper.readTree(Files.readString(request.jobContextFile()));

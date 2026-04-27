@@ -72,7 +72,7 @@ public class StrategyService {
         Strategy strategy = new Strategy();
         strategy.setName(dto.getName());
         strategy.setDescription(dto.getDescription());
-        strategy.setCode(dto.getCode());
+        applySourceMetadata(strategy, dto, null);
         strategy.setConfiguration(dto.getConfiguration());
         strategy.setOwnerEmail(dto.getOwnerEmail());
         strategy.setIsPublic(dto.getIsPublic() != null ? dto.getIsPublic() : true);
@@ -94,9 +94,7 @@ public class StrategyService {
         if (dto.getDescription() != null) {
             strategy.setDescription(dto.getDescription());
         }
-        if (dto.getCode() != null) {
-            strategy.setCode(dto.getCode());
-        }
+        applySourceMetadata(strategy, dto, existingStrategy.get());
         if (dto.getConfiguration() != null) {
             strategy.setConfiguration(dto.getConfiguration());
         }
@@ -124,11 +122,45 @@ public class StrategyService {
         dto.setId(strategy.getId());
         dto.setName(strategy.getName());
         dto.setDescription(strategy.getDescription());
+        dto.setEntryFile(strategy.getEntryFile());
+        dto.setRuntime(strategy.getRuntime());
         dto.setRequirements(strategy.getRequirements());
         dto.setOwnerEmail(strategy.getOwnerEmail());
         dto.setIsPublic(strategy.getIsPublic());
         dto.setCreatedAt(strategy.getCreatedAt());
         dto.setUpdatedAt(strategy.getUpdatedAt());
         return dto;
+    }
+
+    private void applySourceMetadata(Strategy target, StrategyCreateDTO dto, Strategy existingStrategy) {
+        boolean hasSourceUpdate = dto.getSourceFiles() != null
+                || dto.getCode() != null
+                || dto.getEntryFile() != null
+                || dto.getRuntime() != null
+                || existingStrategy == null;
+
+        if (!hasSourceUpdate) {
+            return;
+        }
+
+        StrategySourceFiles.ResolvedStrategySources resolved = StrategySourceFiles.resolve(
+                dto.getSourceFiles() != null
+                        ? dto.getSourceFiles()
+                        : existingStrategy != null ? existingStrategy.getSourceFiles() : null,
+                dto.getCode() != null
+                        ? dto.getCode()
+                        : existingStrategy != null ? existingStrategy.getCode() : null,
+                dto.getEntryFile() != null
+                        ? dto.getEntryFile()
+                        : existingStrategy != null ? existingStrategy.getEntryFile() : null,
+                dto.getRuntime() != null
+                        ? dto.getRuntime()
+                        : existingStrategy != null ? existingStrategy.getRuntime() : null
+        );
+
+        target.setSourceFiles(resolved.sourceFiles());
+        target.setEntryFile(resolved.entryFile());
+        target.setRuntime(resolved.runtime());
+        target.setCode(resolved.code());
     }
 }

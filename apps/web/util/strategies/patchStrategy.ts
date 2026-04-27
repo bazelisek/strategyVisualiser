@@ -3,6 +3,7 @@
 import { getServerSession } from "@/auth/server";
 import { getBaseUrl } from "../baseURL";
 import axios from "axios";
+import { StrategySourceFile } from "./sourceFiles";
 
 const BASE_URL = getBaseUrl();
 
@@ -11,7 +12,8 @@ export async function patchStrategy({
   name,
   description,
   isPublic,
-  strategyCode,
+  strategySourceFiles,
+  entryFile,
   configurationOptions,
   requirements
 }: {
@@ -19,7 +21,8 @@ export async function patchStrategy({
   name: string;
   description: string;
   isPublic: boolean;
-  strategyCode: string;
+  strategySourceFiles?: StrategySourceFile[];
+  entryFile: string | null;
   configurationOptions: string;
   requirements: string;
 }): Promise<{ error: string | null }> {
@@ -30,7 +33,8 @@ export async function patchStrategy({
   const data = {
     name,
     description,
-    code: strategyCode,
+    ...(strategySourceFiles ? { sourceFiles: strategySourceFiles } : {}),
+    entryFile,
     configuration: configurationOptions,
     ownerEmail: userEmail,
     isPublic,

@@ -4,7 +4,9 @@ import java.nio.file.Path;
 
 public record StrategyExecutionRequest(
         Path workspaceDir,
-        Path sourceFile,
+        Path entrySourceFile,
+        String runtime,
+        String javaMainClass,
         Path configFile,
         Path stockDataFile,
         Path jobContextFile,

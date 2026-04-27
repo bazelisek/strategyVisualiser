@@ -62,6 +62,13 @@ export default function NewStrategyPage() {
               name="strategyCode"
               resetTrigger={resetTrigger}
             />
+            <FormControl>
+              <FormLabel>Entry File</FormLabel>
+              <Input
+                name="strategyEntryFile"
+                placeholder="StrategyMain.java or main.py"
+              />
+            </FormControl>
             <JSONOptions
               onConfigUpload={() => {}}
               name="strategyConfig"

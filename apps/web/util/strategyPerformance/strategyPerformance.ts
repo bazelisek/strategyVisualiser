@@ -13,19 +13,22 @@ export type Trade = {
   sellTime: number;
 };
 
-export function getStrategyPerformance(
-  strategyData: StrategyPoint[],
-  transformedData: { candles: candleData },
-): {
+export type StrategyPerformance = {
   data?: {
     bestTrade: Trade;
     worstTrade: Trade;
     totalBuys: number;
     totalSells: number;
     trades: Trade[];
+    earningsWithoutStrategyPct: number;
   };
   error?: string;
-} {
+};
+
+export function getStrategyPerformance(
+  strategyData: StrategyPoint[],
+  transformedData: { candles: candleData },
+): StrategyPerformance {
   const opens = transformedData.candles.map((candle) => ({
     value: candle.open,
     time: candle.time,
@@ -56,6 +59,7 @@ export function getStrategyPerformance(
     .flat();
   const totalBuys = flatBuys.length;
   const totalSells = flatSells.length;
+  const earningsWithoutStrategy = (opens[opens.length - 1].value - opens[0].value) / opens[0].value;
 
   if (totalBuys !== totalSells) {
     return { error: "Buy amount is not equal to the sell amount." };
@@ -71,7 +75,10 @@ export function getStrategyPerformance(
   let buyIndex = 0;
   let sellIndex = 0;
   for (let i = 0; i < totalBuys; i++) {
-    while (buyIndex < opens.length-1 && opens[buyIndex].time < flatBuys[i].time) {
+    while (
+      buyIndex < opens.length - 1 &&
+      opens[buyIndex].time < flatBuys[i].time
+    ) {
       buyIndex++;
     }
     if (buyIndex < opens.length) {
@@ -80,7 +87,9 @@ export function getStrategyPerformance(
     }
 
     if (buyIndex >= opens.length || opens[buyIndex].time !== flatBuys[i].time) {
-      console.error("MISMATCH: " + opens[buyIndex].time + ", " + flatBuys[i].time);
+      console.error(
+        "MISMATCH: " + opens[buyIndex].time + ", " + flatBuys[i].time,
+      );
       return { error: "Candle and strategy times are not matching." };
     }
     const buyPrice = opens[buyIndex].value;
@@ -93,7 +102,9 @@ export function getStrategyPerformance(
       console.log("opens(sell): " + opens[sellIndex].time);
     }
     if (opens[sellIndex].time !== flatSells[i].time) {
-      console.error("MISMATCH: " + opens[sellIndex].time + ", " + flatSells[i].time);
+      console.error(
+        "MISMATCH: " + opens[sellIndex].time + ", " + flatSells[i].time,
+      );
       return { error: "Candle and strategy times are not matching." };
     }
     const sellPrice = opens[sellIndex].value;
@@ -112,5 +123,5 @@ export function getStrategyPerformance(
   if (!bestTrade || !worstTrade) return { error: "Trades not found" };
 
   //fetch('http://DUMMYURL/strategyPerformance')
-  return { data: { bestTrade, worstTrade, totalBuys, totalSells, trades } };
+  return { data: { bestTrade, worstTrade, totalBuys, totalSells, trades, earningsWithoutStrategyPct: earningsWithoutStrategy * 100 } };
 }

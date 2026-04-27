@@ -20,11 +20,13 @@ export default function EditStrategyForm({
   initialName,
   initialDescription,
   initialIsPublic,
+  initialEntryFile,
 }: {
   strategyId: string;
   initialName: string;
   initialDescription: string;
   initialIsPublic: boolean;
+  initialEntryFile: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [resetTrigger, setResetTrigger] = useState(0);
@@ -76,6 +78,14 @@ export default function EditStrategyForm({
             name="strategyCode"
             resetTrigger={resetTrigger}
           />
+          <FormControl>
+            <FormLabel>Entry File</FormLabel>
+            <Input
+              name="strategyEntryFile"
+              placeholder="StrategyMain.java or main.py"
+              defaultValue={initialEntryFile}
+            />
+          </FormControl>
           <JSONOptions
             onConfigUpload={() => {}}
             name="strategyConfig"

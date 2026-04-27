@@ -6,6 +6,7 @@ import { Strategy } from "@/util/strategies/strategies";
 import { getBaseUrl } from "../baseURL";
 import { getUserByEmail } from "@/auth/server";
 import { User } from "better-auth";
+import { StrategySourceFile } from "./sourceFiles";
 
 const BASE_URL = getBaseUrl();
 
@@ -42,6 +43,11 @@ export default async function getStrategy(
   const strategy: Strategy = {
     ownerUser,
     code: data.code,
+    sourceFiles: Array.isArray(data.sourceFiles)
+      ? (data.sourceFiles as StrategySourceFile[])
+      : [],
+    entryFile: typeof data.entryFile === "string" ? data.entryFile : "",
+    runtime: typeof data.runtime === "string" ? data.runtime : "java",
     configuration: data.configuration,
     requirements: data.requirements,
     createdAt: data.createdAt,

@@ -5,6 +5,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -15,6 +16,9 @@ public class Strategy {
     private String name;
     private String description;
     private String code;
+    private List<StrategySourceFile> sourceFiles;
+    private String entryFile;
+    private String runtime;
     private String configuration;
     private String ownerEmail;
     private String requirements;

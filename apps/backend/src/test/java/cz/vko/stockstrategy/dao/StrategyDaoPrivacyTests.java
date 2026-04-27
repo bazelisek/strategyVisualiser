@@ -182,6 +182,31 @@ class StrategyDaoPrivacyTests {
         assertThat(updated.get().getOwnerEmail()).isEqualTo("user1@example.com");
     }
 
+    @Test
+    void findByIdBackfillsLegacySourceMetadata() {
+        jdbcTemplate.update("""
+                INSERT INTO strategies (name, description, code, configuration, owner_email, is_public, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """,
+                "Legacy Strategy",
+                "Legacy description",
+                "public class StrategyMain {}",
+                "config",
+                "legacy@example.com",
+                true);
+
+        Long strategyId = jdbcTemplate.queryForObject("SELECT id FROM strategies WHERE name = ?", Long.class, "Legacy Strategy");
+        Optional<Strategy> loaded = strategyDao.findById(strategyId);
+
+        assertThat(loaded).isPresent();
+        assertThat(loaded.get().getRuntime()).isEqualTo("java");
+        assertThat(loaded.get().getEntryFile()).isEqualTo("StrategyMain.java");
+        assertThat(loaded.get().getSourceFiles()).singleElement().satisfies(sourceFile -> {
+            assertThat(sourceFile.path()).isEqualTo("StrategyMain.java");
+            assertThat(sourceFile.content()).contains("class StrategyMain");
+        });
+    }
+
     // Helper methods
     private Strategy createAndSaveStrategy(String name, String ownerEmail, boolean isPublic) {
         Strategy strategy = new Strategy();

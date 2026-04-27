@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { candleData } from "@/util/serverFetch";
 import {
@@ -6,24 +6,33 @@ import {
   Trade,
 } from "@/util/strategyPerformance/strategyPerformance";
 import React, { ReactNode, useMemo, useState } from "react";
-import AnimationButton from "./Input/Buttons/AnimationButton";
+import AnimationButton from "../Input/Buttons/AnimationButton";
 import { AnimatePresence, motion } from "framer-motion";
 import classes from "./StrategyPerformanceOverview.module.css";
-import Table from "./common/Table";
-import { Typography, Sheet, Stack, Chip, Divider, Card } from "@mui/joy";
+import Table from "../common/Table";
+import {
+  Typography,
+  Sheet,
+  Stack,
+  Chip,
+  Divider,
+  Card,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+} from "@mui/joy";
 import { formatLocalDateTime } from "@/util/time";
 
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import InsightsIcon from "@mui/icons-material/Insights";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { TableCell, TableRow } from "@mui/material";
-import DropdownButton from "./Input/Buttons/DropdownButton";
+import DropdownButton from "../Input/Buttons/DropdownButton";
 import { useStrategyName } from "@/hooks/useStrategyName";
+import TradeDetails from "./TradeDetails";
 
-type EnrichedTrade = Trade & {
+export type EnrichedTrade = Trade & {
   pct: number;
 };
 
@@ -42,6 +51,22 @@ interface StrategyPerformanceOverviewProps {
   className?: string;
 }
 
+export type EnrichedStrategyPerformance = {
+  trades: EnrichedTrade[];
+  wins: number;
+  losses: number;
+  winRate: number;
+  avgPct: number;
+  pnl: number;
+  totalBuyValue: number;
+  totalSellValue: number;
+  totalPct: number;
+  avgBuy: number;
+  avgSell: number;
+  avgPnL: number;
+  avgPctFinal: number;
+} | null;
+
 const StrategyPerformanceOverview: React.FC<
   StrategyPerformanceOverviewProps
 > = ({ transformedData, strategy, strategyData, className }) => {
@@ -50,7 +75,7 @@ const StrategyPerformanceOverview: React.FC<
   const strategyName = useStrategyName(strategy);
   const performance = getStrategyPerformance(strategyData, transformedData);
 
-  const enriched = useMemo(() => {
+  const enriched: EnrichedStrategyPerformance = useMemo(() => {
     if (!performance.data) return null;
 
     const trades: EnrichedTrade[] = performance.data.trades.map((t) => {
@@ -114,7 +139,7 @@ const StrategyPerformanceOverview: React.FC<
           <Typography fontWeight="lg">Strategy Performance</Typography>
         </Stack>
 
-<DropdownButton onClick={() => setOpen((p) => !p)}>
+        <DropdownButton onClick={() => setOpen((p) => !p)}>
           {strategyName || `Strategy ${strategy}`}
         </DropdownButton>
       </Sheet>
@@ -126,7 +151,7 @@ const StrategyPerformanceOverview: React.FC<
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.35 }}
-            style={{ overflow: "hidden" }}
+            style={{ overflow: "hidden", width: "100%" }}
           >
             <Sheet sx={{ mt: 2, p: 2, borderRadius: "lg" }}>
               {performance.error && (
@@ -169,116 +194,48 @@ const StrategyPerformanceOverview: React.FC<
                       </Typography>
                     </Card>
                   </Stack>
+                  {performance.data && (
+                    <>
+                      <Divider sx={{ my: 2 }} />
+                      <Stack direction="row" spacing={2} flexWrap="wrap">
+                        <Card>
+                          <Typography level="body-sm">With strategy:</Typography>
+                          <Typography
+                            fontSize="xl"
+                            fontWeight="lg"
+                            color={
+                              enriched.totalPct >= 0 ? "success" : "danger"
+                            }
+                          >
+                            {enriched.totalPct.toFixed(2)}%
+                          </Typography>
+                        </Card>
+                        <Card>
+                          <Typography level="body-sm">
+                            Without strategy:
+                          </Typography>
+                          <Typography
+                            fontSize="xl"
+                            fontWeight="lg"
+                            color={
+                              performance.data?.earningsWithoutStrategyPct >= 0
+                                ? "success"
+                                : "danger"
+                            }
+                          >
+                            {performance.data?.earningsWithoutStrategyPct.toFixed(
+                              2,
+                            )}
+                            %
+                          </Typography>
+                        </Card>
+                      </Stack>
+                    </>
+                  )}
 
                   <Divider sx={{ my: 2 }} />
 
-                  {/* BEST / WORST */}
-                  <Stack direction="row" spacing={2}>
-                    <Chip color="success" startDecorator={<TrendingUpIcon />}>
-                      Best: {performance.data!.bestTrade.result.toFixed(2)}
-                    </Chip>
-
-                    <Chip color="danger" startDecorator={<TrendingDownIcon />}>
-                      Worst: {performance.data!.worstTrade.result.toFixed(2)}
-                    </Chip>
-                  </Stack>
-
-                  {/* TABLE */}
-                  <Typography level="title-md" sx={{ mt: 2 }}>
-                    Trades
-                  </Typography>
-
-                  <Table
-                    columns={[
-                      {
-                        id: "buyTime",
-                        header: "Buy",
-                        cell: (r: EnrichedTrade) => formatLocalDateTime(r.buyTime),
-                        sortable: true,
-                      },
-                      {
-                        id: "sellTime",
-                        header: "Sell",
-                        cell: (r: EnrichedTrade) => formatLocalDateTime(r.sellTime),
-                        sortable: true,
-                      },
-                      {
-                        id: "buy",
-                        header: "Buy",
-                        cell: (r: EnrichedTrade) => r.buy.toFixed(2),
-                        sortable: true,
-                      },
-                      {
-                        id: "sell",
-                        header: "Sell",
-                        cell: (r: EnrichedTrade) => r.sell.toFixed(2),
-                        sortable: true,
-                      },
-                      {
-                        id: "result",
-                        header: "PnL",
-                        cell: (r: EnrichedTrade) => r.result.toFixed(2),
-                        sortable: true,
-                      },
-                      {
-                        id: "pct",
-                        header: "%",
-                        cell: (r: EnrichedTrade) => (
-                          <Typography color={r.pct >= 0 ? "success" : "danger"}>
-                            {r.pct.toFixed(2)}%
-                          </Typography>
-                        ),
-                        sortable: true,
-                      },
-                    ]}
-                    rows={enriched.trades}
-                    renderFooter={() => (
-                      <>
-                        <TableRow>
-                          <TableCell colSpan={2}>
-                            <Typography>
-                              <strong>Total</strong>
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            {enriched.totalBuyValue.toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            {enriched.totalSellValue.toFixed(2)}
-                          </TableCell>
-                          <TableCell>{enriched.pnl.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Typography
-                              color={
-                                enriched.totalPct >= 0 ? "success" : "danger"
-                              }
-                            >
-                              {enriched.totalPct.toFixed(2)}%
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell colSpan={2}>
-                            <Typography>
-                              <strong>Average</strong>
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{enriched.avgBuy.toFixed(2)}</TableCell>
-                          <TableCell>{enriched.avgSell.toFixed(2)}</TableCell>
-                          <TableCell>{enriched.avgPnL.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Typography
-                              color={
-                                enriched.avgPctFinal >= 0 ? "success" : "danger"
-                              }
-                            >
-                              {enriched.avgPctFinal.toFixed(2)}%
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      </>
-                    )}
-                  />
+                  <TradeDetails enriched={enriched} performance={performance} />
 
                   <Sheet
                     variant="soft"
@@ -296,7 +253,7 @@ const StrategyPerformanceOverview: React.FC<
                     {/* ANALYSIS */}
                     <Divider sx={{ my: 1 }} />
 
-                    <Typography level="body-sm">
+                    <Typography>
                       {enriched.pnl > 0
                         ? "Strategy is net profitable. Positive expectancy confirmed."
                         : "Strategy is net losing. Edge is not statistically supported."}

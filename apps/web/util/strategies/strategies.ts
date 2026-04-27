@@ -4,6 +4,7 @@ import { getServerSession } from "@/auth/server";
 import { fetchDataFromUrl } from "@/util/fetch";
 import { User } from "better-auth";
 import { getBaseUrl } from "../baseURL";
+import { StrategySourceFile } from "./sourceFiles";
 
 const BASE_URL = getBaseUrl();
 
@@ -43,6 +44,9 @@ export type Strategy = {
   name: string;
   description: string;
   code: string;
+  sourceFiles?: StrategySourceFile[];
+  entryFile?: string;
+  runtime?: string;
   configuration: string; //should be an object later
   ownerUser: User;
   isPublic: boolean;

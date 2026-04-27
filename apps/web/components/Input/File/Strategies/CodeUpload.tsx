@@ -9,11 +9,9 @@ const CodeUpload = ({
   resetTrigger,
 }: {
   onFileUpload?: ({
-    file,
-    fileText,
+    files,
   }: {
-    file: File;
-    fileText: string;
+    files: File[];
   }) => void;
   name?: string;
   resetTrigger?: number;
@@ -33,21 +31,23 @@ const CodeUpload = ({
   }, [resetTrigger]);
 
   async function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) {
       setInfo({ error: true, message: "No file was uploaded", display: true });
+      return;
     }
 
-    const fileText = await file!.text();
     try {
-      // maybe perform checks
-
+      const fileNames = files.map((file) => file.name);
       setInfo({
         error: false,
-        message: "File " + file!.name + " was successfully uploaded.",
+        message:
+          files.length === 1
+            ? `File ${fileNames[0]} was successfully uploaded.`
+            : `${files.length} files were successfully uploaded: ${fileNames.join(", ")}`,
         display: true,
       });
-      onFileUpload?.({ file: file!, fileText });
+      onFileUpload?.({ files });
     } catch (e) {
       setInfo({
         error: true,
@@ -60,10 +60,11 @@ const CodeUpload = ({
     <FormControl error={info.error}>
       <FormLabel>Strategy Code</FormLabel>
       <UploadFile
-        accept=".java"
+        accept=".java,.py"
         name={name}
+        multiple
         onChange={handleFileUpload}
-        displayName="Java Code"
+        displayName="Strategy Files"
       />
       {info.display && (
         <FormHelperText>

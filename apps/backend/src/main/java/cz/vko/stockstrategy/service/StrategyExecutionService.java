@@ -31,26 +31,30 @@ public class StrategyExecutionService {
                 containerRuntime, "run", "--rm",
                 "--network=none",
                 "--cpus=1",
-                "--memory=512m",
+                "--memory=1g",
                 "--pids-limit=128",
                 "--read-only",
-                "--tmpfs", "/opt/strategy/tmp:rw,noexec,nosuid,size=512m",
-                "--tmpfs", "/tmp:rw,noexec,nosuid,size=512m"
+                "--tmpfs", "/opt/strategy/tmp:rw,noexec,nosuid,size=1g",
+                "--tmpfs", "/tmp:rw,noexec,nosuid,size=1g"
         ));
         if ("podman".equalsIgnoreCase(containerRuntime) || runAsRoot) {
             command.add("--user");
             command.add("0");
+        }
+        if (request.javaMainClass() != null && !request.javaMainClass().isBlank()) {
+            command.addAll(List.of("-e", "RUN_MAIN_CLASS=" + request.javaMainClass()));
         }
         command.addAll(List.of(
                 "-e", "STRATEGY_CONFIG_FILE=/opt/strategy/workspace/" + request.configFile().getFileName(),
                 "-e", "STRATEGY_STOCK_DATA_FILE=/opt/strategy/workspace/" + request.stockDataFile().getFileName(),
                 "-e", "STRATEGY_JOB_CONTEXT_FILE=/opt/strategy/workspace/" + request.jobContextFile().getFileName(),
                 "-e", "STRATEGY_TMP_DIR=/tmp",
+                "-e", "STRATEGY_RUNTIME=" + request.runtime(),
                 "-e", "STRATEGY_JOB_ID=" + request.jobId(),
                 "-e", "STRATEGY_ID=" + request.strategyId(),
                 "-v", workspaceVolume,
                 containerImage,
-                containerWorkspacePath(request.sourceFile())
+                containerWorkspacePath(request.workspaceDir(), request.entrySourceFile())
         ));
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -80,8 +84,11 @@ public class StrategyExecutionService {
         return output.toString();
     }
 
-    static String containerWorkspacePath(Path hostPath) {
-        return CONTAINER_WORKSPACE + "/" + hostPath.getFileName();
+    static String containerWorkspacePath(Path workspaceDir, Path hostPath) {
+        Path normalizedWorkspaceDir = workspaceDir.toAbsolutePath().normalize();
+        Path normalizedHostPath = hostPath.toAbsolutePath().normalize();
+        Path relativePath = normalizedWorkspaceDir.relativize(normalizedHostPath);
+        return CONTAINER_WORKSPACE + "/" + relativePath.toString().replace('\\', '/');
     }
 
     static String workspaceVolumeSuffix(String containerRuntime) {
