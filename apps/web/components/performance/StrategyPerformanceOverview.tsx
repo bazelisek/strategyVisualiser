@@ -53,6 +53,8 @@ interface StrategyPerformanceOverviewProps {
 
 export type EnrichedStrategyPerformance = {
   trades: EnrichedTrade[];
+  closedTrades: EnrichedTrade[];
+  openTrades: EnrichedTrade[];
   wins: number;
   losses: number;
   winRate: number;
@@ -82,28 +84,32 @@ const StrategyPerformanceOverview: React.FC<
       const pct = ((t.sell - t.buy) / t.buy) * 100;
       return { ...t, pct };
     });
+    const closedTrades = trades.filter((trade) => !trade.isOpen);
+    const openTrades = trades.filter((trade) => trade.isOpen);
 
-    const wins = trades.filter((t) => t.pct > 0).length;
-    const losses = trades.length - wins;
+    const wins = closedTrades.filter((t) => t.pct > 0).length;
+    const losses = closedTrades.filter((t) => t.pct <= 0).length;
 
-    const totalPct = trades.reduce((a, b) => a + b.pct, 0);
-    const avgPct = trades.length ? totalPct / trades.length : 0;
+    const totalPct = closedTrades.reduce((a, b) => a + b.pct, 0);
+    const avgPct = closedTrades.length ? totalPct / closedTrades.length : 0;
 
-    const pnl = trades.reduce((a, b) => a + (b.sell - b.buy), 0);
+    const pnl = closedTrades.reduce((a, b) => a + (b.sell - b.buy), 0);
 
-    const totalBuyValue = trades.reduce((a, t) => a + t.buy, 0);
-    const totalSellValue = trades.reduce((a, t) => a + t.sell, 0);
+    const totalBuyValue = closedTrades.reduce((a, t) => a + t.buy, 0);
+    const totalSellValue = closedTrades.reduce((a, t) => a + t.sell, 0);
 
-    const avgBuy = trades.length ? totalBuyValue / trades.length : 0;
-    const avgSell = trades.length ? totalSellValue / trades.length : 0;
-    const avgPnL = trades.length ? pnl / trades.length : 0;
-    const avgPctFinal = trades.length ? totalPct / trades.length : 0;
+    const avgBuy = closedTrades.length ? totalBuyValue / closedTrades.length : 0;
+    const avgSell = closedTrades.length ? totalSellValue / closedTrades.length : 0;
+    const avgPnL = closedTrades.length ? pnl / closedTrades.length : 0;
+    const avgPctFinal = closedTrades.length ? totalPct / closedTrades.length : 0;
 
     return {
       trades,
+      closedTrades,
+      openTrades,
       wins,
       losses,
-      winRate: trades.length ? (wins / trades.length) * 100 : 0,
+      winRate: closedTrades.length ? (wins / closedTrades.length) * 100 : 0,
       avgPct,
       pnl,
       totalBuyValue,
@@ -190,10 +196,21 @@ const StrategyPerformanceOverview: React.FC<
                     <Card>
                       <Typography level="body-sm">Trades</Typography>
                       <Typography fontSize="xl" fontWeight="lg">
-                        {enriched.trades.length}
+                        {enriched.closedTrades.length}
                       </Typography>
                     </Card>
                   </Stack>
+                  {enriched.openTrades.length > 0 && (
+                    <Chip
+                      sx={{ mt: 2 }}
+                      color="warning"
+                      startDecorator={<WarningAmberIcon />}
+                    >
+                      {enriched.openTrades.length} open{" "}
+                      {enriched.openTrades.length === 1 ? "trade" : "trades"}{" "}
+                      excluded from summary stats
+                    </Chip>
+                  )}
                   {performance.data && (
                     <>
                       <Divider sx={{ my: 2 }} />

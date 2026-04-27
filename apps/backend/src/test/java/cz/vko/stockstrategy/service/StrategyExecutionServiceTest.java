@@ -2,11 +2,13 @@ package cz.vko.stockstrategy.service;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class StrategyExecutionServiceTest {
 
@@ -119,5 +121,80 @@ class StrategyExecutionServiceTest {
                 .isZero();
         assertThat(output).contains("[strategy-runner] Starting main.py");
         assertThat(output).contains("python-ok");
+    }
+
+    @Test
+    void liveStrategyRunnerImageProvidesPython3() throws Exception {
+        assumeTrue(commandSucceeds("docker", "image", "inspect", "strategy-runner:latest"),
+                "strategy-runner:latest image is required for this smoke test");
+
+        Process process = new ProcessBuilder(
+                "docker", "run", "--rm", "strategy-runner:latest",
+                "sh", "-lc", "python3 --version"
+        ).redirectErrorStream(true).start();
+
+        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        int exitCode = process.waitFor();
+
+        assertThat(exitCode)
+                .withFailMessage("strategy-runner image should provide python3:%n%s", output)
+                .isZero();
+        assertThat(output).contains("Python");
+    }
+
+    @Test
+    void liveStrategyRunnerImageExecutesPythonWorkspaceStrategy() throws Exception {
+        assumeTrue(commandSucceeds("docker", "image", "inspect", "strategy-runner:latest"),
+                "strategy-runner:latest image is required for this smoke test");
+
+        Path workspace = Files.createTempDirectory("strategy-runner-live-python-workspace");
+        Path entryFile = workspace.resolve("main.py");
+        Path helperFile = workspace.resolve("helpers.py");
+        workspace.toFile().setReadable(true, false);
+        workspace.toFile().setExecutable(true, false);
+
+        Files.writeString(helperFile, """
+                #!/usr/bin/env python3
+                def message():
+                    return "python-ok"
+                """, StandardCharsets.UTF_8);
+        Files.writeString(entryFile, """
+                #!/usr/bin/env python3
+                from helpers import message
+
+                print(message())
+                """, StandardCharsets.UTF_8);
+        helperFile.toFile().setReadable(true, false);
+        helperFile.toFile().setExecutable(true, false);
+        entryFile.toFile().setReadable(true, false);
+        entryFile.toFile().setExecutable(true, false);
+
+        Process process = new ProcessBuilder(
+                "docker", "run", "--rm",
+                "--network=none",
+                "--read-only",
+                "--tmpfs", "/opt/strategy/tmp:rw,noexec,nosuid,size=128m",
+                "--tmpfs", "/tmp:rw,noexec,nosuid,size=128m",
+                "-v", workspace.toAbsolutePath() + ":/opt/strategy/workspace",
+                "strategy-runner:latest",
+                "/opt/strategy/workspace/main.py"
+        ).redirectErrorStream(true).start();
+
+        String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        int exitCode = process.waitFor();
+
+        assertThat(exitCode)
+                .withFailMessage("strategy-runner image should execute python workspace sources:%n%s", output)
+                .isZero();
+        assertThat(output).contains("[strategy-runner] Starting main.py");
+        assertThat(output).contains("python-ok");
+    }
+
+    private boolean commandSucceeds(String... command) throws Exception {
+        Process process = new ProcessBuilder(command)
+                .redirectErrorStream(true)
+                .start();
+        process.getInputStream().transferTo(OutputStream.nullOutputStream());
+        return process.waitFor() == 0;
     }
 }

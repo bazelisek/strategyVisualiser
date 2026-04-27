@@ -28,7 +28,7 @@ export default function TradeDetails({
                 Trades
               </Typography>
               {/* BEST / WORST */}
-              {performance.data && (
+              {performance.data?.bestTrade && performance.data?.worstTrade && (
                 <>
                   <Chip color="success" startDecorator={<TrendingUpIcon />}>
                     Best: {performance.data.bestTrade.result.toFixed(2)}
@@ -53,7 +53,8 @@ export default function TradeDetails({
               {
                 id: "sellTime",
                 header: "Sell",
-                cell: (r: EnrichedTrade) => formatLocalDateTime(r.sellTime),
+                cell: (r: EnrichedTrade) =>
+                  r.isOpen ? "-" : formatLocalDateTime(r.sellTime),
                 sortable: true,
               },
               {

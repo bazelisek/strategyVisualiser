@@ -34,6 +34,8 @@ class BuiltInStrategyIntegrationTest {
     void applicationStartupSeedsBuiltInStrategies() {
         Strategy movingAverage = strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME)
                 .orElseThrow(() -> new AssertionError("Built-in strategy was not seeded"));
+        Strategy pythonMovingAverage = strategyDao.findByName(BuiltInStrategyCatalog.PYTHON_MOVING_AVERAGE_CROSSOVER_NAME)
+                .orElseThrow(() -> new AssertionError("Python built-in strategy was not seeded"));
         Strategy superTrend = strategyDao.findByName(BuiltInStrategyCatalog.SUPER_TREND_NAME)
                 .orElseThrow(() -> new AssertionError("SuperTrend built-in strategy was not seeded"));
         Strategy emaAdxTrend = strategyDao.findByName(BuiltInStrategyCatalog.EMA_ADX_TREND_NAME)
@@ -45,6 +47,15 @@ class BuiltInStrategyIntegrationTest {
         assertThat(movingAverage.getConfiguration()).contains("\"maRange2\"");
         assertThat(movingAverage.getCode()).contains("class StrategyMain");
         assertThat(movingAverage.getRequirements()).isEqualTo("{}");
+
+        assertThat(pythonMovingAverage.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
+        assertThat(pythonMovingAverage.getIsPublic()).isTrue();
+        assertThat(pythonMovingAverage.getRuntime()).isEqualTo("python");
+        assertThat(pythonMovingAverage.getEntryFile()).isEqualTo("main.py");
+        assertThat(pythonMovingAverage.getSourceFiles()).hasSize(3);
+        assertThat(pythonMovingAverage.getConfiguration()).contains("\"slopeLookback\"");
+        assertThat(pythonMovingAverage.getRequirements()).contains("\"interval\"");
+        assertThat(pythonMovingAverage.getCode()).contains("def main()");
 
         assertThat(superTrend.getOwnerEmail()).isEqualTo(BuiltInStrategyCatalog.SYSTEM_OWNER_EMAIL);
         assertThat(superTrend.getIsPublic()).isTrue();
@@ -76,6 +87,7 @@ class BuiltInStrategyIntegrationTest {
                 .extracting(StrategyDTO::getName)
                 .contains(
                         BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME,
+                        BuiltInStrategyCatalog.PYTHON_MOVING_AVERAGE_CROSSOVER_NAME,
                         BuiltInStrategyCatalog.SUPER_TREND_NAME,
                         BuiltInStrategyCatalog.EMA_ADX_TREND_NAME
                 );

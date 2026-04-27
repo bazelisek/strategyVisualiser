@@ -186,7 +186,8 @@ public class AnalysisJobService {
             if (outputFile.getParent() != null) {
                 Files.createDirectories(outputFile.getParent());
             }
-            Files.writeString(outputFile, sourceFile.content(), StandardCharsets.UTF_8);
+            Files.writeString(outputFile, normalizeWorkspaceSourceContent(sourceFile), StandardCharsets.UTF_8);
+            ensureWorkspaceFilePermissions(outputFile, sourceFile.path());
             if (sourceFile.path().equals(entryFile)) {
                 entrySourceFile = outputFile;
             }
@@ -197,6 +198,31 @@ public class AnalysisJobService {
         }
 
         return entrySourceFile;
+    }
+
+    private String normalizeWorkspaceSourceContent(StrategySourceFile sourceFile) {
+        String content = sourceFile.content();
+        if (content == null) {
+            content = "";
+        }
+
+        if (sourceFile.path().endsWith(".py") && !content.startsWith("#!")) {
+            return "#!/usr/bin/env python3\n" + content;
+        }
+
+        return content;
+    }
+
+    private void ensureWorkspaceFilePermissions(Path outputFile, String sourcePath) throws IOException {
+        if (!sourcePath.endsWith(".py")) {
+            return;
+        }
+
+        boolean readable = outputFile.toFile().setReadable(true, false);
+        boolean executable = outputFile.toFile().setExecutable(true, false);
+        if ((!readable || !executable) && !Files.isExecutable(outputFile)) {
+            throw new IOException("Failed to make Python strategy file executable: " + sourcePath);
+        }
     }
 
     private AnalysisJobDTO convertToDTO(AnalysisJob job, String symbol) {
