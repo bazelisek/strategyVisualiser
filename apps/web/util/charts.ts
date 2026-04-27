@@ -2,6 +2,7 @@ import {
   ColorType,
   createChart,
   CrosshairMode,
+  DeepPartial,
   IChartApi,
   LineStyle,
   TimeChartOptions,
@@ -12,7 +13,7 @@ const DEFAULT_RIGHT_PRICE_SCALE_MIN_WIDTH = 64;
 export function getBaseChartOptions(
   width: number,
   height: number,
-): TimeChartOptions {
+): DeepPartial<TimeChartOptions> {
   return {
     width,
     height,
@@ -52,17 +53,33 @@ export function getBaseChartOptions(
   };
 }
 
-export function equalizeRightPriceScaleWidths(charts: IChartApi[]): void {
-  if (charts.length === 0) return;
+export function equalizeRightPriceScaleWidths(charts: (IChartApi | null)[]): void {
+  const validCharts = charts.filter(
+    (c): c is IChartApi => !!c
+  );
+
+  if (validCharts.length === 0) return;
+
+  const widths = validCharts.map((chart) => {
+    try {
+      return chart.priceScale("right").width();
+    } catch {
+      return DEFAULT_RIGHT_PRICE_SCALE_MIN_WIDTH;
+    }
+  });
 
   const maxWidth = Math.max(
     DEFAULT_RIGHT_PRICE_SCALE_MIN_WIDTH,
-    ...charts.map((chart) => chart.priceScale("right").width()),
+    ...widths
   );
 
-  charts.forEach((chart) => {
-    if (chart.priceScale("right").options().minimumWidth !== maxWidth) {
-      chart.priceScale("right").applyOptions({ minimumWidth: maxWidth });
+  validCharts.forEach((chart) => {
+    try {
+      if (chart.priceScale("right").options().minimumWidth !== maxWidth) {
+        chart.priceScale("right").applyOptions({ minimumWidth: maxWidth });
+      }
+    } catch {
+      // ignore broken chart
     }
   });
 }

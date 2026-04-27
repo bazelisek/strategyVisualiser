@@ -15,33 +15,43 @@ export default function CustomAccordion({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -120 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring" }}
-      className={`${className}`}
+    <Sheet
+      variant="outlined"
+      sx={{
+        borderRadius: "lg",
+        p: 1.5,
+        width: "100%",
+      }}
+      component={motion.div}
+      layout
+      transition={{ layout: { duration: 0.25, ease: "easeInOut" } }}
     >
-      <Sheet
-        variant="outlined"
-        sx={{
-          borderRadius: "lg",
-          p: 1.5,
-          width: "100%",
-        }}
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        justifyContent="space-between"
       >
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          justifyContent="space-between"
-        >
-          {summary}
+        {summary}
 
-          <DropdownButton onClick={() => setOpen((p) => !p)}></DropdownButton>
-        </Stack>
+        <DropdownButton onClick={() => setOpen((p) => !p)}></DropdownButton>
+      </Stack>
 
-        <AnimatePresence>{open && children}</AnimatePresence>
-      </Sheet>
-    </motion.div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+          key={'content'}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{opacity: 0, height: 0}}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className={`${className}`}
+            style={{overflow: 'hidden'}}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Sheet>
   );
 }
