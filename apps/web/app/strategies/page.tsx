@@ -1,6 +1,7 @@
 "use server";
 import VerifyAuth from "@/auth/VerifyAuth";
 import AddStrategyButton from "@/components/Strategies/AddStrategyButton";
+import StrategyDeletedSnackbar from "@/components/Strategies/StrategyDeletedSnackbar";
 import StrategyList from "@/components/Strategies/StrategyList";
 import { Sheet } from "@mui/joy";
 
@@ -9,6 +10,7 @@ import { Suspense } from "react";
 export default async function Page() {
   return (
     <VerifyAuth>
+      <StrategyDeletedSnackbar />
       <div
         style={{ display: "flex", justifyContent: "center", padding: "2rem" }}
       >

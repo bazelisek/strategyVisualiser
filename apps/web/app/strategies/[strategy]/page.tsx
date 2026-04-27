@@ -7,6 +7,7 @@ import { Tooltip } from "@mui/material";
 import { formatLocalDateTime } from "@/util/time";
 import EditCalendarIcon from "@mui/icons-material/EditCalendar";
 import { getServerSession } from "@/auth/server";
+import DeleteStrategyButton from "./DeleteStrategyButton";
 
 const Page = async ({ params }: { params: Promise<{ strategy: string }> }) => {
   const { strategy: strategyId } = await params;
@@ -30,7 +31,14 @@ const Page = async ({ params }: { params: Promise<{ strategy: string }> }) => {
           }}
         >
           {isOwner && (
-            <Stack direction="row" justifyContent="flex-start" position={'absolute'} right={8*8} sx={{ mb: 1 }}>
+            <Stack
+              direction="row"
+              justifyContent="flex-start"
+              position={"absolute"}
+              right={8 * 8}
+              gap={1}
+              sx={{ mb: 1 }}
+            >
               <Button
                 component="a"
                 href={`/strategies/${strategyId}/edit`}
@@ -39,6 +47,7 @@ const Page = async ({ params }: { params: Promise<{ strategy: string }> }) => {
               >
                 Edit
               </Button>
+              <DeleteStrategyButton strategyId={strategyId} />
             </Stack>
           )}
           <Typography level="h1">{name} <Chip variant="outlined" color={isPublic ? "success" : "danger"}>{isPublic ? "Public" : "Private"}</Chip></Typography>

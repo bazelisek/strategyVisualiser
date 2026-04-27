@@ -5,6 +5,7 @@ import {
   parseStrategyRequirements,
   parseUserConfigOptions,
 } from "@/util/strategies/configuration";
+import { deleteStrategy } from "@/util/strategies/deleteStrategy";
 import getStrategy from "@/util/strategies/getStrategy";
 import { patchStrategy } from "@/util/strategies/patchStrategy";
 import { getServerSession } from "@/auth/server";
@@ -73,4 +74,30 @@ export async function updateStrategy(strategyId: string, formData: FormData) {
   }
 
   redirect(`/strategies/${strategyId}`);
+}
+
+export async function deleteStrategyAction(strategyId: string) {
+  const session = await getServerSession();
+  const currentUserEmail = session?.user?.email;
+
+  if (!currentUserEmail) {
+    throw new Error("Unauthorized");
+  }
+
+  const existingStrategy = await getStrategy(strategyId);
+  if (!existingStrategy) {
+    throw new Error("Strategy not found.");
+  }
+
+  if (existingStrategy.ownerUser.email !== currentUserEmail) {
+    throw new Error("Only the strategy owner can delete this strategy.");
+  }
+
+  const { error } = await deleteStrategy(strategyId);
+
+  if (error) {
+    throw new Error(error);
+  }
+
+  redirect("/strategies?deleted=1");
 }
