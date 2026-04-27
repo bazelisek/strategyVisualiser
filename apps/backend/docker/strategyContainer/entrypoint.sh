@@ -6,6 +6,7 @@ workdir="${STRATEGY_WORKDIR:-/opt/strategy/workspace}"
 tmpdir="${STRATEGY_TMP_DIR:-/opt/strategy/tmp}"
 timeout_seconds="${RUN_TIMEOUT_SECONDS:-300}"
 java_tmpdir=""
+export PYTHONPATH="${workdir}${PYTHONPATH:+:${PYTHONPATH}}"
 
 if [[ "${JAVA_TOOL_OPTIONS:-}" =~ -Djava\.io\.tmpdir=([^[:space:]]+) ]]; then
   java_tmpdir="${BASH_REMATCH[1]}"
@@ -21,29 +22,57 @@ cd "$workdir"
 classpath=".:${lib_dir}/*"
 class_output_dir="${tmpdir}/classes"
 
+resolve_source_file() {
+  local source_file="$1"
+  if [[ -f "$source_file" ]]; then
+    printf '%s\n' "$source_file"
+    return
+  fi
+
+  local relative_path="${source_file#${workdir}/}"
+  relative_path="${relative_path#/opt/strategy/workspace/}"
+  printf '%s\n' "${workdir}/${relative_path}"
+}
+
 if [[ $# -eq 0 ]]; then
   set -- java -version
 fi
 
 case "$1" in
-  java|javac|jshell|bash|sh)
+  java|javac|jshell|bash|sh|python|python3|pip|pip3)
     exec "$@"
     ;;
   *.java)
-    source_file="$1"
+    source_file="$(resolve_source_file "$1")"
     shift
     if [[ ! -f "$source_file" ]]; then
-      source_file="${workdir}/$(basename "$source_file")"
+      echo "[strategy-runner] Missing Java entry source: $source_file" >&2
+      exit 1
     fi
     main_class="${RUN_MAIN_CLASS:-$(basename "$source_file" .java)}"
     mkdir -p "$class_output_dir"
+    mapfile -d '' java_sources < <(find "$workdir" -type f -name '*.java' -print0 | sort -z)
+    if [[ ${#java_sources[@]} -eq 0 ]]; then
+      echo "[strategy-runner] No Java source files were found in $workdir" >&2
+      exit 1
+    fi
     echo "[strategy-runner] Compiling ${source_file}"
-    timeout --foreground "${timeout_seconds}s" javac -encoding UTF-8 -cp "$classpath" -d "$class_output_dir" "$source_file"
+    timeout --foreground "${timeout_seconds}s" javac -encoding UTF-8 -cp "$classpath" -d "$class_output_dir" "${java_sources[@]}"
     if [[ "${COMPILE_ONLY:-false}" == "true" ]]; then
       exit 0
     fi
     echo "[strategy-runner] Starting ${main_class}"
     exec timeout --foreground "${timeout_seconds}s" java -cp "${class_output_dir}:${lib_dir}/*" "$main_class" "$@"
+    ;;
+  *.py)
+    source_file="$(resolve_source_file "$1")"
+    shift
+    if [[ ! -f "$source_file" ]]; then
+      echo "[strategy-runner] Missing Python entry source: $source_file" >&2
+      exit 1
+    fi
+    echo "[strategy-runner] Starting $(basename "$source_file")"
+    exec timeout --foreground "${timeout_seconds}s" python3 "$source_file" "$@"
     ;;
   *.jar)
     exec timeout --foreground "${timeout_seconds}s" java -jar "$@"

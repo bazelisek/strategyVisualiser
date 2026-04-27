@@ -18,7 +18,7 @@ import {
 import { getSymbolDisplayLabel, symbols } from "@/util/symbols";
 import CandlestickChartWrapper from "./Chart/CandlestickChartWrapper";
 import StrategyConsoleCollapsible from "./StrategyConsoleCollapsible";
-import StrategyPerformanceOverview from "./StrategyPerformanceOverview";
+import StrategyPerformanceOverview from "./performance/StrategyPerformanceOverview";
 import CustomSelect from "./Input/Form/CustomSelect";
 import classes from "./ChartSection.module.css";
 import { AnimatePresence, motion } from "framer-motion";

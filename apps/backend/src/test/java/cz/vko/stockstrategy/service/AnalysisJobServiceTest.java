@@ -8,6 +8,7 @@ import cz.vko.stockstrategy.dto.AnalyzeStrategyRequestDTO;
 import cz.vko.stockstrategy.model.AnalysisJob;
 import cz.vko.stockstrategy.model.StockData;
 import cz.vko.stockstrategy.model.Strategy;
+import cz.vko.stockstrategy.model.StrategySourceFile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,12 +18,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -214,6 +218,60 @@ class AnalysisJobServiceTest {
             assertThat(row.getPeriod()).isEqualTo("1d");
         });
         verify(stockDataService).saveIfMissing(List.of(yahooRow));
+    }
+
+    @Test
+    void executeAnalysisJobWritesPythonSourceTreeAndCompletes() throws Exception {
+        AnalysisJob job = new AnalysisJob();
+        job.setId(401L);
+        job.setStrategyId(19L);
+        job.setStatus("pending");
+
+        Strategy strategy = new Strategy();
+        strategy.setId(19L);
+        strategy.setConfiguration("[]");
+        strategy.setSourceFiles(List.of(
+                new StrategySourceFile("main.py", "from helpers import message\nprint(message())\n"),
+                new StrategySourceFile("helpers.py", "def message():\n    return 'ok'\n")
+        ));
+        strategy.setEntryFile("main.py");
+        strategy.setRuntime(StrategySourceFiles.PYTHON_RUNTIME);
+        strategy.setCode("from helpers import message\nprint(message())\n");
+
+        when(analysisJobDao.findById(401L)).thenReturn(Optional.of(job));
+        when(strategyDao.findById(19L)).thenReturn(Optional.of(strategy));
+        when(analysisJobDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(strategyExecutionService.execute(any(), any())).thenAnswer(invocation -> {
+            StrategyExecutionRequest request = invocation.getArgument(0);
+            @SuppressWarnings("unchecked")
+            java.util.function.Consumer<String> outputListener = invocation.getArgument(1, java.util.function.Consumer.class);
+
+            assertThat(request.runtime()).isEqualTo(StrategySourceFiles.PYTHON_RUNTIME);
+            assertThat(request.entrySourceFile().getFileName().toString()).isEqualTo("main.py");
+            assertThat(request.javaMainClass()).isNull();
+            assertThat(Files.readString(request.entrySourceFile())).startsWith("#!/usr/bin/env python3\n");
+            assertThat(Files.readString(request.entrySourceFile())).contains("helpers import message");
+            assertThat(Files.getPosixFilePermissions(request.entrySourceFile()))
+                    .containsAll(Set.of(java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE,
+                            java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE,
+                            java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE));
+            Path helperPath = request.workspaceDir().resolve("helpers.py");
+            assertThat(Files.readString(helperPath)).startsWith("#!/usr/bin/env python3\n");
+            assertThat(Files.readString(helperPath)).contains("return 'ok'");
+            assertThat(Files.getPosixFilePermissions(helperPath))
+                    .containsAll(Set.of(java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE,
+                            java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE,
+                            java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE));
+            outputListener.accept("[strategy-runner] Starting main.py");
+            return "{\"status\":\"ok\"}";
+        });
+
+        analysisJobService.executeAnalysisJob(401L);
+
+        assertThat(job.getStatus()).isEqualTo("completed");
+        assertThat(job.getResult()).isEqualTo("{\"status\":\"ok\"}");
+        assertThat(job.getConsoleOutput()).contains("[strategy-runner] Starting main.py");
+        assertThat(job.getCompletedAt()).isNotNull();
     }
 
     private Strategy strategyWithConfiguration() {

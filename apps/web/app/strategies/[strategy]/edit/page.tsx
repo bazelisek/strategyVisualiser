@@ -28,6 +28,7 @@ export default async function EditStrategyPage({
         initialName={strategy.name}
         initialDescription={strategy.description}
         initialIsPublic={strategy.isPublic}
+        initialEntryFile={strategy.entryFile ?? ""}
       />
     </VerifyAuth>
   );

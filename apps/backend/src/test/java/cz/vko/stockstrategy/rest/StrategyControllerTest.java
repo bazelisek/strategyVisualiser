@@ -82,6 +82,8 @@ class StrategyControllerTest {
         savedStrategy.setName("Momentum");
         savedStrategy.setDescription("Test strategy");
         savedStrategy.setCode("return true;");
+        savedStrategy.setEntryFile("main.py");
+        savedStrategy.setRuntime("python");
         savedStrategy.setConfiguration("{\"window\":20}");
         savedStrategy.setCreatedAt(LocalDateTime.of(2026, 4, 2, 19, 30));
         savedStrategy.setUpdatedAt(LocalDateTime.of(2026, 4, 2, 19, 30));
@@ -93,7 +95,13 @@ class StrategyControllerTest {
                   "id": 999,
                   "name": "Momentum",
                   "description": "Test strategy",
-                  "code": "return true;",
+                  "sourceFiles": [
+                    {
+                      "path": "main.py",
+                      "content": "print('ok')"
+                    }
+                  ],
+                  "entryFile": "main.py",
                   "configuration": "{\\"window\\":20}",
                   "createdAt": "2026-04-02T19:00:00",
                   "updatedAt": "2026-04-02T19:00:00"
@@ -107,14 +115,19 @@ class StrategyControllerTest {
                 .andExpect(jsonPath("$.id").value(42))
                 .andExpect(jsonPath("$.name").value("Momentum"))
                 .andExpect(jsonPath("$.description").value("Test strategy"))
-                .andExpect(jsonPath("$.code").value("return true;"))
+                .andExpect(jsonPath("$.entryFile").value("main.py"))
+                .andExpect(jsonPath("$.runtime").value("python"))
                 .andExpect(jsonPath("$.configuration").value("{\"window\":20}"));
 
         ArgumentCaptor<StrategyCreateDTO> captor = ArgumentCaptor.forClass(StrategyCreateDTO.class);
         verify(strategyService).createStrategy(captor.capture());
         assertThat(captor.getValue().getName()).isEqualTo("Momentum");
         assertThat(captor.getValue().getDescription()).isEqualTo("Test strategy");
-        assertThat(captor.getValue().getCode()).isEqualTo("return true;");
+        assertThat(captor.getValue().getEntryFile()).isEqualTo("main.py");
+        assertThat(captor.getValue().getSourceFiles()).singleElement().satisfies(sourceFile -> {
+            assertThat(sourceFile.path()).isEqualTo("main.py");
+            assertThat(sourceFile.content()).isEqualTo("print('ok')");
+        });
         assertThat(captor.getValue().getConfiguration()).isEqualTo("{\"window\":20}");
     }
 
@@ -151,6 +164,8 @@ class StrategyControllerTest {
         updated.setName("Updated name");
         updated.setDescription("Updated description");
         updated.setCode("return updated;");
+        updated.setEntryFile("StrategyMain.java");
+        updated.setRuntime("java");
         updated.setConfiguration("{\"window\":30}");
 
         when(strategyService.updateStrategy(any(Long.class), any(StrategyCreateDTO.class)))
@@ -171,7 +186,9 @@ class StrategyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.name").value("Updated name"))
-                .andExpect(jsonPath("$.description").value("Updated description"));
+                .andExpect(jsonPath("$.description").value("Updated description"))
+                .andExpect(jsonPath("$.entryFile").value("StrategyMain.java"))
+                .andExpect(jsonPath("$.runtime").value("java"));
     }
 
     @Test

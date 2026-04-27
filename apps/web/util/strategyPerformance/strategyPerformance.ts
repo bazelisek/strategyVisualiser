@@ -11,21 +11,27 @@ export type Trade = {
   result: number;
   buyTime: number;
   sellTime: number;
+  isOpen: boolean;
+};
+
+export type StrategyPerformance = {
+  data?: {
+    bestTrade?: Trade;
+    worstTrade?: Trade;
+    totalBuys: number;
+    totalSells: number;
+    closedTrades: number;
+    openTrades: number;
+    trades: Trade[];
+    earningsWithoutStrategyPct: number;
+  };
+  error?: string;
 };
 
 export function getStrategyPerformance(
   strategyData: StrategyPoint[],
   transformedData: { candles: candleData },
-): {
-  data?: {
-    bestTrade: Trade;
-    worstTrade: Trade;
-    totalBuys: number;
-    totalSells: number;
-    trades: Trade[];
-  };
-  error?: string;
-} {
+): StrategyPerformance {
   const opens = transformedData.candles.map((candle) => ({
     value: candle.open,
     time: candle.time,
@@ -54,33 +60,40 @@ export function getStrategyPerformance(
       return newSell;
     })
     .flat();
-  const totalBuys = flatBuys.length;
-  const totalSells = flatSells.length;
+  let totalBuys = flatBuys.length;
+  let totalSells = flatSells.length;
+  const openCount = Math.max(totalBuys - totalSells, 0);
+  const earningsWithoutStrategy =
+    (opens[opens.length - 1].value - opens[0].value) / opens[0].value;
 
-  if (totalBuys !== totalSells) {
+  if (totalBuys > totalSells) {
+    for (let i = 0; i < totalBuys - totalSells; i++) {
+      flatSells.push({ time: opens[opens.length - 1].time });
+    }
+  }
+  const actualSellCount = totalSells;
+  totalBuys = flatBuys.length;
+  totalSells = actualSellCount;
+
+  if (flatBuys.length !== flatSells.length) {
     return { error: "Buy amount is not equal to the sell amount." };
   }
 
-  const trades: {
-    buy: number;
-    sell: number;
-    result: number;
-    buyTime: number;
-    sellTime: number;
-  }[] = [];
+  const trades: Trade[] = [];
   let buyIndex = 0;
   let sellIndex = 0;
   for (let i = 0; i < totalBuys; i++) {
-    while (buyIndex < opens.length-1 && opens[buyIndex].time < flatBuys[i].time) {
+    while (
+      buyIndex < opens.length - 1 &&
+      opens[buyIndex].time < flatBuys[i].time
+    ) {
       buyIndex++;
-    }
-    if (buyIndex < opens.length) {
-      console.log("flatBuys: " + flatBuys[i].time);
-      console.log("opens(buy): " + opens[buyIndex].time);
     }
 
     if (buyIndex >= opens.length || opens[buyIndex].time !== flatBuys[i].time) {
-      console.error("MISMATCH: " + opens[buyIndex].time + ", " + flatBuys[i].time);
+      console.error(
+        "MISMATCH: " + opens[buyIndex].time + ", " + flatBuys[i].time,
+      );
       return { error: "Candle and strategy times are not matching." };
     }
     const buyPrice = opens[buyIndex].value;
@@ -88,29 +101,42 @@ export function getStrategyPerformance(
     while (opens[sellIndex].time < flatSells[i].time) {
       sellIndex++;
     }
-    if (sellIndex < opens.length) {
-      console.log("flatSells: " + flatSells[i].time);
-      console.log("opens(sell): " + opens[sellIndex].time);
-    }
     if (opens[sellIndex].time !== flatSells[i].time) {
-      console.error("MISMATCH: " + opens[sellIndex].time + ", " + flatSells[i].time);
+      console.error(
+        "MISMATCH: " + opens[sellIndex].time + ", " + flatSells[i].time,
+      );
       return { error: "Candle and strategy times are not matching." };
     }
     const sellPrice = opens[sellIndex].value;
+
     trades.push({
       buy: buyPrice,
       sell: sellPrice,
       result: sellPrice - buyPrice,
       buyTime: opens[buyIndex].time,
       sellTime: opens[sellIndex].time,
+      isOpen: i >= totalBuys - openCount,
     });
   }
 
-  const sortedTrades = trades.sort((a, b) => a.result - b.result);
-  const bestTrade: Trade | undefined = sortedTrades.at(-1);
-  const worstTrade: Trade | undefined = sortedTrades[0];
-  if (!bestTrade || !worstTrade) return { error: "Trades not found" };
+  const closedTrades = trades.filter((trade) => !trade.isOpen);
+  const rankedTrades = (closedTrades.length > 0 ? closedTrades : trades).toSorted(
+    (a, b) => a.result - b.result,
+  );
+  const bestTrade: Trade | undefined = rankedTrades.at(-1);
+  const worstTrade: Trade | undefined = rankedTrades[0];
 
   //fetch('http://DUMMYURL/strategyPerformance')
-  return { data: { bestTrade, worstTrade, totalBuys, totalSells, trades } };
+  return {
+    data: {
+      bestTrade,
+      worstTrade,
+      totalBuys,
+      totalSells,
+      closedTrades: closedTrades.length,
+      openTrades: openCount,
+      trades,
+      earningsWithoutStrategyPct: earningsWithoutStrategy * 100,
+    },
+  };
 }

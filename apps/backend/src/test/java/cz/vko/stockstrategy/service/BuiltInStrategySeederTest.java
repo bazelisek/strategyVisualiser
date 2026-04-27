@@ -37,6 +37,8 @@ class BuiltInStrategySeederTest {
 
         when(strategyDao.findByName(BuiltInStrategyCatalog.MOVING_AVERAGE_CROSSOVER_NAME))
                 .thenReturn(Optional.of(existing));
+        when(strategyDao.findByName(BuiltInStrategyCatalog.PYTHON_MOVING_AVERAGE_CROSSOVER_NAME))
+                .thenReturn(Optional.of(BuiltInStrategyCatalog.pythonMovingAverageCrossover().toStrategy()));
         when(strategyDao.findByName(BuiltInStrategyCatalog.SUPER_TREND_NAME))
                 .thenReturn(Optional.of(BuiltInStrategyCatalog.superTrend().toStrategy()));
         when(strategyDao.findByName(BuiltInStrategyCatalog.EMA_ADX_TREND_NAME))

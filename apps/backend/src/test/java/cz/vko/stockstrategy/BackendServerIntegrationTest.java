@@ -6,6 +6,7 @@ import cz.vko.stockstrategy.dto.AnalysisJobDTO;
 import cz.vko.stockstrategy.dto.StrategyDTO;
 import cz.vko.stockstrategy.model.StockData;
 import cz.vko.stockstrategy.model.Strategy;
+import cz.vko.stockstrategy.service.StrategySourceFiles;
 import cz.vko.stockstrategy.service.StockDataService;
 import cz.vko.stockstrategy.service.StrategyExecutionRequest;
 import cz.vko.stockstrategy.service.StrategyExecutionService;
@@ -84,6 +85,35 @@ class BackendServerIntegrationTest {
               }
             ]
             """;
+    private static final String PYTHON_STRATEGY_CONFIGURATION = """
+            [
+              {
+                "id": "maRange1",
+                "label": "MA Range 1",
+                "type": "number",
+                "defaultValue": 5
+              },
+              {
+                "id": "maRange2",
+                "label": "MA Range 2",
+                "type": "number",
+                "defaultValue": 20
+              },
+              {
+                "id": "universe",
+                "label": "Universe",
+                "type": "multi-select",
+                "defaultValue": ["AAPL"]
+              }
+            ]
+            """;
+    private static final String PYTHON_STRATEGY_REQUIREMENTS = """
+            {
+              "interval": {
+                "blacklist": ["1m", "2m"]
+              }
+            }
+            """;
 
     @LocalServerPort
     private int port;
@@ -128,12 +158,12 @@ class BackendServerIntegrationTest {
             Consumer<String> outputListener = invocation.getArgument(1, Consumer.class);
             capturedRequest.set(request);
 
-            assertTrue(Files.exists(request.sourceFile()));
+            assertTrue(Files.exists(request.entrySourceFile()));
             assertTrue(Files.exists(request.configFile()));
             assertTrue(Files.exists(request.stockDataFile()));
             assertTrue(Files.exists(request.jobContextFile()));
 
-            String source = Files.readString(request.sourceFile());
+            String source = Files.readString(request.entrySourceFile());
             JsonNode config = objectMapper.readTree(Files.readString(request.configFile()));
             List<String> csvLines = Files.readAllLines(request.stockDataFile());
             JsonNode jobContext = objectMapper.readTree(Files.readString(request.jobContextFile()));
@@ -239,6 +269,160 @@ class BackendServerIntegrationTest {
         assertEquals(jobIdNumber.longValue(), executionRequest.jobId());
         verify(stockDataService).getStockData("AAPL", "D", LocalDate.parse("2024-01-02"), LocalDate.parse("2024-01-03"));
         verify(stockDataService).getStockData("MSFT", "D", LocalDate.parse("2024-01-02"), LocalDate.parse("2024-01-03"));
+    }
+
+    @Test
+    void createPythonStrategyAnalyzeJobAndReadCompletedResponse() throws Exception {
+        AtomicReference<StrategyExecutionRequest> capturedRequest = new AtomicReference<>();
+
+        when(stockDataService.getStockData(eq("AAPL"), eq("D"), eq(LocalDate.parse("2024-01-02")), eq(LocalDate.parse("2024-01-04"))))
+                .thenReturn(sampleAaplStockData());
+
+        when(strategyExecutionService.execute(any(), any())).thenAnswer(invocation -> {
+            StrategyExecutionRequest request = invocation.getArgument(0);
+            @SuppressWarnings("unchecked")
+            Consumer<String> outputListener = invocation.getArgument(1, Consumer.class);
+            capturedRequest.set(request);
+
+            assertEquals(StrategySourceFiles.PYTHON_RUNTIME, request.runtime());
+            assertNull(request.javaMainClass());
+            assertEquals("main.py", request.entrySourceFile().getFileName().toString());
+            assertTrue(Files.exists(request.entrySourceFile()));
+            assertTrue(Files.exists(request.workspaceDir().resolve("helpers.py")));
+            assertTrue(Files.exists(request.configFile()));
+            assertTrue(Files.exists(request.stockDataFile()));
+            assertTrue(Files.exists(request.jobContextFile()));
+
+            String mainSource = Files.readString(request.entrySourceFile());
+            String helperSource = Files.readString(request.workspaceDir().resolve("helpers.py"));
+            JsonNode config = objectMapper.readTree(Files.readString(request.configFile()));
+            JsonNode jobContext = objectMapper.readTree(Files.readString(request.jobContextFile()));
+            List<String> csvLines = Files.readAllLines(request.stockDataFile());
+
+            assertTrue(mainSource.startsWith("#!/usr/bin/env python3"));
+            assertTrue(mainSource.contains("from helpers import build_result"));
+            assertTrue(helperSource.startsWith("#!/usr/bin/env python3"));
+            assertTrue(helperSource.contains("def build_result"));
+            assertEquals(3, config.path("maRange1").asInt());
+            assertEquals(8, config.path("maRange2").asInt());
+            assertEquals("AAPL", config.path("universe").get(0).asText());
+            assertEquals("AAPL", jobContext.path("universe").get(0).asText());
+            assertEquals(3, jobContext.path("stockRowCount").asInt());
+            assertEquals(4, csvLines.size());
+            assertTrue(Files.isExecutable(request.entrySourceFile()));
+            assertTrue(Files.isExecutable(request.workspaceDir().resolve("helpers.py")));
+
+            outputListener.accept("[strategy-runner] Starting main.py");
+            outputListener.accept("[python-ma] DEBUG Loaded config");
+
+            return objectMapper.writeValueAsString(Map.of(
+                    "status", "ok",
+                    "runtime", "python",
+                    "strategy", "Integration Python Strategy",
+                    "trades", List.of(
+                            Map.of("symbol", "AAPL", "time", 1704274200L, "amount", 1),
+                            Map.of("symbol", "AAPL", "time", 1704447000L, "amount", -1)
+                    ),
+                    "tradeCount", 2
+            ));
+        });
+
+        Map<String, Object> createPayload = Map.of(
+                "name", "HTTP Python Integration Strategy",
+                "description", "Created by python HTTP integration test",
+                "sourceFiles", List.of(
+                        Map.of(
+                                "path", "main.py",
+                                "content", """
+                                        from helpers import build_result
+
+                                        print(build_result())
+                                        """
+                        ),
+                        Map.of(
+                                "path", "helpers.py",
+                                "content", """
+                                        import json
+
+                                        def build_result():
+                                            return json.dumps({
+                                                "status": "ok",
+                                                "runtime": "python"
+                                            })
+                                        """
+                        )
+                ),
+                "entryFile", "main.py",
+                "runtime", "python",
+                "configuration", PYTHON_STRATEGY_CONFIGURATION,
+                "requirements", PYTHON_STRATEGY_REQUIREMENTS
+        );
+
+        ResponseEntity<Strategy> createResponse = restTemplate.postForEntity(
+                url("/api/strategies"),
+                createPayload,
+                Strategy.class
+        );
+
+        assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
+        Strategy createdStrategy = createResponse.getBody();
+        assertNotNull(createdStrategy);
+        assertNotNull(createdStrategy.getId());
+        assertEquals("main.py", createdStrategy.getEntryFile());
+        assertEquals("python", createdStrategy.getRuntime());
+        assertEquals(2, createdStrategy.getSourceFiles().size());
+        assertEquals(PYTHON_STRATEGY_REQUIREMENTS.trim(), createdStrategy.getRequirements().trim());
+
+        ResponseEntity<Strategy> strategyResponse = restTemplate.getForEntity(
+                url("/api/strategies/" + createdStrategy.getId()),
+                Strategy.class
+        );
+        assertEquals(HttpStatus.OK, strategyResponse.getStatusCode());
+        assertNotNull(strategyResponse.getBody());
+        assertEquals("python", strategyResponse.getBody().getRuntime());
+        assertEquals("main.py", strategyResponse.getBody().getEntryFile());
+
+        Map<String, Object> analyzePayload = Map.of(
+                "symbol", "AAPL",
+                "fromDate", "2024-01-02",
+                "toDate", "2024-01-04",
+                "config", Map.of(
+                        "maRange1", 3,
+                        "maRange2", 8
+                )
+        );
+
+        ResponseEntity<Map> analyzeResponse = restTemplate.postForEntity(
+                url("/api/strategies/" + createdStrategy.getId() + "/analyze"),
+                analyzePayload,
+                Map.class
+        );
+
+        assertEquals(HttpStatus.ACCEPTED, analyzeResponse.getStatusCode());
+        assertNotNull(analyzeResponse.getBody());
+        Number jobIdNumber = (Number) analyzeResponse.getBody().get("job_id");
+        assertNotNull(jobIdNumber);
+
+        AnalysisJobDTO finishedJob = waitForJob(jobIdNumber.longValue());
+        assertEquals("completed", finishedJob.getStatus());
+        assertNull(finishedJob.getErrorMessage());
+        assertEquals("[strategy-runner] Starting main.py\n[python-ma] DEBUG Loaded config", finishedJob.getConsoleOutput());
+
+        JsonNode result = objectMapper.readTree(finishedJob.getResult());
+        assertEquals("ok", result.path("status").asText());
+        assertEquals("python", result.path("runtime").asText());
+        assertEquals("Integration Python Strategy", result.path("strategy").asText());
+        assertEquals(2, result.path("tradeCount").asInt());
+        assertEquals(2, result.path("trades").size());
+        assertEquals("AAPL", result.path("trades").get(0).path("symbol").asText());
+        assertEquals(1704274200L, result.path("trades").get(0).path("time").asLong());
+        assertEquals(1, result.path("trades").get(0).path("amount").asInt());
+
+        StrategyExecutionRequest executionRequest = capturedRequest.get();
+        assertNotNull(executionRequest);
+        assertEquals(createdStrategy.getId(), executionRequest.strategyId());
+        assertEquals(jobIdNumber.longValue(), executionRequest.jobId());
+        verify(stockDataService).getStockData("AAPL", "D", LocalDate.parse("2024-01-02"), LocalDate.parse("2024-01-04"));
     }
 
     @Test

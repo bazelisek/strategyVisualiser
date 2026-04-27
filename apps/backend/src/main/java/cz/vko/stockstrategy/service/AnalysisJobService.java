@@ -11,6 +11,7 @@ import cz.vko.stockstrategy.dto.AnalysisJobDTO;
 import cz.vko.stockstrategy.model.AnalysisJob;
 import cz.vko.stockstrategy.model.StockData;
 import cz.vko.stockstrategy.model.Strategy;
+import cz.vko.stockstrategy.model.StrategySourceFile;
 import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -120,9 +121,13 @@ public class AnalysisJobService {
             long strategyId = job.getStrategyId();
             Strategy strategy = strategyDao.findById(strategyId)
                     .orElseThrow(() -> new IllegalArgumentException("Strategy not found: " + strategyId));
-            String code = strategy.getCode();
-            Path sourceFile = workspaceDir.resolve("StrategyMain.java");
-            Files.writeString(sourceFile, code);
+            StrategySourceFiles.ResolvedStrategySources resolvedSources = StrategySourceFiles.resolve(
+                    strategy.getSourceFiles(),
+                    strategy.getCode(),
+                    strategy.getEntryFile(),
+                    strategy.getRuntime()
+            );
+            Path entrySourceFile = writeStrategySourceFiles(workspaceDir, resolvedSources.sourceFiles(), resolvedSources.entryFile());
             Path configFile = workspaceDir.resolve("config.json");
             Path stockDataFile = workspaceDir.resolve("stock-data.csv");
             Path jobContextFile = workspaceDir.resolve("job-context.json");
@@ -139,7 +144,11 @@ public class AnalysisJobService {
 
             String output = strategyExecutionService.execute(new StrategyExecutionRequest(
                     workspaceDir,
-                    sourceFile,
+                    entrySourceFile,
+                    resolvedSources.runtime(),
+                    StrategySourceFiles.JAVA_RUNTIME.equals(resolvedSources.runtime())
+                            ? StrategySourceFiles.javaMainClass(resolvedSources.entryFile(), resolvedSources.code())
+                            : null,
                     configFile,
                     stockDataFile,
                     jobContextFile,
@@ -159,6 +168,61 @@ public class AnalysisJobService {
         }
 
         analysisJobDao.save(job);
+    }
+
+    private Path writeStrategySourceFiles(
+            Path workspaceDir,
+            List<StrategySourceFile> sourceFiles,
+            String entryFile
+    ) throws IOException {
+        Path normalizedWorkspaceDir = workspaceDir.toAbsolutePath().normalize();
+        Path entrySourceFile = null;
+
+        for (StrategySourceFile sourceFile : sourceFiles) {
+            Path outputFile = normalizedWorkspaceDir.resolve(sourceFile.path()).normalize();
+            if (!outputFile.startsWith(normalizedWorkspaceDir)) {
+                throw new IllegalArgumentException("Strategy source file path escapes the workspace: " + sourceFile.path());
+            }
+            if (outputFile.getParent() != null) {
+                Files.createDirectories(outputFile.getParent());
+            }
+            Files.writeString(outputFile, normalizeWorkspaceSourceContent(sourceFile), StandardCharsets.UTF_8);
+            ensureWorkspaceFilePermissions(outputFile, sourceFile.path());
+            if (sourceFile.path().equals(entryFile)) {
+                entrySourceFile = outputFile;
+            }
+        }
+
+        if (entrySourceFile == null) {
+            throw new IllegalArgumentException("Strategy entry file could not be written: " + entryFile);
+        }
+
+        return entrySourceFile;
+    }
+
+    private String normalizeWorkspaceSourceContent(StrategySourceFile sourceFile) {
+        String content = sourceFile.content();
+        if (content == null) {
+            content = "";
+        }
+
+        if (sourceFile.path().endsWith(".py") && !content.startsWith("#!")) {
+            return "#!/usr/bin/env python3\n" + content;
+        }
+
+        return content;
+    }
+
+    private void ensureWorkspaceFilePermissions(Path outputFile, String sourcePath) throws IOException {
+        if (!sourcePath.endsWith(".py")) {
+            return;
+        }
+
+        boolean readable = outputFile.toFile().setReadable(true, false);
+        boolean executable = outputFile.toFile().setExecutable(true, false);
+        if ((!readable || !executable) && !Files.isExecutable(outputFile)) {
+            throw new IOException("Failed to make Python strategy file executable: " + sourcePath);
+        }
     }
 
     private AnalysisJobDTO convertToDTO(AnalysisJob job, String symbol) {

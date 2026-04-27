@@ -3,6 +3,7 @@
 import { getServerSession } from "@/auth/server";
 import { getBaseUrl } from "../baseURL";
 import axios from "axios";
+import { StrategySourceFile } from "./sourceFiles";
 
 const BASE_URL = getBaseUrl();
 
@@ -10,14 +11,16 @@ export async function postStrategy({
   name,
   description,
   isPublic,
-  strategyCode,
+  strategySourceFiles,
+  entryFile,
   configurationOptions,
   requirements
 }: {
   name: string;
   description: string;
   isPublic: boolean;
-  strategyCode: string;
+  strategySourceFiles: StrategySourceFile[];
+  entryFile: string | null;
   configurationOptions: string;
   requirements: string;
 }): Promise<{ error: string | null; }> {
@@ -28,7 +31,8 @@ export async function postStrategy({
     const data = {
         name,
         description,
-        code: strategyCode,
+        sourceFiles: strategySourceFiles,
+        entryFile,
         configuration: configurationOptions,
         ownerEmail: userEmail,
         isPublic,
