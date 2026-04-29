@@ -3,19 +3,20 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   createChart,
-  CrosshairMode,
-  ColorType,
   UTCTimestamp,
   IChartApi,
   CandlestickSeries,
-  LineStyle,
   SeriesMarker,
   Time,
   createSeriesMarkers,
   ISeriesMarkersPluginApi,
 } from "lightweight-charts";
 import { candleData } from "@/util/serverFetch";
-import { createSecondaryChart } from "@/util/charts";
+import {
+  createSecondaryChart,
+  equalizeRightPriceScaleWidths,
+  getBaseChartOptions,
+} from "@/util/charts";
 import { centerToMarker, toUTCTimestamp } from "@/util/markers";
 import MarkerNavigation from "./MarkerNavigation";
 import useIndicators from "@/hooks/useIndicators";
@@ -92,40 +93,10 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
     );
 
     // Create main chart
-    const mainChart = createChart(chartRef.current, {
-      width,
-      height: height * 0.7,
-      layout: {
-        background: { color: "#1e1e2a", type: ColorType.Solid },
-        textColor: "#d1d4dc",
-        fontSize: 12,
-      },
-      grid: {
-        vertLines: { color: "#2b2b43", style: LineStyle.Solid },
-        horzLines: { color: "#2b2b43", style: LineStyle.Solid },
-      },
-      crosshair: { mode: CrosshairMode.MagnetOHLC },
-      rightPriceScale: { borderVisible: false },
-      timeScale: { borderColor: "#2b2b43", timeVisible: true },
-      handleScroll: {
-        mouseWheel: false,
-        pressedMouseMove: true,
-        horzTouchDrag: true,
-        vertTouchDrag: false,
-      },
-      handleScale: {
-        mouseWheel: true,
-        pinch: true,
-        axisPressedMouseMove: {
-          time: true,
-          price: true,
-        },
-        axisDoubleClickReset: {
-          time: true,
-          price: true,
-        },
-      },
-    });
+    const mainChart = createChart(
+      chartRef.current,
+      getBaseChartOptions(width, height * 0.7),
+    );
 
     mainChartRef.current = mainChart;
 
@@ -253,8 +224,24 @@ const CandlestickChart: React.FC<CandlestickChartProps> = ({
       },
     );
 
+    const renderedCharts = Object.values(charts).filter(
+      (chart): chart is IChartApi => chart !== null,
+    );
+
+    const syncPriceScaleWidths = () => {
+      requestAnimationFrame(() => {
+        equalizeRightPriceScaleWidths(renderedCharts);
+      });
+    };
+
+    syncPriceScaleWidths();
+    mainChart.timeScale().subscribeVisibleLogicalRangeChange(syncPriceScaleWidths);
+
     // Cleanup
     return () => {
+      mainChart
+        .timeScale()
+        .unsubscribeVisibleLogicalRangeChange(syncPriceScaleWidths);
       seriesMarkersApi?.setMarkers?.([]);
       seriesMarkersApi?.detach?.();
       Object.values(charts).forEach((chart) => chart?.remove());

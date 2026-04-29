@@ -266,7 +266,7 @@ The web chart loads `result` and calls `extractTradeMarkersFromJobResult`, which
 
 | Field | Type | Meaning |
 |-------|------|---------|
-| `time` | number | UNIX time in **seconds** (UTC), aligned with candle timestamps used by the app |
+| `time` | number | UNIX time in **seconds** (UTC), aligned with candle timestamps used by the app. This time must be the `open` time of the market.
 | `amount` | number | **> 0** buy / long entry, **< 0** sell / exit. Magnitude can represent size; the performance helper expands integer magnitudes into discrete legs. |
 | `symbol` | string | Recommended when multiple tickers; enables server-side filtering via `?symbol=` |
 
