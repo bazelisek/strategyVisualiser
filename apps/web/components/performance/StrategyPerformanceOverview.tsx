@@ -67,6 +67,7 @@ export type EnrichedStrategyPerformance = {
   avgSell: number;
   avgPnL: number;
   avgPctFinal: number;
+  timeInvested: number;
 } | null;
 
 const StrategyPerformanceOverview: React.FC<
@@ -119,6 +120,7 @@ const StrategyPerformanceOverview: React.FC<
       avgSell,
       avgPnL,
       avgPctFinal,
+      timeInvested: performance.data.timeInvested
     };
   }, [performance.data]);
 
@@ -245,6 +247,17 @@ const StrategyPerformanceOverview: React.FC<
                             )}
                             %
                           </Typography>
+                        </Card>
+                        <Card>
+                          <Typography level="body-sm">
+                            Time invested:
+                          </Typography>
+                          <Typography
+                          fontSize="xl"
+                            fontWeight="lg"
+                            >
+                              {(enriched.timeInvested*100).toFixed(2)}%
+                            </Typography>
                         </Card>
                       </Stack>
                     </>

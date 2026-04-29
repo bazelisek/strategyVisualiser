@@ -24,6 +24,7 @@ export type StrategyPerformance = {
     openTrades: number;
     trades: Trade[];
     earningsWithoutStrategyPct: number;
+    timeInvested: number;
   };
   error?: string;
 };
@@ -82,6 +83,7 @@ export function getStrategyPerformance(
   const trades: Trade[] = [];
   let buyIndex = 0;
   let sellIndex = 0;
+  let timesInvested = 0;
   for (let i = 0; i < totalBuys; i++) {
     while (
       buyIndex < opens.length - 1 &&
@@ -100,6 +102,8 @@ export function getStrategyPerformance(
 
     while (opens[sellIndex].time < flatSells[i].time) {
       sellIndex++;
+      if (sellIndex >= buyIndex)
+        timesInvested++;
     }
     if (opens[sellIndex].time !== flatSells[i].time) {
       console.error(
@@ -126,6 +130,8 @@ export function getStrategyPerformance(
   const bestTrade: Trade | undefined = rankedTrades.at(-1);
   const worstTrade: Trade | undefined = rankedTrades[0];
 
+  const timeInvested = timesInvested / transformedData.candles.length;
+
   //fetch('http://DUMMYURL/strategyPerformance')
   return {
     data: {
@@ -133,6 +139,7 @@ export function getStrategyPerformance(
       worstTrade,
       totalBuys,
       totalSells,
+      timeInvested,
       closedTrades: closedTrades.length,
       openTrades: openCount,
       trades,
