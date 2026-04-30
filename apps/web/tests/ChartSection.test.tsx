@@ -104,6 +104,7 @@ const mockUseChartDataState = {
   statusMessage: "",
   consoleOutput: "",
   jobResult: null as unknown,
+  lastRunConfig: {} as Record<string, unknown>,
   loadCandlesForSymbols: jest.fn().mockResolvedValue({}),
 };
 
@@ -205,6 +206,7 @@ describe("ChartSection", () => {
     mockUseChartDataState.statusMessage = "";
     mockUseChartDataState.consoleOutput = "";
     mockUseChartDataState.jobResult = null;
+    mockUseChartDataState.lastRunConfig = {};
     mockUseChartDataState.loadCandlesForSymbols = jest.fn().mockResolvedValue({});
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,

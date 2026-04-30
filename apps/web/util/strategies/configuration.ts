@@ -2,6 +2,7 @@ import { Requirements } from "@/components/Input/Form/Form";
 import { symbols } from "@/util/symbols";
 
 export const UNIVERSE_CONFIG_ID = "universe";
+export const AVAILABLE_MONEY_CONFIG_ID = "availableMoney";
 
 export type ConfigOption = {
   id: string;
@@ -25,6 +26,16 @@ export function createUniverseConfigOption(): ConfigOption {
     type: "multi-select",
     options: [...symbols],
     defaultValue: [],
+  };
+}
+
+export function createAvailableMoneyConfigOption(): ConfigOption {
+  return {
+    id: AVAILABLE_MONEY_CONFIG_ID,
+    label: "Available Money ($)",
+    type: "number",
+    defaultValue: 10000,
+    required: true,
   };
 }
 
@@ -102,18 +113,46 @@ function mergeUniverseConfigOption(
   };
 }
 
+function mergeAvailableMoneyConfigOption(
+  uploadedAvailableMoneyConfig?: ConfigOption
+): ConfigOption {
+  const defaultAvailableMoneyConfig = createAvailableMoneyConfigOption();
+
+  if (!uploadedAvailableMoneyConfig) {
+    return defaultAvailableMoneyConfig;
+  }
+
+  return {
+    ...defaultAvailableMoneyConfig,
+    ...uploadedAvailableMoneyConfig,
+    id: AVAILABLE_MONEY_CONFIG_ID,
+    label:
+      uploadedAvailableMoneyConfig.label ?? defaultAvailableMoneyConfig.label,
+    type: "number",
+    defaultValue:
+      uploadedAvailableMoneyConfig.defaultValue ??
+      defaultAvailableMoneyConfig.defaultValue,
+  };
+}
+
 export function buildStrategyConfiguration(
   configOptions: ConfigOptions = []
 ): ConfigOptions {
   const uploadedUniverseConfig = configOptions.find(
     (option) => option.id === UNIVERSE_CONFIG_ID
   );
+  const uploadedAvailableMoneyConfig = configOptions.find(
+    (option) => option.id === AVAILABLE_MONEY_CONFIG_ID
+  );
   const userDefinedConfigOptions = configOptions.filter(
-    (option) => option.id !== UNIVERSE_CONFIG_ID
+    (option) =>
+      option.id !== UNIVERSE_CONFIG_ID &&
+      option.id !== AVAILABLE_MONEY_CONFIG_ID
   );
 
   return [
     mergeUniverseConfigOption(uploadedUniverseConfig),
+    mergeAvailableMoneyConfigOption(uploadedAvailableMoneyConfig),
     ...userDefinedConfigOptions,
   ];
 }

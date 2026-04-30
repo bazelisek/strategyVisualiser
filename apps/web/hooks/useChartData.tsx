@@ -49,6 +49,7 @@ export function useChartData(
   chartLoading: boolean;
   transformedData: TransformedChartData;
   jobResult: unknown;
+  lastRunConfig: Record<string, unknown>;
   runCalculation: (configOverrides: Record<string, unknown>) => Promise<void>;
   loadCandlesForSymbols: (
     symbols: string[],
@@ -75,6 +76,7 @@ export function useChartData(
     { time: number; amount: number }[]
   >([]);
   const [jobResult, setJobResult] = useState<unknown>(null);
+  const [lastRunConfig, setLastRunConfig] = useState<Record<string, unknown>>({});
   const candlesBySymbolRef = useRef<Record<string, TransformedChartData>>({});
   const pendingCandlesRef = useRef<Record<string, Promise<TransformedChartData>>>(
     {},
@@ -92,6 +94,7 @@ export function useChartData(
       setTransformedData(EMPTY_CHART_DATA);
       setStrategyData([]);
       setJobResult(null);
+      setLastRunConfig({});
       candlesBySymbolRef.current = {};
       pendingCandlesRef.current = {};
       return;
@@ -156,6 +159,7 @@ export function useChartData(
     setStrategyData([]);
     setTransformedData(EMPTY_CHART_DATA);
     setJobResult(null);
+    setLastRunConfig({});
     candlesBySymbolRef.current = {};
     pendingCandlesRef.current = {};
   }, [hasParams, interval, period1, period2, strategy]);
@@ -352,6 +356,7 @@ export function useChartData(
       setStrategyData([]);
       setTransformedData(EMPTY_CHART_DATA);
       setJobResult(null);
+      setLastRunConfig({});
       candlesBySymbolRef.current = {};
       pendingCandlesRef.current = {};
       try {
@@ -368,6 +373,7 @@ export function useChartData(
         setStage("running");
         const parsedResult = await pollJobUntilFinished(start.jobId);
         setJobResult(parsedResult);
+        setLastRunConfig(configOverrides);
         setStatusMessage("Calculation completed.");
         setStage("success");
       } catch (e) {
@@ -395,6 +401,7 @@ export function useChartData(
     statusMessage,
     stage,
     jobResult,
+    lastRunConfig,
     loadCandlesForSymbols,
   };
 }

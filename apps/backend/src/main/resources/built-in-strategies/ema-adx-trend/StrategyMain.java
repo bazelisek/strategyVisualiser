@@ -21,12 +21,16 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class StrategyMain {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final double PORTFOLIO_RISK_FRACTION = 0.02D;
+    private static final double MIN_POSITION_SIZE = 1e-6D;
 
     public static void main(String[] args) throws Exception {
         JsonNode config = loadConfig();
@@ -36,29 +40,23 @@ public class StrategyMain {
         double adxThreshold = readPositiveDouble(config, "adxThreshold");
         int atrPeriod = readPositiveInt(config, "atrPeriod");
         double atrMultiplier = readPositiveDouble(config, "atrMultiplier");
+        double availableMoney = readPositiveDouble(config, "availableMoney");
 
         if (fastEmaPeriod >= slowEmaPeriod) {
             throw new IllegalArgumentException("fastEmaPeriod must be smaller than slowEmaPeriod.");
         }
 
         Map<String, List<BarPoint>> barsBySymbol = loadBars(resolveInputPath("STRATEGY_STOCK_DATA_FILE", "stock-data.csv"));
-        List<Trade> trades = new ArrayList<>();
-
-        for (Map.Entry<String, List<BarPoint>> entry : barsBySymbol.entrySet()) {
-            emitTrades(
-                    entry.getKey(),
-                    entry.getValue(),
-                    fastEmaPeriod,
-                    slowEmaPeriod,
-                    adxPeriod,
-                    adxThreshold,
-                    atrPeriod,
-                    atrMultiplier,
-                    trades
-            );
-        }
-
-        trades.sort(Comparator.comparingLong(Trade::time).thenComparing(Trade::symbol));
+        PortfolioSimulation simulation = simulatePortfolio(
+                barsBySymbol,
+                fastEmaPeriod,
+                slowEmaPeriod,
+                adxPeriod,
+                adxThreshold,
+                atrPeriod,
+                atrMultiplier,
+                availableMoney
+        );
 
         ObjectNode result = MAPPER.createObjectNode();
         result.put("status", "ok");
@@ -69,73 +67,241 @@ public class StrategyMain {
         result.put("adxThreshold", adxThreshold);
         result.put("atrPeriod", atrPeriod);
         result.put("atrMultiplier", atrMultiplier);
-        result.put("tradeCount", trades.size());
+        result.put("availableMoney", availableMoney);
+        result.put("endingCash", simulation.cash());
+        result.put("endingEquity", simulation.cash() + simulation.openPositionValue());
+        result.put("tradeCount", simulation.trades().size());
 
         ArrayNode tradesNode = result.putArray("trades");
-        for (Trade trade : trades) {
+        for (Trade trade : simulation.trades()) {
             tradesNode.add(createTradeNode(trade));
         }
 
         System.out.println(MAPPER.writeValueAsString(result));
     }
 
-    private static void emitTrades(
-            String symbol,
-            List<BarPoint> bars,
+    private static PortfolioSimulation simulatePortfolio(
+            Map<String, List<BarPoint>> barsBySymbol,
             int fastEmaPeriod,
             int slowEmaPeriod,
             int adxPeriod,
             double adxThreshold,
             int atrPeriod,
             double atrMultiplier,
-            List<Trade> trades
+            double startingCash
     ) {
-        int minimumBars = Math.max(slowEmaPeriod, Math.max(adxPeriod, atrPeriod)) + 2;
-        if (bars.size() < minimumBars) {
-            return;
+        List<SymbolState> states = buildSymbolStates(
+                barsBySymbol,
+                fastEmaPeriod,
+                slowEmaPeriod,
+                adxPeriod,
+                adxThreshold,
+                atrPeriod
+        );
+        List<Trade> trades = new ArrayList<>();
+        Map<String, Position> openPositions = new LinkedHashMap<>();
+        List<Long> timeline = buildTimeline(states);
+        double cash = startingCash;
+
+        for (long time : timeline) {
+            List<ExitSignal> exits = new ArrayList<>();
+            List<EntrySignal> entries = new ArrayList<>();
+
+            for (SymbolState state : states) {
+                Integer index = state.indexByTime().get(time);
+                if (index == null || index <= state.startIndex()) {
+                    continue;
+                }
+
+                int signalIndex = index - 1;
+                double prevClose = state.closeIndicator().getValue(signalIndex).doubleValue();
+                double openPrice = state.bars().get(index).open();
+                double fastValue = state.fastIndicator().getValue(signalIndex).doubleValue();
+                double slowValue = state.slowIndicator().getValue(signalIndex).doubleValue();
+                double adxValue = state.adxIndicator().getValue(signalIndex).doubleValue();
+                double atrValue = state.atrIndicator().getValue(signalIndex).doubleValue();
+                double fadeThreshold = state.adxThreshold() * 0.75D;
+                Position currentPosition = openPositions.get(state.symbol());
+
+                if (currentPosition != null) {
+                    currentPosition.highestClose = Math.max(currentPosition.highestClose, prevClose);
+                    double trailingStop = currentPosition.highestClose - (atrValue * atrMultiplier);
+
+                    if (prevClose < fastValue || prevClose <= trailingStop || adxValue < fadeThreshold) {
+                        exits.add(new ExitSignal(state, time, openPrice));
+                    }
+                    continue;
+                }
+
+                if (prevClose > fastValue && fastValue > slowValue && adxValue >= adxThreshold) {
+                    entries.add(new EntrySignal(state, time, openPrice, prevClose, atrValue, adxValue));
+                }
+            }
+
+            exits.sort(Comparator.comparing(exit -> exit.state().symbol()));
+            for (ExitSignal exit : exits) {
+                Position position = openPositions.remove(exit.state().symbol());
+                if (position == null || position.shares <= MIN_POSITION_SIZE) {
+                    continue;
+                }
+
+                cash += position.shares * exit.executionPrice();
+                trades.add(new Trade(exit.state().symbol(), exit.time(), -position.shares));
+            }
+
+            entries.sort(Comparator
+                    .comparingDouble(EntrySignal::adxValue).reversed()
+                    .thenComparing(entry -> entry.state().symbol()));
+
+            for (int i = 0; i < entries.size(); i++) {
+                EntrySignal entry = entries.get(i);
+                if (cash <= 0D) {
+                    break;
+                }
+
+                int remainingEntries = entries.size() - i;
+                double atrRisk = entry.atrValue() * atrMultiplier;
+                if (atrRisk <= 0D || entry.executionPrice() <= 0D) {
+                    continue;
+                }
+
+                double equity = cash + markOpenPositions(openPositions, entry.time(), states);
+                double riskBudget = Math.max(equity * PORTFOLIO_RISK_FRACTION, 0D);
+                double equalCashBudget = cash / remainingEntries;
+                double sharesByRisk = riskBudget / atrRisk;
+                double sharesByCash = equalCashBudget / entry.executionPrice();
+                double shares = Math.min(sharesByRisk, sharesByCash);
+
+                if (shares <= MIN_POSITION_SIZE) {
+                    continue;
+                }
+
+                double tradeCost = shares * entry.executionPrice();
+                if (tradeCost > cash) {
+                    shares = cash / entry.executionPrice();
+                    tradeCost = shares * entry.executionPrice();
+                }
+
+                if (shares <= MIN_POSITION_SIZE || tradeCost <= 0D) {
+                    continue;
+                }
+
+                cash -= tradeCost;
+                openPositions.put(entry.state().symbol(), new Position(shares, entry.closePrice()));
+                trades.add(new Trade(entry.state().symbol(), entry.time(), shares));
+            }
         }
 
-        BarSeries series = buildSeries(symbol, bars);
-        ClosePriceIndicator close = new ClosePriceIndicator(series);
-        EMAIndicator fast = new EMAIndicator(close, fastEmaPeriod);
-        EMAIndicator slow = new EMAIndicator(close, slowEmaPeriod);
-        ADXIndicator adx = new ADXIndicator(series, adxPeriod);
-        ATRIndicator atr = new ATRIndicator(series, atrPeriod);
-        int startIndex = Math.max(slowEmaPeriod, Math.max(adxPeriod, atrPeriod));
-        double fadeThreshold = adxThreshold * 0.75D;
-
-        boolean inPosition = false;
-        double highestClose = 0D;
-
-        for (int index = startIndex; index <= series.getEndIndex(); index++) {
-            double closePrice = close.getValue(index).doubleValue();
-            double fastValue = fast.getValue(index).doubleValue();
-            double slowValue = slow.getValue(index).doubleValue();
-            double adxValue = adx.getValue(index).doubleValue();
-            double atrValue = atr.getValue(index).doubleValue();
-            long time = bars.get(index).time();
-
-            if (!inPosition && closePrice > fastValue && fastValue > slowValue && adxValue >= adxThreshold) {
-                trades.add(new Trade(symbol, time, 1));
-                highestClose = closePrice;
-                inPosition = true;
+        Set<String> closedSymbols = new LinkedHashSet<>();
+        for (SymbolState state : states) {
+            Position position = openPositions.remove(state.symbol());
+            if (position == null || position.shares <= MIN_POSITION_SIZE || !closedSymbols.add(state.symbol())) {
                 continue;
             }
 
-            if (inPosition) {
-                highestClose = Math.max(highestClose, closePrice);
-                double trailingStop = highestClose - (atrValue * atrMultiplier);
+            BarPoint lastBar = state.bars().get(state.bars().size() - 1);
+            cash += position.shares * lastBar.open();
+            trades.add(new Trade(state.symbol(), lastBar.time(), -position.shares));
+        }
 
-                if (closePrice < fastValue || closePrice <= trailingStop || adxValue < fadeThreshold) {
-                    trades.add(new Trade(symbol, time, -1));
-                    inPosition = false;
-                }
+        trades.sort(Comparator.comparingLong(Trade::time)
+                .thenComparing(Trade::symbol)
+                .thenComparing(trade -> trade.amount() < 0)); // Buy (positive) before Sell (negative)
+        return new PortfolioSimulation(trades, cash, 0D);
+    }
+
+    private static double markOpenPositions(
+            Map<String, Position> openPositions,
+            long time,
+            List<SymbolState> states
+    ) {
+        if (openPositions.isEmpty()) {
+            return 0D;
+        }
+
+        double value = 0D;
+        for (SymbolState state : states) {
+            Position position = openPositions.get(state.symbol());
+            if (position == null || position.shares <= MIN_POSITION_SIZE) {
+                continue;
+            }
+
+            BarPoint latestBar = latestBarAtOrBefore(state.bars(), time);
+            if (latestBar == null) {
+                continue;
+            }
+            value += position.shares * latestBar.open();
+        }
+        return value;
+    }
+
+    private static BarPoint latestBarAtOrBefore(List<BarPoint> bars, long time) {
+        BarPoint latest = null;
+        for (BarPoint bar : bars) {
+            if (bar.time() > time) {
+                break;
+            }
+            latest = bar;
+        }
+        return latest == null && !bars.isEmpty() ? bars.get(0) : latest;
+    }
+
+    private static List<Long> buildTimeline(List<SymbolState> states) {
+        Set<Long> timeline = new LinkedHashSet<>();
+        for (SymbolState state : states) {
+            for (BarPoint bar : state.bars()) {
+                timeline.add(bar.time());
             }
         }
+        return timeline.stream().sorted().toList();
+    }
 
-        if (inPosition) {
-            trades.add(new Trade(symbol, bars.get(bars.size() - 1).time(), -1));
+    private static List<SymbolState> buildSymbolStates(
+            Map<String, List<BarPoint>> barsBySymbol,
+            int fastEmaPeriod,
+            int slowEmaPeriod,
+            int adxPeriod,
+            double adxThreshold,
+            int atrPeriod
+    ) {
+        List<SymbolState> states = new ArrayList<>();
+
+        for (Map.Entry<String, List<BarPoint>> entry : barsBySymbol.entrySet()) {
+            List<BarPoint> bars = entry.getValue();
+            int minimumBars = Math.max(slowEmaPeriod, Math.max(adxPeriod, atrPeriod)) + 2;
+            if (bars.size() < minimumBars) {
+                continue;
+            }
+
+            BarSeries series = buildSeries(entry.getKey(), bars);
+            ClosePriceIndicator close = new ClosePriceIndicator(series);
+            EMAIndicator fast = new EMAIndicator(close, fastEmaPeriod);
+            EMAIndicator slow = new EMAIndicator(close, slowEmaPeriod);
+            ADXIndicator adx = new ADXIndicator(series, adxPeriod);
+            ATRIndicator atr = new ATRIndicator(series, atrPeriod);
+            int startIndex = Math.max(slowEmaPeriod, Math.max(adxPeriod, atrPeriod));
+
+            Map<Long, Integer> indexByTime = new LinkedHashMap<>();
+            for (int i = 0; i < bars.size(); i++) {
+                indexByTime.put(bars.get(i).time(), i);
+            }
+
+            states.add(new SymbolState(
+                    entry.getKey(),
+                    bars,
+                    close,
+                    fast,
+                    slow,
+                    adx,
+                    atr,
+                    startIndex,
+                    adxThreshold,
+                    indexByTime
+            ));
         }
+
+        states.sort(Comparator.comparing(SymbolState::symbol));
+        return states;
     }
 
     private static BarSeries buildSeries(String symbol, List<BarPoint> bars) {
@@ -250,7 +416,47 @@ public class StrategyMain {
         return tradeNode;
     }
 
-    private record Trade(String symbol, long time, int amount) {
+    private record PortfolioSimulation(List<Trade> trades, double cash, double openPositionValue) {
+    }
+
+    private record EntrySignal(
+            SymbolState state,
+            long time,
+            double executionPrice,
+            double closePrice,
+            double atrValue,
+            double adxValue
+    ) {
+    }
+
+    private record ExitSignal(SymbolState state, long time, double executionPrice) {
+    }
+
+    private static final class Position {
+        private final double shares;
+        private double highestClose;
+
+        private Position(double shares, double highestClose) {
+            this.shares = shares;
+            this.highestClose = highestClose;
+        }
+    }
+
+    private record SymbolState(
+            String symbol,
+            List<BarPoint> bars,
+            ClosePriceIndicator closeIndicator,
+            EMAIndicator fastIndicator,
+            EMAIndicator slowIndicator,
+            ADXIndicator adxIndicator,
+            ATRIndicator atrIndicator,
+            int startIndex,
+            double adxThreshold,
+            Map<Long, Integer> indexByTime
+    ) {
+    }
+
+    private record Trade(String symbol, long time, double amount) {
     }
 
     private record BarPoint(

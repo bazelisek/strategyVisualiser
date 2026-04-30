@@ -102,6 +102,7 @@ describe("getStrategyPerformance", () => {
           { time: 1000, amount: 1 },
           { time: 2000, amount: -1 },
         ],
+        symbol: "AAPL",
         transformedData: {
           candles: [
             { time: at(1000), open: 10, high: 10, low: 10, close: 10, volume: 1 },
@@ -111,6 +112,7 @@ describe("getStrategyPerformance", () => {
       },
       {
         strategyData: [],
+        symbol: "MSFT",
         transformedData: {
           candles: [
             { time: at(1000), open: 20, high: 20, low: 20, close: 20, volume: 1 },
@@ -118,7 +120,7 @@ describe("getStrategyPerformance", () => {
           ],
         },
       },
-    ]);
+    ], 30);
 
     expect(result.error).toBeUndefined();
     expect(result.data?.closedTrades).toBe(1);
@@ -127,5 +129,32 @@ describe("getStrategyPerformance", () => {
     expect(result.data?.totalSells).toBe(1);
     expect(result.data?.earningsWithoutStrategyPct).toBeCloseTo(15);
     expect(result.data?.timeInvested).toBeGreaterThan(0);
+    expect(result.data?.totalReturnPct).toBeCloseTo((2 / 30) * 100);
+    expect(result.data?.symbolBreakdown.AAPL.pnl).toBeCloseTo(2);
+  });
+
+  test("supports fractional share trades", () => {
+    const result = getStrategyPerformance(
+      [
+        { time: 1000, amount: 0.5, symbol: "AAPL" },
+        { time: 2000, amount: -0.5, symbol: "AAPL" },
+      ],
+      {
+        candles: [
+          { time: at(1000), open: 100, high: 100, low: 100, close: 100, volume: 1 },
+          { time: at(2000), open: 110, high: 110, low: 110, close: 110, volume: 1 },
+        ],
+      },
+      { initialCash: 1000, symbol: "AAPL" },
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.data?.trades[0]).toMatchObject({
+      quantity: 0.5,
+      buyValue: 50,
+      sellValue: 55,
+      result: 5,
+    });
+    expect(result.data?.totalReturnPct).toBeCloseTo(0.5);
   });
 });

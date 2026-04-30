@@ -5,6 +5,7 @@ import { useTiles } from "@/hooks/useTiles";
 import { getTradeMarkers } from "@/util/markers";
 import { getValidIntervals } from "@/util/formCheck";
 import {
+  AVAILABLE_MONEY_CONFIG_ID,
   buildStrategyConfiguration,
   ConfigOption,
   isConfigOptions,
@@ -396,6 +397,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     statusMessage,
     consoleOutput,
     jobResult,
+    lastRunConfig,
     loadCandlesForSymbols,
   } = useChartData(
     useMemo(
@@ -415,6 +417,12 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   );
 
   const tradeMarkers = getTradeMarkers(strategyData);
+  const availableMoney = useMemo(() => {
+    const configuredValue = lastRunConfig?.[AVAILABLE_MONEY_CONFIG_ID];
+    return typeof configuredValue === "number" && Number.isFinite(configuredValue)
+      ? configuredValue
+      : 10000;
+  }, [lastRunConfig]);
   const canCalculate =
     isTileReady &&
     jobValidationErrors.length === 0 &&
@@ -798,13 +806,13 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
         <>
           <StrategyPerformanceOverview
             transformedData={transformedData}
-            strategyData={strategyData}
             strategy={strategy}
             className={classes.div}
             jobResult={jobResult}
             selectedSymbol={symbol}
             universe={chartSymbols}
             loadCandlesForSymbols={loadCandlesForSymbols}
+            availableMoney={availableMoney}
           />
           <StrategyConsoleCollapsible
             consoleOutput={consoleOutput}

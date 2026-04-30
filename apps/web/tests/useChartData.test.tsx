@@ -83,6 +83,7 @@ describe("useChartData", () => {
         "[strategy-runner] Starting StrategyMain",
       );
       expect(result.current.transformedData.symbol).toBe("AAPL");
+      expect(result.current.lastRunConfig).toEqual({ lookback: 14 });
     });
   });
 

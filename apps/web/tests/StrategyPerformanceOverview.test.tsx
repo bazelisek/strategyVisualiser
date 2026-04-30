@@ -78,10 +78,6 @@ describe("StrategyPerformanceOverview", () => {
             { time: at(2000), open: 12, high: 12, low: 12, close: 12, volume: 1 },
           ],
         }}
-        strategyData={[
-          { time: 1000, amount: 1 },
-          { time: 2000, amount: -1 },
-        ]}
         strategy="12:Momentum"
         jobResult={{
           trades: [
@@ -94,6 +90,7 @@ describe("StrategyPerformanceOverview", () => {
         selectedSymbol="AAPL"
         universe={["AAPL", "MSFT"]}
         loadCandlesForSymbols={loadCandlesForSymbols}
+        availableMoney={30}
       />,
     );
 
@@ -101,9 +98,16 @@ describe("StrategyPerformanceOverview", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Current stock performance reflects the stock shown in the chart tabs."),
+        screen.getByText(
+          "Current stock performance shows how the selected stock contributed to the portfolio result.",
+        ),
       ).toBeInTheDocument();
-      expect(screen.getAllByText("20.00%").length).toBeGreaterThan(0);
+      // Share of PnL
+      expect(screen.getByText("66.67%")).toBeInTheDocument();
+      // Stock Return (2 / 30)
+      expect(screen.getByText("6.67%")).toBeInTheDocument();
+      // Avg Trade (2 / 10)
+      expect(screen.getByText("20.00%")).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Global" }));
@@ -113,7 +117,7 @@ describe("StrategyPerformanceOverview", () => {
       expect(
         screen.getByText("Global performance aggregates every stock in the resolved universe."),
       ).toBeInTheDocument();
-      expect(screen.getAllByText("25.00%").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("10.00%").length).toBeGreaterThan(0);
     });
   });
 });

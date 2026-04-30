@@ -114,15 +114,12 @@ export function EditableTabs<T extends EditableTabItem = EditableTabItem>({
   };
 
   const handleRemoveTab = (tabName: string) => {
-    setDisplayedTabs((prev) => {
-      const nextTabs = prev.filter((tab) => tab.name !== tabName);
+    const nextTabs = displayedTabs.filter((tab) => tab.name !== tabName);
+    setDisplayedTabs(nextTabs);
 
-      if (selectedTab === tabName) {
-        onTabChange(nextTabs[0]?.name ?? null);
-      }
-
-      return nextTabs;
-    });
+    if (selectedTab === tabName) {
+      onTabChange(nextTabs[0]?.name ?? null);
+    }
   };
 
   React.useEffect(() => {

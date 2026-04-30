@@ -1,5 +1,12 @@
 [
   {
+    "id": "availableMoney",
+    "label": "Available Money ($)",
+    "type": "number",
+    "defaultValue": 10000,
+    "required": true
+  },
+  {
     "id": "fastEmaPeriod",
     "label": "Fast EMA Period",
     "type": "number",

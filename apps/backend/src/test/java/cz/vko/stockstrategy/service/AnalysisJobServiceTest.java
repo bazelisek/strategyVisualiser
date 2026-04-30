@@ -163,6 +163,32 @@ class AnalysisJobServiceTest {
     }
 
     @Test
+    void createAnalysisJobIncludesAvailableMoneyOverrideEvenWhenMissingFromStrategyDefinition() {
+        Strategy strategy = new Strategy();
+        strategy.setId(21L);
+        strategy.setConfiguration("""
+                [
+                  {"id":"lookback","type":"number","defaultValue":20}
+                ]
+                """);
+        when(strategyDao.findById(21L)).thenReturn(Optional.of(strategy));
+        when(analysisJobDao.findCompletedByExactRange(eq(21L), any(), any(), any())).thenReturn(Optional.empty());
+        when(analysisJobDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AnalyzeStrategyRequestDTO request = new AnalyzeStrategyRequestDTO();
+        request.setConfig(Map.of("availableMoney", 25000, "lookback", 55));
+
+        analysisJobService.createAnalysisJob(21L, request);
+
+        ArgumentCaptor<AnalysisJob> captor = ArgumentCaptor.forClass(AnalysisJob.class);
+        verify(analysisJobDao).save(captor.capture());
+        assertThat(captor.getValue().getConfigPayload()).contains("\"availableMoney\"");
+        assertThat(captor.getValue().getConfigPayload()).contains("25000");
+        assertThat(captor.getValue().getConfigPayload()).contains("\"lookback\"");
+        assertThat(captor.getValue().getConfigPayload()).contains("55");
+    }
+
+    @Test
     void getJobByIdFiltersTradeArraysBySymbol() throws Exception {
         AnalysisJob job = new AnalysisJob();
         job.setId(77L);

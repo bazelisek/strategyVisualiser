@@ -1,18 +1,40 @@
 import { candleData } from "../serverFetch";
 
+const EPSILON = 1e-7;
+
 export interface StrategyPoint {
-  time: number; // UTC timestamp int
-  amount: number; // >0 = buy, <0 = sell
+  time: number;
+  amount: number;
   symbol?: string;
 }
 
 export type Trade = {
+  symbol?: string;
+  quantity: number;
   buy: number;
   sell: number;
+  buyValue: number;
+  sellValue: number;
   result: number;
   buyTime: number;
   sellTime: number;
   isOpen: boolean;
+};
+
+export type SymbolContribution = {
+  symbol: string;
+  trades: Trade[];
+  closedTrades: number;
+  openTrades: number;
+  totalBuyValue: number;
+  totalSellValue: number;
+  pnl: number;
+  realizedPnl: number;
+  unrealizedPnl: number;
+  returnPct: number;
+  contributionPct: number;
+  averageInvestedPct: number;
+  benchmarkPct: number;
 };
 
 export type StrategyPerformance = {
@@ -26,6 +48,14 @@ export type StrategyPerformance = {
     trades: Trade[];
     earningsWithoutStrategyPct: number;
     timeInvested: number;
+    initialCash: number;
+    endingCash: number;
+    endingValue: number;
+    pnl: number;
+    totalReturnPct: number;
+    totalBuyValue: number;
+    totalSellValue: number;
+    symbolBreakdown: Record<string, SymbolContribution>;
   };
   error?: string;
 };
@@ -33,6 +63,33 @@ export type StrategyPerformance = {
 type StrategyPerformanceInput = {
   strategyData: StrategyPoint[];
   transformedData: { candles: candleData };
+  symbol?: string;
+};
+
+type ResolvedTradeEvent = {
+  symbol: string;
+  time: number;
+  amount: number;
+  price: number;
+};
+
+type OpenLot = {
+  symbol: string;
+  quantity: number;
+  buyPrice: number;
+  buyTime: number;
+};
+
+type SimulationResult = {
+  trades: Trade[];
+  totalBuys: number;
+  totalSells: number;
+  endingCash: number;
+  endingValue: number;
+  closedTrades: number;
+  openTrades: number;
+  totalBuyValue: number;
+  totalSellValue: number;
 };
 
 function findFirstCandleIndexAtOrAfter(
@@ -47,118 +104,20 @@ function findFirstCandleIndexAtOrAfter(
   return index < opens.length ? index : -1;
 }
 
-export function getStrategyPerformance(
-  strategyData: StrategyPoint[],
-  transformedData: { candles: candleData },
-): StrategyPerformance {
-  const opens = transformedData.candles.map((candle) => ({
-    value: candle.open,
-    time: Number(candle.time),
-  }));
+function normalizeSymbol(symbol?: string): string | undefined {
+  if (!symbol) return undefined;
+  const trimmed = symbol.trim();
+  return trimmed ? trimmed : undefined;
+}
 
-  if (strategyData.length === 0) return { error: "No buy/sell data." };
-  if (opens.length === 0) return { error: "No candlestick data found." };
-
-  const sortedStrategyData = [...strategyData].sort((a, b) => a.time - b.time);
-  const buys = sortedStrategyData.filter((point) => point.amount > 0);
-  const sells = sortedStrategyData.filter((point) => point.amount < 0);
-  const flatBuys: { time: number }[] = buys
-    .map((buy) => {
-      const newBuy: { time: number }[] = [];
-      for (let i = 0; i < buy.amount; i++) {
-        newBuy.push({ time: buy.time });
-      }
-      return newBuy;
-    })
-    .flat();
-  const flatSells: { time: number }[] = sells
-    .map((sell) => {
-      const newSell: { time: number }[] = [];
-      for (let i = 0; i < Math.abs(sell.amount); i++) {
-        newSell.push({ time: sell.time });
-      }
-      return newSell;
-    })
-    .flat();
-  let totalBuys = flatBuys.length;
-  let totalSells = flatSells.length;
-  const openCount = Math.max(totalBuys - totalSells, 0);
-  const earningsWithoutStrategy =
-    (opens[opens.length - 1].value - opens[0].value) / opens[0].value;
-
-  if (totalBuys > totalSells) {
-    for (let i = 0; i < totalBuys - totalSells; i++) {
-      flatSells.push({ time: opens[opens.length - 1].time });
-    }
+function normalizeCashBase(initialCash: number | undefined, fallbackCash: number): number {
+  if (typeof initialCash === "number" && Number.isFinite(initialCash) && initialCash > 0) {
+    return initialCash;
   }
-  const actualSellCount = totalSells;
-  totalBuys = flatBuys.length;
-  totalSells = actualSellCount;
-
-  if (flatBuys.length !== flatSells.length) {
-    return { error: "Buy amount is not equal to the sell amount." };
+  if (Number.isFinite(fallbackCash) && fallbackCash > 0) {
+    return fallbackCash;
   }
-
-  const trades: Trade[] = [];
-  let buyIndex = 0;
-  let sellIndex = 0;
-  let timesInvested = 0;
-  for (let i = 0; i < totalBuys; i++) {
-    buyIndex = findFirstCandleIndexAtOrAfter(opens, flatBuys[i].time, buyIndex);
-    if (buyIndex === -1) {
-      return { error: "Candle and strategy times are not matching." };
-    }
-    const buyPrice = opens[buyIndex].value;
-
-    const resolvedSellIndex = findFirstCandleIndexAtOrAfter(
-      opens,
-      flatSells[i].time,
-      sellIndex,
-    );
-    if (resolvedSellIndex === -1) {
-      return { error: "Candle and strategy times are not matching." };
-    }
-
-    while (sellIndex < resolvedSellIndex) {
-      sellIndex++;
-      if (sellIndex >= buyIndex)
-        timesInvested++;
-    }
-    const sellPrice = opens[sellIndex].value;
-
-    trades.push({
-      buy: buyPrice,
-      sell: sellPrice,
-      result: sellPrice - buyPrice,
-      buyTime: opens[buyIndex].time,
-      sellTime: opens[sellIndex].time,
-      isOpen: i >= totalBuys - openCount,
-    });
-  }
-
-  const closedTrades = trades.filter((trade) => !trade.isOpen);
-  const rankedTrades = (closedTrades.length > 0 ? closedTrades : trades).toSorted(
-    (a, b) => a.result - b.result,
-  );
-  const bestTrade: Trade | undefined = rankedTrades.at(-1);
-  const worstTrade: Trade | undefined = rankedTrades[0];
-
-  const timeInvested = timesInvested / transformedData.candles.length;
-
-  //fetch('http://DUMMYURL/strategyPerformance')
-  return {
-    data: {
-      bestTrade,
-      worstTrade,
-      totalBuys,
-      totalSells,
-      timeInvested,
-      closedTrades: closedTrades.length,
-      openTrades: openCount,
-      trades,
-      earningsWithoutStrategyPct: earningsWithoutStrategy * 100,
-    },
-  };
+  return 1;
 }
 
 function getBuyAndHoldPct(candles: candleData): number {
@@ -166,66 +125,456 @@ function getBuyAndHoldPct(candles: candleData): number {
   return ((candles[candles.length - 1].open - candles[0].open) / candles[0].open) * 100;
 }
 
-export function getAggregatedStrategyPerformance(
-  inputs: StrategyPerformanceInput[],
-): StrategyPerformance {
-  const inputsWithCandles = inputs.filter(
-    (input) => input.transformedData.candles.length > 0,
-  );
+function resolveTradeEvents(
+  strategyData: StrategyPoint[],
+  candles: candleData,
+  fallbackSymbol?: string,
+): { events: ResolvedTradeEvent[]; error?: string } {
+  const opens = candles.map((candle) => ({
+    value: candle.open,
+    time: Number(candle.time),
+  }));
 
-  if (inputsWithCandles.length === 0) {
-    return { error: "No candlestick data found." };
+  if (strategyData.length === 0) {
+    return { events: [], error: "No buy/sell data." };
+  }
+  if (opens.length === 0) {
+    return { events: [], error: "No candlestick data found." };
   }
 
+  const sortedStrategyData = [...strategyData].sort((a, b) => a.time - b.time);
+  const events: ResolvedTradeEvent[] = [];
+  let candleIndex = 0;
+
+  for (const point of sortedStrategyData) {
+    if (!Number.isFinite(point.amount) || Math.abs(point.amount) <= EPSILON) {
+      continue;
+    }
+
+    candleIndex = findFirstCandleIndexAtOrAfter(opens, point.time, candleIndex);
+    if (candleIndex === -1) {
+      return { events: [], error: "Candle and strategy times are not matching." };
+    }
+
+    const symbol = normalizeSymbol(point.symbol) ?? normalizeSymbol(fallbackSymbol);
+    events.push({
+      symbol: symbol ?? "",
+      time: opens[candleIndex].time,
+      amount: point.amount,
+      price: opens[candleIndex].value,
+    });
+  }
+
+  return { events };
+}
+
+function simulateTrades(
+  resolvedEvents: ResolvedTradeEvent[],
+  candlesBySymbol: Record<string, candleData>,
+  initialCash?: number,
+): { data?: SimulationResult; error?: string } {
+  const sortedEvents = [...resolvedEvents].sort((a, b) => {
+    if (a.time !== b.time) return a.time - b.time;
+    if (a.symbol !== b.symbol) return a.symbol.localeCompare(b.symbol);
+    // Process buys before sells at the same timestamp
+    return b.amount - a.amount;
+  });
+
+  const openLots = new Map<string, OpenLot[]>();
   const trades: Trade[] = [];
   let totalBuys = 0;
   let totalSells = 0;
-  let closedTrades = 0;
-  let openTrades = 0;
-  let timeInvestedWeighted = 0;
-  let timeWeight = 0;
-  let earningsWithoutStrategySum = 0;
+  let totalBuyValue = 0;
+  let totalSellValue = 0;
 
-  inputsWithCandles.forEach((input) => {
-    const candleCount = input.transformedData.candles.length;
-    earningsWithoutStrategySum += getBuyAndHoldPct(input.transformedData.candles);
-    timeWeight += candleCount;
+  const totalResolvedBuyValue = sortedEvents
+    .filter((event) => event.amount > 0)
+    .reduce((sum, event) => sum + event.amount * event.price, 0);
+  const cashBase = normalizeCashBase(initialCash, totalResolvedBuyValue);
+  let cash = cashBase;
 
-    if (input.strategyData.length === 0) {
+  for (const event of sortedEvents) {
+    const symbolLots = openLots.get(event.symbol) ?? [];
+    openLots.set(event.symbol, symbolLots);
+
+    if (event.amount > 0) {
+      totalBuys++;
+      const buyValue = event.amount * event.price;
+      totalBuyValue += buyValue;
+      cash -= buyValue;
+      symbolLots.push({
+        symbol: event.symbol,
+        quantity: event.amount,
+        buyPrice: event.price,
+        buyTime: event.time,
+      });
+      continue;
+    }
+
+    totalSells++;
+    let remaining = Math.abs(event.amount);
+
+    while (remaining > EPSILON && symbolLots.length > 0) {
+      const lot = symbolLots[0];
+      const matchedQuantity = Math.min(remaining, lot.quantity);
+      const sellValue = matchedQuantity * event.price;
+      const buyValue = matchedQuantity * lot.buyPrice;
+
+      trades.push({
+        symbol: event.symbol || undefined,
+        quantity: matchedQuantity,
+        buy: lot.buyPrice,
+        sell: event.price,
+        buyValue,
+        sellValue,
+        result: sellValue - buyValue,
+        buyTime: lot.buyTime,
+        sellTime: event.time,
+        isOpen: false,
+      });
+
+      totalSellValue += sellValue;
+      cash += sellValue;
+      remaining -= matchedQuantity;
+      lot.quantity -= matchedQuantity;
+
+      if (lot.quantity <= EPSILON) {
+        symbolLots.shift();
+      }
+    }
+
+    if (remaining > EPSILON) {
+      return { error: "Sell amount exceeds the open position size." };
+    }
+  }
+
+  let endingValue = cash;
+
+  openLots.forEach((symbolLots, symbol) => {
+    const symbolCandles = candlesBySymbol[symbol];
+    if (!symbolCandles || symbolCandles.length === 0) {
       return;
     }
 
-    const performance = getStrategyPerformance(
-      input.strategyData,
-      input.transformedData,
-    );
+    const lastCandle = symbolCandles[symbolCandles.length - 1];
+    const lastPrice = lastCandle.open;
+    const lastTime = Number(lastCandle.time);
 
-    if (!performance.data) {
-      return;
+    for (const lot of symbolLots) {
+      if (lot.quantity <= EPSILON) {
+        continue;
+      }
+
+      const sellValue = lot.quantity * lastPrice;
+      const buyValue = lot.quantity * lot.buyPrice;
+      endingValue += sellValue;
+
+      trades.push({
+        symbol: symbol || undefined,
+        quantity: lot.quantity,
+        buy: lot.buyPrice,
+        sell: lastPrice,
+        buyValue,
+        sellValue,
+        result: sellValue - buyValue,
+        buyTime: lot.buyTime,
+        sellTime: lastTime,
+        isOpen: true,
+      });
     }
-
-    totalBuys += performance.data.totalBuys;
-    totalSells += performance.data.totalSells;
-    closedTrades += performance.data.closedTrades;
-    openTrades += performance.data.openTrades;
-    timeInvestedWeighted += performance.data.timeInvested * candleCount;
-    trades.push(...performance.data.trades);
   });
 
-  const rankedTrades = (closedTrades > 0 ? trades.filter((trade) => !trade.isOpen) : trades)
-    .toSorted((a, b) => a.result - b.result);
+  const closedTrades = trades.filter((trade) => !trade.isOpen).length;
+  const openTrades = trades.filter((trade) => trade.isOpen).length;
+
+  return {
+    data: {
+      trades,
+      totalBuys,
+      totalSells,
+      endingCash: cash,
+      endingValue,
+      closedTrades,
+      openTrades,
+      totalBuyValue,
+      totalSellValue,
+    },
+  };
+}
+
+function getAverageInvestedPct(
+  resolvedEvents: ResolvedTradeEvent[],
+  candlesBySymbol: Record<string, candleData>,
+  initialCash: number,
+): number {
+  const allTimes = Array.from(
+    new Set(
+      Object.values(candlesBySymbol).flatMap((candles) =>
+        candles.map((candle) => Number(candle.time)),
+      ),
+    ),
+  ).sort((a, b) => a - b);
+
+  if (allTimes.length === 0 || initialCash <= 0) {
+    return 0;
+  }
+
+  const sortedEvents = [...resolvedEvents].sort((a, b) => {
+    if (a.time !== b.time) return a.time - b.time;
+    if (a.symbol !== b.symbol) return a.symbol.localeCompare(b.symbol);
+    // Process buys before sells at the same timestamp
+    return b.amount - a.amount;
+  });
+
+  const positionQuantityBySymbol = new Map<string, number>();
+  const candleIndexBySymbol = new Map<string, number>();
+  let eventIndex = 0;
+  let investedRatioSum = 0;
+
+  for (const time of allTimes) {
+    while (eventIndex < sortedEvents.length && sortedEvents[eventIndex].time <= time) {
+      const event = sortedEvents[eventIndex];
+      positionQuantityBySymbol.set(
+        event.symbol,
+        (positionQuantityBySymbol.get(event.symbol) ?? 0) + event.amount,
+      );
+      eventIndex++;
+    }
+
+    let investedValue = 0;
+
+    Object.entries(candlesBySymbol).forEach(([symbol, candles]) => {
+      if (candles.length === 0) {
+        return;
+      }
+
+      let candleIndex = candleIndexBySymbol.get(symbol) ?? 0;
+      while (
+        candleIndex + 1 < candles.length &&
+        Number(candles[candleIndex + 1].time) <= time
+      ) {
+        candleIndex++;
+      }
+      candleIndexBySymbol.set(symbol, candleIndex);
+
+      const quantity = positionQuantityBySymbol.get(symbol) ?? 0;
+      if (quantity <= EPSILON) {
+        return;
+      }
+
+      investedValue += quantity * candles[candleIndex].open;
+    });
+
+    investedRatioSum += investedValue / initialCash;
+  }
+
+  return investedRatioSum / allTimes.length;
+}
+
+function buildSymbolBreakdown(
+  symbols: string[],
+  trades: Trade[],
+  candlesBySymbol: Record<string, candleData>,
+  initialCash: number,
+  totalPnl: number,
+  resolvedEvents: ResolvedTradeEvent[],
+): Record<string, SymbolContribution> {
+  const breakdown: Record<string, SymbolContribution> = {};
+
+  for (const symbol of symbols) {
+    const symbolTrades = trades.filter((trade) => trade.symbol === symbol);
+    const closedTrades = symbolTrades.filter((trade) => !trade.isOpen);
+    const openTrades = symbolTrades.filter((trade) => trade.isOpen);
+    const totalBuyValue = symbolTrades.reduce((sum, trade) => sum + trade.buyValue, 0);
+    const totalSellValue = symbolTrades.reduce((sum, trade) => sum + trade.sellValue, 0);
+    const realizedPnl = closedTrades.reduce((sum, trade) => sum + trade.result, 0);
+    const unrealizedPnl = openTrades.reduce((sum, trade) => sum + trade.result, 0);
+    const pnl = realizedPnl + unrealizedPnl;
+    const returnPct = initialCash > 0 ? (pnl / initialCash) * 100 : 0;
+
+    breakdown[symbol] = {
+      symbol,
+      trades: symbolTrades,
+      closedTrades: closedTrades.length,
+      openTrades: openTrades.length,
+      totalBuyValue,
+      totalSellValue,
+      pnl,
+      realizedPnl,
+      unrealizedPnl,
+      returnPct,
+      contributionPct: Math.abs(totalPnl) > EPSILON ? (pnl / totalPnl) * 100 : 0,
+      averageInvestedPct: getAverageInvestedPct(
+        resolvedEvents.filter((event) => event.symbol === symbol),
+        { [symbol]: candlesBySymbol[symbol] ?? [] },
+        initialCash,
+      ),
+      benchmarkPct: getBuyAndHoldPct(candlesBySymbol[symbol] ?? []),
+    };
+  }
+
+  return breakdown;
+}
+
+function buildPortfolioBenchmarkPct(
+  candlesBySymbol: Record<string, candleData>,
+  initialCash: number,
+): number {
+  const symbols = Object.keys(candlesBySymbol).filter(
+    (symbol) => candlesBySymbol[symbol]?.length > 0,
+  );
+  if (symbols.length === 0 || initialCash <= 0) {
+    return 0;
+  }
+
+  const allocationPerSymbol = initialCash / symbols.length;
+  let endingValue = 0;
+
+  for (const symbol of symbols) {
+    const candles = candlesBySymbol[symbol];
+    const firstOpen = candles[0]?.open ?? 0;
+    const lastOpen = candles[candles.length - 1]?.open ?? 0;
+    if (firstOpen <= 0) {
+      continue;
+    }
+    const shares = allocationPerSymbol / firstOpen;
+    endingValue += shares * lastOpen;
+  }
+
+  return ((endingValue - initialCash) / initialCash) * 100;
+}
+
+function buildPerformanceResult(
+  candlesBySymbol: Record<string, candleData>,
+  resolvedEvents: ResolvedTradeEvent[],
+  initialCash?: number,
+): StrategyPerformance {
+  const simulation = simulateTrades(resolvedEvents, candlesBySymbol, initialCash);
+  if (!simulation.data) {
+    return { error: simulation.error ?? "Unable to calculate strategy performance." };
+  }
+
+  const totalResolvedBuyValue = resolvedEvents
+    .filter((event) => event.amount > 0)
+    .reduce((sum, event) => sum + event.amount * event.price, 0);
+  const cashBase = normalizeCashBase(initialCash, totalResolvedBuyValue);
+  const pnl = simulation.data.endingValue - cashBase;
+  const totalReturnPct = (pnl / cashBase) * 100;
+  const rankedTrades = (
+    simulation.data.closedTrades > 0
+      ? simulation.data.trades.filter((trade) => !trade.isOpen)
+      : simulation.data.trades
+  ).toSorted((a, b) => a.result - b.result);
+
+  const symbolBreakdown = buildSymbolBreakdown(
+    Object.keys(candlesBySymbol),
+    simulation.data.trades,
+    candlesBySymbol,
+    cashBase,
+    pnl,
+    resolvedEvents,
+  );
 
   return {
     data: {
       bestTrade: rankedTrades.at(-1),
       worstTrade: rankedTrades[0],
-      totalBuys,
-      totalSells,
-      closedTrades,
-      openTrades,
-      trades,
-      earningsWithoutStrategyPct: earningsWithoutStrategySum / inputsWithCandles.length,
-      timeInvested: timeWeight > 0 ? timeInvestedWeighted / timeWeight : 0,
+      totalBuys: simulation.data.totalBuys,
+      totalSells: simulation.data.totalSells,
+      closedTrades: simulation.data.closedTrades,
+      openTrades: simulation.data.openTrades,
+      trades: simulation.data.trades,
+      earningsWithoutStrategyPct: buildPortfolioBenchmarkPct(candlesBySymbol, cashBase),
+      timeInvested: getAverageInvestedPct(resolvedEvents, candlesBySymbol, cashBase),
+      initialCash: cashBase,
+      endingCash: simulation.data.endingCash,
+      endingValue: simulation.data.endingValue,
+      pnl,
+      totalReturnPct,
+      totalBuyValue: simulation.data.totalBuyValue,
+      totalSellValue: simulation.data.totalSellValue,
+      symbolBreakdown,
     },
   };
+}
+
+export function getStrategyPerformance(
+  strategyData: StrategyPoint[],
+  transformedData: { candles: candleData },
+  options?: { initialCash?: number; symbol?: string },
+): StrategyPerformance {
+  const resolved = resolveTradeEvents(
+    strategyData,
+    transformedData.candles,
+    options?.symbol,
+  );
+
+  if (resolved.error) {
+    return { error: resolved.error };
+  }
+
+  if (transformedData.candles.length === 0) {
+    return { error: "No candlestick data found." };
+  }
+
+  const symbolKey = normalizeSymbol(options?.symbol) ?? "current";
+
+  return buildPerformanceResult(
+    { [symbolKey]: transformedData.candles },
+    resolved.events.map((event) => ({ ...event, symbol: symbolKey })),
+    options?.initialCash,
+  );
+}
+
+export function getAggregatedStrategyPerformance(
+  inputs: StrategyPerformanceInput[],
+  initialCash?: number,
+): StrategyPerformance {
+  const candlesBySymbol: Record<string, candleData> = {};
+  const resolvedEvents: ResolvedTradeEvent[] = [];
+  let hasTrades = false;
+
+  for (const input of inputs) {
+    const symbol =
+      normalizeSymbol(input.symbol) ??
+      normalizeSymbol(input.strategyData.find((point) => point.symbol)?.symbol) ??
+      "";
+
+    if (!symbol) {
+      continue;
+    }
+
+    if (input.transformedData.candles.length > 0) {
+      candlesBySymbol[symbol] = input.transformedData.candles;
+    }
+
+    if (input.strategyData.length === 0) {
+      continue;
+    }
+
+    const resolved = resolveTradeEvents(
+      input.strategyData.map((point) => ({ ...point, symbol })),
+      input.transformedData.candles,
+      symbol,
+    );
+
+    if (resolved.error && resolved.error !== "No buy/sell data.") {
+      return { error: resolved.error };
+    }
+
+    if (resolved.events.length > 0) {
+      hasTrades = true;
+      resolvedEvents.push(...resolved.events);
+    }
+  }
+
+  if (Object.keys(candlesBySymbol).length === 0) {
+    return { error: "No candlestick data found." };
+  }
+
+  if (!hasTrades) {
+    return buildPerformanceResult(candlesBySymbol, [], initialCash);
+  }
+
+  return buildPerformanceResult(candlesBySymbol, resolvedEvents, initialCash);
 }

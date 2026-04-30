@@ -262,6 +262,7 @@ public class AnalysisJobService {
         ObjectNode executionConfiguration = objectMapper.createObjectNode();
         List<String> universe = List.of();
         Map<String, Object> safeOverrides = overrides == null ? Map.of() : overrides;
+        java.util.Set<String> encounteredIds = new java.util.HashSet<>();
 
         for (JsonNode optionNode : options) {
             if (!optionNode.isObject()) {
@@ -272,6 +273,7 @@ public class AnalysisJobService {
             if (id == null) {
                 continue;
             }
+            encounteredIds.add(id);
 
             JsonNode defaultValue = optionNode.get("defaultValue");
             if (safeOverrides.containsKey(id)) {
@@ -288,10 +290,17 @@ public class AnalysisJobService {
             }
         }
 
-        if (universe.isEmpty() && safeOverrides.containsKey("universe")) {
-            JsonNode universeOverride = objectMapper.valueToTree(safeOverrides.get("universe"));
-            executionConfiguration.set("universe", universeOverride);
-            universe = extractUniverse(universeOverride);
+        for (Map.Entry<String, Object> overrideEntry : safeOverrides.entrySet()) {
+            if (encounteredIds.contains(overrideEntry.getKey())) {
+                continue;
+            }
+
+            JsonNode overrideValue = objectMapper.valueToTree(overrideEntry.getValue());
+            executionConfiguration.set(overrideEntry.getKey(), overrideValue);
+
+            if ("universe".equals(overrideEntry.getKey())) {
+                universe = extractUniverse(overrideValue);
+            }
         }
 
         return new ResolvedStrategyConfiguration(

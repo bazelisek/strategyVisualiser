@@ -4,11 +4,11 @@ import { useStrategyName } from "@/hooks/useStrategyName";
 import {
   candleData,
   extractSymbolsFromJobResult,
-  extractTradeMarkersFromJobResult,
+  extractTradePointsFromJobResult,
 } from "@/util/serverFetch";
 import {
   getAggregatedStrategyPerformance,
-  getStrategyPerformance,
+  SymbolContribution,
   StrategyPerformance,
   Trade,
 } from "@/util/strategyPerformance/strategyPerformance";
@@ -43,10 +43,6 @@ type TransformedData = {
 interface StrategyPerformanceOverviewProps {
   children?: ReactNode;
   transformedData: TransformedData;
-  strategyData: {
-    time: number;
-    amount: number;
-  }[];
   strategy: string;
   className?: string;
   jobResult: unknown;
@@ -55,6 +51,7 @@ interface StrategyPerformanceOverviewProps {
   loadCandlesForSymbols: (
     symbols: string[],
   ) => Promise<Record<string, TransformedData>>;
+  availableMoney: number;
 }
 
 export type EnrichedStrategyPerformance = {
@@ -69,23 +66,30 @@ export type EnrichedStrategyPerformance = {
   totalBuyValue: number;
   totalSellValue: number;
   totalPct: number;
-  avgBuy: number;
-  avgSell: number;
+  avgBuyValue: number;
+  avgSellValue: number;
   avgPnL: number;
   avgPctFinal: number;
   timeInvested: number;
+  totalReturnPct: number;
+  benchmarkPct: number;
+  contributionPct?: number;
+  realizedPnl?: number;
+  unrealizedPnl?: number;
 } | null;
 
 type PerformanceScope = "current" | "global";
 
 function enrichPerformance(
   performance: StrategyPerformance,
+  contribution?: SymbolContribution,
 ): EnrichedStrategyPerformance {
   if (!performance.data) return null;
 
-  const trades: EnrichedTrade[] = performance.data.trades.map((trade) => ({
+  const sourceTrades = contribution?.trades ?? performance.data.trades;
+  const trades: EnrichedTrade[] = sourceTrades.map((trade) => ({
     ...trade,
-    pct: ((trade.sell - trade.buy) / trade.buy) * 100,
+    pct: trade.buyValue > 0 ? (trade.result / trade.buyValue) * 100 : 0,
   }));
   const closedTrades = trades.filter((trade) => !trade.isOpen);
   const openTrades = trades.filter((trade) => trade.isOpen);
@@ -93,11 +97,23 @@ function enrichPerformance(
   const losses = closedTrades.filter((trade) => trade.pct <= 0).length;
   const totalPct = closedTrades.reduce((sum, trade) => sum + trade.pct, 0);
   const avgPct = closedTrades.length ? totalPct / closedTrades.length : 0;
-  const pnl = closedTrades.reduce((sum, trade) => sum + (trade.sell - trade.buy), 0);
-  const totalBuyValue = closedTrades.reduce((sum, trade) => sum + trade.buy, 0);
-  const totalSellValue = closedTrades.reduce((sum, trade) => sum + trade.sell, 0);
-  const avgBuy = closedTrades.length ? totalBuyValue / closedTrades.length : 0;
-  const avgSell = closedTrades.length ? totalSellValue / closedTrades.length : 0;
+  const pnl =
+    contribution?.pnl ??
+    performance.data.pnl;
+  const totalBuyValue =
+    contribution?.totalBuyValue ??
+    trades.reduce((sum, trade) => sum + trade.buyValue, 0);
+  const totalSellValue =
+    contribution?.totalSellValue ??
+    trades.reduce((sum, trade) => sum + trade.sellValue, 0);
+  const avgBuyValue = closedTrades.length
+    ? closedTrades.reduce((sum, trade) => sum + trade.buyValue, 0) /
+      closedTrades.length
+    : 0;
+  const avgSellValue = closedTrades.length
+    ? closedTrades.reduce((sum, trade) => sum + trade.sellValue, 0) /
+      closedTrades.length
+    : 0;
   const avgPnL = closedTrades.length ? pnl / closedTrades.length : 0;
 
   return {
@@ -111,12 +127,17 @@ function enrichPerformance(
     pnl,
     totalBuyValue,
     totalSellValue,
-    totalPct,
-    avgBuy,
-    avgSell,
+    totalPct: contribution?.returnPct ?? performance.data.totalReturnPct,
+    avgBuyValue,
+    avgSellValue,
     avgPnL,
     avgPctFinal: closedTrades.length ? totalPct / closedTrades.length : 0,
-    timeInvested: performance.data.timeInvested,
+    timeInvested: contribution?.averageInvestedPct ?? performance.data.timeInvested,
+    totalReturnPct: contribution?.returnPct ?? performance.data.totalReturnPct,
+    benchmarkPct: contribution?.benchmarkPct ?? performance.data.earningsWithoutStrategyPct,
+    contributionPct: contribution?.contributionPct,
+    realizedPnl: contribution?.realizedPnl,
+    unrealizedPnl: contribution?.unrealizedPnl,
   };
 }
 
@@ -125,12 +146,12 @@ const StrategyPerformanceOverview: React.FC<
 > = ({
   transformedData,
   strategy,
-  strategyData,
   className,
   jobResult,
   selectedSymbol,
   universe,
   loadCandlesForSymbols,
+  availableMoney,
 }) => {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<PerformanceScope>("current");
@@ -141,16 +162,10 @@ const StrategyPerformanceOverview: React.FC<
   const [globalError, setGlobalError] = useState("");
 
   const strategyName = useStrategyName(strategy);
-
-  const currentPerformance = useMemo(() => {
-    if (!selectedSymbol) {
-      return { error: "Select a stock tab to inspect current-stock performance." };
-    }
-    if (transformedData.candles.length === 0) {
-      return { error: "No candlestick data found." };
-    }
-    return getStrategyPerformance(strategyData, transformedData);
-  }, [selectedSymbol, strategyData, transformedData]);
+  const allTradePoints = useMemo(
+    () => extractTradePointsFromJobResult(jobResult),
+    [jobResult],
+  );
 
   const globalSymbols = useMemo(() => {
     const unique = new Set<string>();
@@ -182,7 +197,7 @@ const StrategyPerformanceOverview: React.FC<
   }, [selectedSymbol, transformedData]);
 
   useEffect(() => {
-    if (!open || scope !== "global" || globalSymbols.length === 0) {
+    if (!open || globalSymbols.length === 0) {
       return;
     }
 
@@ -212,9 +227,9 @@ const StrategyPerformanceOverview: React.FC<
     return () => {
       isActive = false;
     };
-  }, [globalSymbols, loadCandlesForSymbols, open, scope]);
+  }, [globalSymbols, loadCandlesForSymbols, open]);
 
-  const globalPerformance = useMemo(() => {
+  const portfolioPerformance = useMemo(() => {
     if (globalSymbols.length === 0) {
       return { error: "Add at least one stock to the universe to compare global performance." };
     }
@@ -229,17 +244,31 @@ const StrategyPerformanceOverview: React.FC<
       .map((item) => {
         const symbolData = globalCandles[item];
         if (!symbolData) return null;
+        const normalizedItem = item.toUpperCase();
         return {
-          strategyData: extractTradeMarkersFromJobResult(jobResult, item),
+          strategyData: allTradePoints
+            .filter((trade) => {
+              const tradeSymbol = trade.symbol?.trim().toUpperCase();
+              if (!tradeSymbol) {
+                return globalSymbols.length === 1;
+              }
+              return tradeSymbol === normalizedItem;
+            })
+            .map((trade) => ({
+              ...trade,
+              symbol: item,
+            })),
           transformedData: symbolData,
+          symbol: item,
         };
       })
       .filter(
         (
           item,
         ): item is {
-          strategyData: { time: number; amount: number }[];
+          strategyData: { time: number; amount: number; symbol?: string }[];
           transformedData: TransformedData;
+          symbol: string;
         } => item !== null,
       );
 
@@ -247,17 +276,35 @@ const StrategyPerformanceOverview: React.FC<
       return { error: "Loading global performance..." };
     }
 
-    return getAggregatedStrategyPerformance(inputs);
+    return getAggregatedStrategyPerformance(inputs, availableMoney);
   }, [
+    availableMoney,
+    allTradePoints,
     globalCandles,
     globalError,
     globalLoading,
     globalSymbols,
-    jobResult,
   ]);
 
-  const performance = scope === "global" ? globalPerformance : currentPerformance;
-  const enriched = useMemo(() => enrichPerformance(performance), [performance]);
+  const currentContribution = useMemo(() => {
+    if (!selectedSymbol) {
+      return null;
+    }
+    return portfolioPerformance.data?.symbolBreakdown[selectedSymbol] ?? null;
+  }, [portfolioPerformance.data, selectedSymbol]);
+
+  const currentPerformance = useMemo(() => {
+    if (!selectedSymbol) {
+      return { error: "Select a stock tab to inspect current-stock contribution." };
+    }
+    return portfolioPerformance;
+  }, [portfolioPerformance, selectedSymbol]);
+
+  const performance = scope === "global" ? portfolioPerformance : currentPerformance;
+  const enriched = useMemo(
+    () => enrichPerformance(performance, scope === "current" ? currentContribution ?? undefined : undefined),
+    [currentContribution, performance, scope],
+  );
 
   return (
     <motion.div
@@ -315,7 +362,7 @@ const StrategyPerformanceOverview: React.FC<
               <Typography level="body-sm" sx={{ mt: 1 }}>
                 {scope === "global"
                   ? "Global performance aggregates every stock in the resolved universe."
-                  : "Current stock performance reflects the stock shown in the chart tabs."}
+                  : "Current stock performance shows how the selected stock contributed to the portfolio result."}
               </Typography>
 
               {performance.error && (
@@ -328,9 +375,11 @@ const StrategyPerformanceOverview: React.FC<
                 <>
                   <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ mt: 2 }}>
                     <Card>
-                      <Typography level="body-sm">Win Rate</Typography>
+                      <Typography level="body-sm">
+                        {scope === "global" ? "Portfolio Return" : "Stock Return"}
+                      </Typography>
                       <Typography fontSize="xl" fontWeight="lg">
-                        {enriched.winRate.toFixed(1)}%
+                        {enriched.totalReturnPct.toFixed(2)}%
                       </Typography>
                     </Card>
 
@@ -342,7 +391,9 @@ const StrategyPerformanceOverview: React.FC<
                     </Card>
 
                     <Card>
-                      <Typography level="body-sm">Total PnL</Typography>
+                      <Typography level="body-sm">
+                        {scope === "global" ? "Total PnL" : "Contribution"}
+                      </Typography>
                       <Typography
                         fontSize="xl"
                         fontWeight="lg"
@@ -351,6 +402,19 @@ const StrategyPerformanceOverview: React.FC<
                         {enriched.pnl.toFixed(2)}
                       </Typography>
                     </Card>
+
+                    {scope === "current" && (
+                      <Card>
+                        <Typography level="body-sm">Share of PnL</Typography>
+                        <Typography
+                          fontSize="xl"
+                          fontWeight="lg"
+                          color={(enriched.contributionPct ?? 0) >= 0 ? "success" : "danger"}
+                        >
+                          {(enriched.contributionPct ?? 0).toFixed(2)}%
+                        </Typography>
+                      </Card>
+                    )}
 
                     <Card>
                       <Typography level="body-sm">Trades</Typography>
@@ -377,31 +441,47 @@ const StrategyPerformanceOverview: React.FC<
                       <Divider sx={{ my: 2 }} />
                       <Stack direction="row" spacing={2} flexWrap="wrap">
                         <Card>
-                          <Typography level="body-sm">With strategy:</Typography>
-                          <Typography
-                            fontSize="xl"
-                            fontWeight="lg"
-                            color={enriched.totalPct >= 0 ? "success" : "danger"}
-                          >
-                            {enriched.totalPct.toFixed(2)}%
+                          <Typography level="body-sm">
+                            {scope === "global" ? "With strategy:" : "Realized PnL:"}
                           </Typography>
-                        </Card>
-                        <Card>
-                          <Typography level="body-sm">Without strategy:</Typography>
                           <Typography
                             fontSize="xl"
                             fontWeight="lg"
                             color={
-                              performance.data.earningsWithoutStrategyPct >= 0
+                              (scope === "global"
+                                ? enriched.totalReturnPct
+                                : enriched.realizedPnl ?? 0) >= 0
                                 ? "success"
                                 : "danger"
                             }
                           >
-                            {performance.data.earningsWithoutStrategyPct.toFixed(2)}%
+                            {scope === "global"
+                              ? `${enriched.totalReturnPct.toFixed(2)}%`
+                              : (enriched.realizedPnl ?? 0).toFixed(2)}
                           </Typography>
                         </Card>
                         <Card>
-                          <Typography level="body-sm">Time invested:</Typography>
+                          <Typography level="body-sm">
+                            {scope === "global" ? "Without strategy:" : "Unrealized PnL:"}
+                          </Typography>
+                          <Typography
+                            fontSize="xl"
+                            fontWeight="lg"
+                            color={
+                              (scope === "global"
+                                ? enriched.benchmarkPct
+                                : enriched.unrealizedPnl ?? 0) >= 0
+                                ? "success"
+                                : "danger"
+                            }
+                          >
+                            {scope === "global"
+                              ? `${enriched.benchmarkPct.toFixed(2)}%`
+                              : (enriched.unrealizedPnl ?? 0).toFixed(2)}
+                          </Typography>
+                        </Card>
+                        <Card>
+                          <Typography level="body-sm">Avg invested:</Typography>
                           <Typography fontSize="xl" fontWeight="lg">
                             {(enriched.timeInvested * 100).toFixed(2)}%
                           </Typography>
@@ -412,7 +492,7 @@ const StrategyPerformanceOverview: React.FC<
 
                   <Divider sx={{ my: 2 }} />
 
-                  <TradeDetails enriched={enriched} performance={performance} />
+                  <TradeDetails enriched={enriched} />
 
                   <Sheet
                     variant="soft"
@@ -430,9 +510,15 @@ const StrategyPerformanceOverview: React.FC<
                     <Divider sx={{ my: 1 }} />
 
                     <Typography>
-                      {enriched.pnl > 0
-                        ? "Strategy is net profitable. Positive expectancy confirmed."
-                        : "Strategy is net losing. Edge is not statistically supported."}
+                      {scope === "global"
+                        ? enriched.pnl > 0
+                          ? "Portfolio finished ahead after replaying the strategy's cash deployment."
+                          : "Portfolio finished down after replaying the strategy's cash deployment."
+                        : enriched.pnl > 0
+                          ? "This stock added positive PnL to the portfolio."
+                          : enriched.pnl < 0
+                            ? "This stock reduced the portfolio result."
+                            : "This stock was neutral for the portfolio result."}
                     </Typography>
                   </Sheet>
                 </>
