@@ -1,0 +1,79 @@
+[
+  {
+    "id": "trendFastPeriod",
+    "label": "Trend Fast EMA Period",
+    "type": "number",
+    "defaultValue": 20,
+    "required": true
+  },
+  {
+    "id": "trendSlowPeriod",
+    "label": "Trend Slow EMA Period",
+    "type": "number",
+    "defaultValue": 50,
+    "required": true
+  },
+  {
+    "id": "adxPeriod",
+    "label": "ADX Period",
+    "type": "number",
+    "defaultValue": 14,
+    "required": true
+  },
+  {
+    "id": "adxThreshold",
+    "label": "ADX Threshold",
+    "type": "number",
+    "defaultValue": 25,
+    "required": true
+  },
+  {
+    "id": "rsiPeriod",
+    "label": "RSI Period",
+    "type": "number",
+    "defaultValue": 14,
+    "required": true
+  },
+  {
+    "id": "rsiOversold",
+    "label": "RSI Oversold Level",
+    "type": "number",
+    "defaultValue": 30,
+    "required": true
+  },
+  {
+    "id": "rsiOverbought",
+    "label": "RSI Overbought Level",
+    "type": "number",
+    "defaultValue": 70,
+    "required": true
+  },
+  {
+    "id": "bbPeriod",
+    "label": "Bollinger Bands Period",
+    "type": "number",
+    "defaultValue": 20,
+    "required": true
+  },
+  {
+    "id": "bbStdDev",
+    "label": "Bollinger Bands StdDev",
+    "type": "number",
+    "defaultValue": 2.0,
+    "required": true
+  },
+  {
+    "id": "atrPeriod",
+    "label": "ATR Period",
+    "type": "number",
+    "defaultValue": 14,
+    "required": true
+  },
+  {
+    "id": "atrMultiplier",
+    "label": "ATR Multiplier (Stops)",
+    "type": "number",
+    "defaultValue": 2.5,
+    "required": true
+  }
+]

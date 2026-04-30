@@ -16,6 +16,7 @@ public final class BuiltInStrategyCatalog {
     public static final String PYTHON_MOVING_AVERAGE_CROSSOVER_NAME = "Python Moving Average Crossover";
     public static final String SUPER_TREND_NAME = "SuperTrend";
     public static final String EMA_ADX_TREND_NAME = "EMA ADX Trend";
+    public static final String HYBRID_TREND_REVERSION_NAME = "Hybrid Trend Reversion";
     private static final String NO_REQUIREMENTS = "{}";
 
     private static final String MOVING_AVERAGE_CROSSOVER_SOURCE_PATH =
@@ -32,6 +33,16 @@ public final class BuiltInStrategyCatalog {
             "built-in-strategies/python-moving-average-crossover/configuration.json";
     private static final String PYTHON_MOVING_AVERAGE_CROSSOVER_REQUIREMENTS_PATH =
             "built-in-strategies/python-moving-average-crossover/requirements.json";
+    private static final String HYBRID_TREND_REVERSION_MAIN_PATH =
+            "built-in-strategies/hybrid-trend-reversion/main.py";
+    private static final String HYBRID_TREND_REVERSION_LOGIC_PATH =
+            "built-in-strategies/hybrid-trend-reversion/strategy_logic.py";
+    private static final String HYBRID_TREND_REVERSION_IO_PATH =
+            "built-in-strategies/hybrid-trend-reversion/workspace_io.py";
+    private static final String HYBRID_TREND_REVERSION_CONFIGURATION_PATH =
+            "built-in-strategies/hybrid-trend-reversion/configuration.json";
+    private static final String HYBRID_TREND_REVERSION_REQUIREMENTS_PATH =
+            "built-in-strategies/hybrid-trend-reversion/requirements.json";
     private static final String SUPER_TREND_SOURCE_PATH =
             "built-in-strategies/supertrend/StrategyMain.java";
     private static final String SUPER_TREND_CONFIGURATION_PATH =
@@ -69,6 +80,23 @@ public final class BuiltInStrategyCatalog {
             SYSTEM_OWNER_EMAIL,
             true
     );
+    private static final BuiltInStrategyDefinition HYBRID_TREND_REVERSION = BuiltInStrategyDefinition.of(
+            HYBRID_TREND_REVERSION_NAME,
+            "A hybrid strategy that combines trend-following (EMA/ADX) and mean-reversion (RSI/Bollinger Bands) "
+                    + "logic. It enters trends during high volatility and reverts to the mean during sideways markets, "
+                    + "utilizing ATR-based trailing stops for risk management.",
+            List.of(
+                    sourceFile("main.py", HYBRID_TREND_REVERSION_MAIN_PATH),
+                    sourceFile("strategy_logic.py", HYBRID_TREND_REVERSION_LOGIC_PATH),
+                    sourceFile("workspace_io.py", HYBRID_TREND_REVERSION_IO_PATH)
+            ),
+            "main.py",
+            StrategySourceFiles.PYTHON_RUNTIME,
+            readResource(HYBRID_TREND_REVERSION_CONFIGURATION_PATH),
+            readResource(HYBRID_TREND_REVERSION_REQUIREMENTS_PATH),
+            SYSTEM_OWNER_EMAIL,
+            true
+    );
     private static final BuiltInStrategyDefinition SUPER_TREND = BuiltInStrategyDefinition.javaSingleFile(
             SUPER_TREND_NAME,
             "Computes SuperTrend with JavaScript-parity ATR, band, and state transitions, then opens and closes "
@@ -94,7 +122,13 @@ public final class BuiltInStrategyCatalog {
     }
 
     public static List<BuiltInStrategyDefinition> all() {
-        return List.of(MOVING_AVERAGE_CROSSOVER, PYTHON_MOVING_AVERAGE_CROSSOVER, SUPER_TREND, EMA_ADX_TREND);
+        return List.of(
+                MOVING_AVERAGE_CROSSOVER,
+                PYTHON_MOVING_AVERAGE_CROSSOVER,
+                HYBRID_TREND_REVERSION,
+                SUPER_TREND,
+                EMA_ADX_TREND
+        );
     }
 
     public static BuiltInStrategyDefinition movingAverageCrossover() {
@@ -103,6 +137,10 @@ public final class BuiltInStrategyCatalog {
 
     public static BuiltInStrategyDefinition pythonMovingAverageCrossover() {
         return PYTHON_MOVING_AVERAGE_CROSSOVER;
+    }
+
+    public static BuiltInStrategyDefinition hybridTrendReversion() {
+        return HYBRID_TREND_REVERSION;
     }
 
     public static BuiltInStrategyDefinition superTrend() {
