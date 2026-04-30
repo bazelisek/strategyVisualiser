@@ -7,7 +7,6 @@ from ta.volatility import BollingerBands, AverageTrueRange
 LOGGER = logging.getLogger(__name__)
 
 def emit_trades(symbol: str, df: pd.DataFrame, config: dict) -> list[dict]:
-    # Determine the minimum number of bars needed for all indicators
     lookback = max(
         config.get('trendSlowPeriod', 50),
         config.get('adxPeriod', 14),
@@ -15,120 +14,183 @@ def emit_trades(symbol: str, df: pd.DataFrame, config: dict) -> list[dict]:
         config.get('rsiPeriod', 14),
         config.get('atrPeriod', 14)
     )
-    
-    if len(df) < lookback + 1:
-        LOGGER.debug("Not enough data for %s: %s bars", symbol, len(df))
+
+    if len(df) < lookback + 2:
         return []
 
-    # Compute Indicators
-    try:
-        df['ema_fast'] = EMAIndicator(df['close'], window=config['trendFastPeriod']).ema_indicator()
-        df['ema_slow'] = EMAIndicator(df['close'], window=config['trendSlowPeriod']).ema_indicator()
-        
-        adx_ind = ADXIndicator(df['high'], df['low'], df['close'], window=config['adxPeriod'])
-        df['adx'] = adx_ind.adx()
-        
-        df['rsi'] = RSIIndicator(df['close'], window=config['rsiPeriod']).rsi()
-        
-        bb = BollingerBands(df['close'], window=config['bbPeriod'], window_dev=config['bbStdDev'])
-        df['bb_hband'] = bb.bollinger_hband()
-        df['bb_lband'] = bb.bollinger_lband()
-        
-        df['atr'] = AverageTrueRange(df['high'], df['low'], df['close'], window=config['atrPeriod']).average_true_range()
-    except Exception as e:
-        LOGGER.error("Error computing indicators for %s: %s", symbol, e)
+    # === Indicators (safe: only backward-looking) ===
+    df['ema_fast'] = EMAIndicator(df['close'], window=config['trendFastPeriod']).ema_indicator()
+    df['ema_slow'] = EMAIndicator(df['close'], window=config['trendSlowPeriod']).ema_indicator()
+
+    adx_ind = ADXIndicator(df['high'], df['low'], df['close'], window=config['adxPeriod'])
+    df['adx'] = adx_ind.adx()
+
+    df['rsi'] = RSIIndicator(df['close'], window=config['rsiPeriod']).rsi()
+
+    bb = BollingerBands(df['close'], window=config['bbPeriod'], window_dev=config['bbStdDev'])
+    df['bb_hband'] = bb.bollinger_hband()
+    df['bb_lband'] = bb.bollinger_lband()
+
+    df['atr'] = AverageTrueRange(
+        df['high'], df['low'], df['close'],
+        window=config['atrPeriod']
+    ).average_true_range()
+
+    required_cols = ['ema_fast', 'ema_slow', 'adx', 'rsi', 'bb_hband', 'bb_lband', 'atr']
+    df = df.dropna(subset=required_cols).reset_index(drop=True)
+
+    if len(df) < 3:
         return []
 
     trades = []
-    
-    # Capital management state
+
+    # === realistic parameters ===
+    fee_rate = float(config.get("feeRate", 0.0005))  # 0.05%
+    slippage = float(config.get("slippage", 0.0005))  # 0.05%
+
     initial_balance = float(config.get('initialBalance', 10000))
     cash = initial_balance
     shares = 0.0
+
     risk_per_trade = float(config.get('riskPerTrade', 1.0)) / 100.0
-    
+
     in_position = False
-    entry_price = 0.0
     stop_loss = 0.0
     highest_price = 0.0
-    
-    # We skip rows with NaN in any required indicator.
-    required_cols = ['ema_fast', 'ema_slow', 'adx', 'rsi', 'bb_hband', 'bb_lband', 'atr']
-    valid_df = df.dropna(subset=required_cols).reset_index(drop=True)
-    
-    if len(valid_df) < 2:
-        LOGGER.debug("No valid data points after computing indicators for %s", symbol)
-        return []
 
-    for i in range(1, len(valid_df)):
-        row = valid_df.iloc[i]
-        prev_row = valid_df.iloc[i-1]
-        
+    # === MAIN LOOP ===
+    # i = execution candle
+    # i-1 = signal candle
+    for i in range(1, len(df)):
+        row = df.iloc[i]        # execution candle
+        prev = df.iloc[i - 1]   # signal candle
+
         time = int(row['epoch_seconds'])
-        close = float(row['close'])
-        
-        # Strategy Logic State Variables
-        adx_val = float(row['adx'])
-        prev_adx_val = float(prev_row['adx'])
+
+        open_price = float(row['open'])
+        high = float(row['high'])
+        low = float(row['low'])
+        close_prev = float(prev['close'])
+
+        # apply slippage to execution price
+        buy_price = open_price * (1 + slippage)
+        sell_price = open_price * (1 - slippage)
+
+        # === SIGNALS computed ONLY on prev ===
+        adx_val = float(prev['adx'])
+        prev_adx_val = float(df.iloc[i-2]['adx']) if i > 1 else adx_val
+
         adx_threshold = float(config['adxThreshold'])
         adx_rising = adx_val > prev_adx_val
-        
-        is_trending_bullish = (row['ema_fast'] > row['ema_slow']) and (adx_val > adx_threshold) and adx_rising
-        is_trending_bearish = (row['ema_fast'] < row['ema_slow']) and (adx_val > adx_threshold) and adx_rising
+
+        is_trending_bullish = (
+            prev['ema_fast'] > prev['ema_slow'] and
+            adx_val > adx_threshold and
+            adx_rising
+        )
+
+        is_trending_bearish = (
+            prev['ema_fast'] < prev['ema_slow'] and
+            adx_val > adx_threshold and
+            adx_rising
+        )
+
         is_flat = adx_val <= adx_threshold
-        
-        is_oversold = (row['rsi'] < config['rsiOversold']) or (close < row['bb_lband'])
-        is_overbought = (row['rsi'] > config['rsiOverbought']) or (close > row['bb_hband'])
-        
-        current_equity = cash + (shares * close)
-        
+
+        is_oversold = (
+            prev['rsi'] < config['rsiOversold'] or
+            close_prev < prev['bb_lband']
+        )
+
+        is_overbought = (
+            prev['rsi'] > config['rsiOverbought'] or
+            close_prev > prev['bb_hband']
+        )
+
+        equity = cash + shares * open_price
+
+        # =========================
+        # ENTRY
+        # =========================
         if not in_position:
-            # ENTRY LOGIC
-            long_entry_signal = (is_trending_bullish and close > row['ema_fast']) or (is_flat and is_oversold)
-            
-            if long_entry_signal:
-                # Calculate Position Size based on Risk Management
-                # Risk Amount = Equity * Risk %
-                # Stop Distance = close - stop_loss (initial stop is ATR based)
-                atr_val = float(row['atr'])
-                stop_dist = atr_val * float(config['atrMultiplier'])
-                
+            long_signal = (
+                (is_trending_bullish and close_prev > prev['ema_fast']) or
+                (is_flat and is_oversold)
+            )
+
+            if long_signal:
+                atr = float(prev['atr'])
+                stop_dist = atr * float(config['atrMultiplier'])
+
                 if stop_dist > 0:
-                    risk_amount = current_equity * risk_per_trade
-                    # Amount of shares to buy = Risk Amount / Stop Distance
+                    risk_amount = equity * risk_per_trade
                     shares_to_buy = risk_amount / stop_dist
-                    
-                    # Ensure we have enough cash (No Margin)
-                    cost = shares_to_buy * close
-                    if cost > cash:
-                        shares_to_buy = cash / close
-                        cost = shares_to_buy * close
-                    
+
+                    cost = shares_to_buy * buy_price
+                    fee = cost * fee_rate
+
+                    if cost + fee > cash:
+                        shares_to_buy = cash / (buy_price * (1 + fee_rate))
+                        cost = shares_to_buy * buy_price
+                        fee = cost * fee_rate
+
                     if shares_to_buy > 0:
-                        trades.append({"symbol": symbol, "time": time, "amount": float(shares_to_buy)})
+                        trades.append({
+                            "symbol": symbol,
+                            "time": time,
+                            "amount": float(shares_to_buy)
+                        })
+
                         shares = shares_to_buy
-                        cash -= cost
+                        cash -= (cost + fee)
                         in_position = True
-                        entry_price = close
-                        highest_price = close
-                        stop_loss = entry_price - stop_dist
-                        LOGGER.debug("BUY %s: amount=%.4f, price=%.4f, cash=%.2f", symbol, shares, close, cash)
-        
-        elif in_position:
-            # MANAGEMENT & EXIT LOGIC
-            highest_price = max(highest_price, close)
-            current_trailing_stop = highest_price - (float(row['atr']) * float(config['atrMultiplier']))
-            stop_loss = max(stop_loss, current_trailing_stop)
-            
-            exit_signal = (close < stop_loss) or \
-                          (is_flat and is_overbought) or \
-                          (is_trending_bearish)
-            
-            if exit_signal:
-                # Sell everything
-                trades.append({"symbol": symbol, "time": time, "amount": -float(shares)})
-                cash += shares * close
-                LOGGER.debug("SELL %s: amount=%.4f, price=%.4f, cash=%.2f", symbol, shares, close, cash)
+
+                        highest_price = buy_price
+                        stop_loss = buy_price - stop_dist
+
+        # =========================
+        # POSITION MANAGEMENT
+        # =========================
+        else:
+            # update trailing stop using previous ATR
+            highest_price = max(highest_price, high)
+
+            trailing_stop = highest_price - (
+                float(prev['atr']) * float(config['atrMultiplier'])
+            )
+
+            stop_loss = max(stop_loss, trailing_stop)
+
+            exit_signal = (
+                is_trending_bearish or
+                (is_flat and is_overbought)
+            )
+
+            exited = False
+
+            # === INTRABAR STOP (REALISTIC) ===
+            if low < stop_loss:
+                exit_price = stop_loss * (1 - slippage)
+                exited = True
+                exit_time = time
+
+            # === NORMAL EXIT (next open) ===
+            elif exit_signal:
+                exit_price = sell_price
+                exited = True
+                exit_time = time
+
+            if exited:
+                proceeds = shares * exit_price
+                fee = proceeds * fee_rate
+
+                trades.append({
+                    "symbol": symbol,
+                    "time": int(exit_time),
+                    "amount": -float(shares)
+                })
+
+                cash += (proceeds - fee)
                 shares = 0.0
                 in_position = False
 
