@@ -75,5 +75,19 @@
     "type": "number",
     "defaultValue": 2.5,
     "required": true
+  },
+  {
+    "id": "initialBalance",
+    "label": "Initial Balance",
+    "type": "number",
+    "defaultValue": 10000,
+    "required": true
+  },
+  {
+    "id": "riskPerTrade",
+    "label": "Risk Per Trade (%)",
+    "type": "number",
+    "defaultValue": 1.0,
+    "required": true
   }
 ]

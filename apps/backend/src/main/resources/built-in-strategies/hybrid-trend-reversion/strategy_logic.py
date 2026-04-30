@@ -40,7 +40,14 @@ def emit_trades(symbol: str, df: pd.DataFrame, config: dict) -> list[dict]:
         return []
 
     trades = []
-    in_position = 0  # 0: None, 1: Long
+    
+    # Capital management state
+    initial_balance = float(config.get('initialBalance', 10000))
+    cash = initial_balance
+    shares = 0.0
+    risk_per_trade = float(config.get('riskPerTrade', 1.0)) / 100.0
+    
+    in_position = False
     entry_price = 0.0
     stop_loss = 0.0
     highest_price = 0.0
@@ -73,19 +80,41 @@ def emit_trades(symbol: str, df: pd.DataFrame, config: dict) -> list[dict]:
         is_oversold = (row['rsi'] < config['rsiOversold']) or (close < row['bb_lband'])
         is_overbought = (row['rsi'] > config['rsiOverbought']) or (close > row['bb_hband'])
         
-        if in_position == 0:
+        current_equity = cash + (shares * close)
+        
+        if not in_position:
             # ENTRY LOGIC
             long_entry_signal = (is_trending_bullish and close > row['ema_fast']) or (is_flat and is_oversold)
             
             if long_entry_signal:
-                trades.append({"symbol": symbol, "time": time, "amount": 1})
-                in_position = 1
-                entry_price = close
-                highest_price = close
-                stop_loss = entry_price - (float(row['atr']) * float(config['atrMultiplier']))
-                LOGGER.debug("BUY %s at %s, close=%.4f, stop=%.4f", symbol, time, close, stop_loss)
+                # Calculate Position Size based on Risk Management
+                # Risk Amount = Equity * Risk %
+                # Stop Distance = close - stop_loss (initial stop is ATR based)
+                atr_val = float(row['atr'])
+                stop_dist = atr_val * float(config['atrMultiplier'])
+                
+                if stop_dist > 0:
+                    risk_amount = current_equity * risk_per_trade
+                    # Amount of shares to buy = Risk Amount / Stop Distance
+                    shares_to_buy = risk_amount / stop_dist
+                    
+                    # Ensure we have enough cash (No Margin)
+                    cost = shares_to_buy * close
+                    if cost > cash:
+                        shares_to_buy = cash / close
+                        cost = shares_to_buy * close
+                    
+                    if shares_to_buy > 0:
+                        trades.append({"symbol": symbol, "time": time, "amount": float(shares_to_buy)})
+                        shares = shares_to_buy
+                        cash -= cost
+                        in_position = True
+                        entry_price = close
+                        highest_price = close
+                        stop_loss = entry_price - stop_dist
+                        LOGGER.debug("BUY %s: amount=%.4f, price=%.4f, cash=%.2f", symbol, shares, close, cash)
         
-        elif in_position == 1:
+        elif in_position:
             # MANAGEMENT & EXIT LOGIC
             highest_price = max(highest_price, close)
             current_trailing_stop = highest_price - (float(row['atr']) * float(config['atrMultiplier']))
@@ -96,9 +125,11 @@ def emit_trades(symbol: str, df: pd.DataFrame, config: dict) -> list[dict]:
                           (is_trending_bearish)
             
             if exit_signal:
-                trades.append({"symbol": symbol, "time": time, "amount": -1})
-                in_position = 0
-                reason = "stop_loss" if close < stop_loss else "signal_reversal"
-                LOGGER.debug("SELL %s at %s, close=%.4f, reason=%s", symbol, time, close, reason)
+                # Sell everything
+                trades.append({"symbol": symbol, "time": time, "amount": -float(shares)})
+                cash += shares * close
+                LOGGER.debug("SELL %s: amount=%.4f, price=%.4f, cash=%.2f", symbol, shares, close, cash)
+                shares = 0.0
+                in_position = False
 
     return trades
