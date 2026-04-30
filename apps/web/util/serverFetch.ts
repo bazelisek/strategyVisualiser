@@ -11,6 +11,12 @@ export type candleData = {
   volume: number;
 }[];
 
+export type StrategyTradePoint = {
+  time: number;
+  amount: number;
+  symbol?: string;
+};
+
 export async function getCandlestickChartData({
   symbol,
   interval,
@@ -160,7 +166,7 @@ export async function getTradeDataForStrategy({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        symbol,
+        ...(symbol ? { symbol } : {}),
         fromDate: new Date(period1 * 1000).toISOString().slice(0, 10),
         toDate: new Date(period2 * 1000).toISOString().slice(0, 10),
         config,
@@ -181,9 +187,15 @@ export async function getTradeDataForStrategy({
   }
 }
 
-export async function getJobDataForSymbol(jobId: number, symbol: string) {
+export async function getJobDataForSymbol(jobId: number, symbol?: string) {
   try {
-    const response = await fetch(`/api/jobs/${jobId}?symbol=${encodeURIComponent(symbol)}`);
+    const qs = new URLSearchParams();
+    if (symbol?.trim()) {
+      qs.set("symbol", symbol.trim());
+    }
+    const response = await fetch(
+      `/api/jobs/${jobId}${qs.size > 0 ? `?${qs.toString()}` : ""}`
+    );
     if (!response.ok) {
       return { data: null, error: "Failed to fetch strategy job status." };
     }
@@ -194,29 +206,71 @@ export async function getJobDataForSymbol(jobId: number, symbol: string) {
   }
 }
 
-export function extractTradeMarkersFromJobResult(
-  result: unknown
-): { time: number; amount: number }[] {
+function getTradeSymbol(entry: Record<string, unknown>): string | undefined {
+  const candidates = [entry.symbol, entry.ticker, entry.instrument];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return undefined;
+}
+
+export function extractTradePointsFromJobResult(
+  result: unknown,
+  symbol?: string
+): StrategyTradePoint[] {
   if (!result || typeof result !== "object") {
     return [];
   }
   const asRecord = result as Record<string, unknown>;
   const trades = Array.isArray(asRecord.trades) ? asRecord.trades : [];
+  const normalizedSymbol = symbol?.trim();
   return trades
-    .map((trade) => {
+    .map<StrategyTradePoint | null>((trade) => {
       if (!trade || typeof trade !== "object") return null;
       const entry = trade as Record<string, unknown>;
       const timeRaw = entry.time;
       const amountRaw = entry.amount;
+      const tradeSymbol = getTradeSymbol(entry);
       const time = typeof timeRaw === "number" ? timeRaw : Number(timeRaw);
       const amount = typeof amountRaw === "number" ? amountRaw : Number(amountRaw);
       if (!Number.isFinite(time) || !Number.isFinite(amount)) {
         return null;
       }
-      return { time, amount };
+      if (
+        normalizedSymbol &&
+        tradeSymbol &&
+        tradeSymbol.toUpperCase() !== normalizedSymbol.toUpperCase()
+      ) {
+        return null;
+      }
+      return { time, amount, symbol: tradeSymbol };
     })
-    .filter((entry): entry is { time: number; amount: number } => entry !== null)
+    .filter((entry): entry is StrategyTradePoint => entry !== null)
     .sort((a, b) => a.time - b.time);
+}
+
+export function extractTradeMarkersFromJobResult(
+  result: unknown,
+  symbol?: string
+): { time: number; amount: number }[] {
+  return extractTradePointsFromJobResult(result, symbol).map(({ time, amount }) => ({
+    time,
+    amount,
+  }));
+}
+
+export function extractSymbolsFromJobResult(result: unknown): string[] {
+  const seen = new Set<string>();
+  const symbols: string[] = [];
+  extractTradePointsFromJobResult(result).forEach((trade) => {
+    if (!trade.symbol) return;
+    if (seen.has(trade.symbol)) return;
+    seen.add(trade.symbol);
+    symbols.push(trade.symbol);
+  });
+  return symbols;
 }
 
 export type searchParamsType = {

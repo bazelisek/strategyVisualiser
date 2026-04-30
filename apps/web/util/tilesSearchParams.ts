@@ -32,7 +32,7 @@ const TILE_FIELDS: (keyof TileSearchParam)[] = [
 function isTileLike(value: unknown): value is TileSearchParam {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
-  return TILE_FIELDS.every((k) => typeof v[k] === "string" && v[k] !== "");
+  return TILE_FIELDS.every((k) => typeof v[k] === "string");
 }
 
 function parseTilesJson(raw: string): TileSearchParam[] {

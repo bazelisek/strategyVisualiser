@@ -1,8 +1,9 @@
 import { candleData } from "../serverFetch";
 
-interface StrategyPoint {
+export interface StrategyPoint {
   time: number; // UTC timestamp int
   amount: number; // >0 = buy, <0 = sell
+  symbol?: string;
 }
 
 export type Trade = {
@@ -29,20 +30,38 @@ export type StrategyPerformance = {
   error?: string;
 };
 
+type StrategyPerformanceInput = {
+  strategyData: StrategyPoint[];
+  transformedData: { candles: candleData };
+};
+
+function findFirstCandleIndexAtOrAfter(
+  opens: { value: number; time: number }[],
+  targetTime: number,
+  startIndex: number,
+): number {
+  let index = startIndex;
+  while (index < opens.length && opens[index].time < targetTime) {
+    index++;
+  }
+  return index < opens.length ? index : -1;
+}
+
 export function getStrategyPerformance(
   strategyData: StrategyPoint[],
   transformedData: { candles: candleData },
 ): StrategyPerformance {
   const opens = transformedData.candles.map((candle) => ({
     value: candle.open,
-    time: candle.time,
+    time: Number(candle.time),
   }));
 
   if (strategyData.length === 0) return { error: "No buy/sell data." };
+  if (opens.length === 0) return { error: "No candlestick data found." };
 
-  strategyData = strategyData.sort((a, b) => a.time - b.time);
-  const buys = strategyData.filter((point) => point.amount > 0);
-  const sells = strategyData.filter((point) => point.amount < 0);
+  const sortedStrategyData = [...strategyData].sort((a, b) => a.time - b.time);
+  const buys = sortedStrategyData.filter((point) => point.amount > 0);
+  const sells = sortedStrategyData.filter((point) => point.amount < 0);
   const flatBuys: { time: number }[] = buys
     .map((buy) => {
       const newBuy: { time: number }[] = [];
@@ -85,31 +104,25 @@ export function getStrategyPerformance(
   let sellIndex = 0;
   let timesInvested = 0;
   for (let i = 0; i < totalBuys; i++) {
-    while (
-      buyIndex < opens.length - 1 &&
-      opens[buyIndex].time < flatBuys[i].time
-    ) {
-      buyIndex++;
-    }
-
-    if (buyIndex >= opens.length || opens[buyIndex].time !== flatBuys[i].time) {
-      console.error(
-        "MISMATCH: " + opens[buyIndex].time + ", " + flatBuys[i].time,
-      );
+    buyIndex = findFirstCandleIndexAtOrAfter(opens, flatBuys[i].time, buyIndex);
+    if (buyIndex === -1) {
       return { error: "Candle and strategy times are not matching." };
     }
     const buyPrice = opens[buyIndex].value;
 
-    while (opens[sellIndex].time < flatSells[i].time) {
+    const resolvedSellIndex = findFirstCandleIndexAtOrAfter(
+      opens,
+      flatSells[i].time,
+      sellIndex,
+    );
+    if (resolvedSellIndex === -1) {
+      return { error: "Candle and strategy times are not matching." };
+    }
+
+    while (sellIndex < resolvedSellIndex) {
       sellIndex++;
       if (sellIndex >= buyIndex)
         timesInvested++;
-    }
-    if (opens[sellIndex].time !== flatSells[i].time) {
-      console.error(
-        "MISMATCH: " + opens[sellIndex].time + ", " + flatSells[i].time,
-      );
-      return { error: "Candle and strategy times are not matching." };
     }
     const sellPrice = opens[sellIndex].value;
 
@@ -144,6 +157,75 @@ export function getStrategyPerformance(
       openTrades: openCount,
       trades,
       earningsWithoutStrategyPct: earningsWithoutStrategy * 100,
+    },
+  };
+}
+
+function getBuyAndHoldPct(candles: candleData): number {
+  if (candles.length === 0) return 0;
+  return ((candles[candles.length - 1].open - candles[0].open) / candles[0].open) * 100;
+}
+
+export function getAggregatedStrategyPerformance(
+  inputs: StrategyPerformanceInput[],
+): StrategyPerformance {
+  const inputsWithCandles = inputs.filter(
+    (input) => input.transformedData.candles.length > 0,
+  );
+
+  if (inputsWithCandles.length === 0) {
+    return { error: "No candlestick data found." };
+  }
+
+  const trades: Trade[] = [];
+  let totalBuys = 0;
+  let totalSells = 0;
+  let closedTrades = 0;
+  let openTrades = 0;
+  let timeInvestedWeighted = 0;
+  let timeWeight = 0;
+  let earningsWithoutStrategySum = 0;
+
+  inputsWithCandles.forEach((input) => {
+    const candleCount = input.transformedData.candles.length;
+    earningsWithoutStrategySum += getBuyAndHoldPct(input.transformedData.candles);
+    timeWeight += candleCount;
+
+    if (input.strategyData.length === 0) {
+      return;
+    }
+
+    const performance = getStrategyPerformance(
+      input.strategyData,
+      input.transformedData,
+    );
+
+    if (!performance.data) {
+      return;
+    }
+
+    totalBuys += performance.data.totalBuys;
+    totalSells += performance.data.totalSells;
+    closedTrades += performance.data.closedTrades;
+    openTrades += performance.data.openTrades;
+    timeInvestedWeighted += performance.data.timeInvested * candleCount;
+    trades.push(...performance.data.trades);
+  });
+
+  const rankedTrades = (closedTrades > 0 ? trades.filter((trade) => !trade.isOpen) : trades)
+    .toSorted((a, b) => a.result - b.result);
+
+  return {
+    data: {
+      bestTrade: rankedTrades.at(-1),
+      worstTrade: rankedTrades[0],
+      totalBuys,
+      totalSells,
+      closedTrades,
+      openTrades,
+      trades,
+      earningsWithoutStrategyPct: earningsWithoutStrategySum / inputsWithCandles.length,
+      timeInvested: timeWeight > 0 ? timeInvestedWeighted / timeWeight : 0,
     },
   };
 }

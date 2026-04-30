@@ -163,6 +163,10 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     requirements.interval?.whitelist,
     validIntervals,
   ]);
+  const availableSymbolLabels = useMemo(
+    () => availableSymbols.map((item) => getSymbolDisplayLabel(item)),
+    [availableSymbols],
+  );
 
   useEffect(() => {
     if (symbol && availableSymbols.length > 0 && !availableSymbols.includes(symbol)) {
@@ -238,9 +242,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
             if (option.id === UNIVERSE_CONFIG_ID) {
               acc[option.id] = hasExplicitMultiSelectDefault
                 ? option.defaultValue
-                : symbol
-                  ? [symbol]
-                  : [];
+                : [];
               return acc;
             }
             acc[option.id] =
@@ -288,7 +290,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     const errors: string[] = [];
 
     if (!strategy) errors.push("Strategy");
-    if (!symbol) errors.push("Symbol");
 
     if (!period1 || !fromDate) {
       errors.push("From date");
@@ -352,6 +353,31 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
       .map((option) => option.label);
   }, [configOptions, formValues]);
 
+  const selectedUniverse = useMemo(
+    () =>
+      Array.isArray(formValues[UNIVERSE_CONFIG_ID])
+        ? (formValues[UNIVERSE_CONFIG_ID] as string[]).filter(
+            (item) => typeof item === "string" && item.trim().length > 0,
+          )
+        : [],
+    [formValues],
+  );
+
+  const chartSymbols = useMemo(() => {
+    const unique = new Set<string>();
+    if (symbol) unique.add(symbol);
+    selectedUniverse.forEach((item) => unique.add(item));
+    return Array.from(unique);
+  }, [selectedUniverse, symbol]);
+
+  const jobValidationErrors = useMemo(() => {
+    const errors = [...validationErrors];
+    if (!symbol && selectedUniverse.length === 0) {
+      errors.push("Current stock or universe");
+    }
+    return errors;
+  }, [selectedUniverse.length, symbol, validationErrors]);
+
   const isTileReady = tileValidationErrors.length === 0;
   useEffect(() => {
     if (!isTileReady && activeTab === "job") {
@@ -362,12 +388,15 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   const {
     strategyData,
     loading,
+    chartLoading,
     transformedData,
     error,
     runCalculation,
     stage,
     statusMessage,
     consoleOutput,
+    jobResult,
+    loadCandlesForSymbols,
   } = useChartData(
     useMemo(
       () =>
@@ -388,7 +417,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   const tradeMarkers = getTradeMarkers(strategyData);
   const canCalculate =
     isTileReady &&
-    validationErrors.length === 0 &&
+    jobValidationErrors.length === 0 &&
     configOptions.length > 0 &&
     !loading;
 
@@ -494,6 +523,10 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     }
   };
 
+  const handleChartSymbolChange = (nextSymbol: string | null) => {
+    updateTile(index, { symbol: nextSymbol ?? "" });
+  };
+
   const handleDateChange = (
     field: "period1" | "period2",
     value: Date | null,
@@ -504,6 +537,29 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   };
 
   const showChart = stage === "success" && !error && isConfigReady;
+
+  useEffect(() => {
+    if (!showChart || chartSymbols.length === 0) {
+      return;
+    }
+
+    if (!symbol || !chartSymbols.includes(symbol)) {
+      updateTile(index, { symbol: chartSymbols[0] });
+    }
+  }, [chartSymbols, index, showChart, symbol, updateTile]);
+
+  useEffect(() => {
+    if (!showChart || chartSymbols.length <= 1) {
+      return;
+    }
+
+    const symbolsToPrefetch = chartSymbols.filter((item) => item !== symbol);
+    if (symbolsToPrefetch.length === 0) {
+      return;
+    }
+
+    void loadCandlesForSymbols(symbolsToPrefetch).catch(() => undefined);
+  }, [chartSymbols, loadCandlesForSymbols, showChart, symbol]);
 
   const tilePanel = (
     <motion.div key="tile-panel" {...panelMotionProps}>
@@ -527,11 +583,11 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
             initialText="Select a strategy"
           />
         </FormControl>
-        <FormControl className={classes.field} required>
+        <FormControl className={classes.field}>
           <FormLabel>Symbol</FormLabel>
           <CustomSelect
             options={availableSymbols}
-            mapping={availableSymbols.map((item) => getSymbolDisplayLabel(item))}
+            mapping={availableSymbolLabels}
             value={symbol || ""}
             onChange={(newValue) =>
               handleTileValueChange("symbol", newValue ?? "")
@@ -623,7 +679,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
       </Stack>
     </motion.div>
   );
-
+  
   const jobPanel = (
     <motion.div key="job-panel" {...panelMotionProps}>
       <Stack spacing={2} width="100%">
@@ -646,9 +702,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
               {renderOptionInput(option)}
             </FormControl>
           ))}
-        {validationErrors.length > 0 && (
+        {jobValidationErrors.length > 0 && (
           <FormHelperText className={classes.errorText}>
-            Missing required values: {validationErrors.join(", ")}
+            Missing required values: {jobValidationErrors.join(", ")}
           </FormHelperText>
         )}
         {statusMessage && (
@@ -729,11 +785,13 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
       {showChart && (
         <CandlestickChartWrapper
           index={index + 1}
-          tileIndex={index}
-          loading={loading}
+          loading={loading || chartLoading}
           transformedData={transformedData}
           tradeMarkers={tradeMarkers}
           handleBackToTileConfig={handleBackToTileConfig}
+          universe={chartSymbols}
+          selectedSymbol={symbol || null}
+          onSelectedSymbolChange={handleChartSymbolChange}
         />
       )}
       {!loading && !error && showChart && isConfigReady && (
@@ -743,6 +801,10 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
             strategyData={strategyData}
             strategy={strategy}
             className={classes.div}
+            jobResult={jobResult}
+            selectedSymbol={symbol}
+            universe={chartSymbols}
+            loadCandlesForSymbols={loadCandlesForSymbols}
           />
           <StrategyConsoleCollapsible
             consoleOutput={consoleOutput}
