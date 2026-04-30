@@ -88,7 +88,7 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
   const filteredIntervals = useMemo(() => {
     if (requirements.interval?.whitelist?.length) {
       return availableIntervals.filter((interval) =>
-        requirements.interval.whitelist?.includes(interval),
+        requirements.interval?.whitelist?.includes(interval),
       );
     }
     if (requirements.interval?.blacklist?.length) {

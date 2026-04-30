@@ -6,10 +6,10 @@ import classes from "./CandlestickChartWrapper.module.css";
 import { SeriesMarker, Time } from "lightweight-charts";
 import ShowModalButton from "../Input/Indicators/ShowModalButton";
 import { candleData } from "@/util/serverFetch";
-import { Stack } from "@mui/joy";
-import SymbolButton from "../Input/QuickActions/SymbolButton";
+import { Stack, Typography } from "@mui/joy";
 import ChartLoading from "../common/ChartLoading";
 import Config from "../Input/QuickActions/Config";
+import EditableTabs from "../blocks/EditableTabs";
 
 interface CandlestickChartWrapperProps {
   //searchParams: Promise<{ [key: string]: string | undefined }>;
@@ -21,9 +21,11 @@ interface CandlestickChartWrapperProps {
     symbol: string;
     candles: candleData;
   };
+  universe: string[];
   index: number;
-  tileIndex: number;
   handleBackToTileConfig?: () => void;
+  selectedSymbol: string | null;
+  onSelectedSymbolChange: (symbol: string | null) => void;
 }
 
 const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
@@ -31,25 +33,23 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
   loading,
   transformedData,
   index,
-  tileIndex,
-  handleBackToTileConfig
+  universe,
+  selectedSymbol,
+  onSelectedSymbolChange,
+  handleBackToTileConfig,
 }) => {
-  // místo useRef:
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
-  const [chartWidth, setChartWidth] = useState<number>(1060); // fallback
+  const [chartWidth, setChartWidth] = useState<number>(1060);
 
-  // useLayoutEffect se spustí až když se callback-ref nastaví (containerEl != null)
   useLayoutEffect(() => {
     if (!containerEl) return;
 
-    // inicialní měření (okamžitě)
     const updateWidth = () => {
       const w = Math.floor(containerEl.getBoundingClientRect().width);
       if (w && w !== chartWidth) setChartWidth(w);
     };
     updateWidth();
 
-    // pozorovatel pro změny velikosti
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         if (entry.contentRect) {
@@ -86,6 +86,16 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
           transition={{ type: "spring" }}
           className={classes.div}
         >
+          <div style={{ width: "100%" }}>
+            <EditableTabs
+              availableTabs={universe.map((item) => ({
+                name: item,
+                key: item,
+              }))}
+              selectedTab={selectedSymbol}
+              onTabChange={onSelectedSymbolChange}
+            />
+          </div>
           <ShowModalButton index={index} className={classes.button} />
           <Stack
             width={"100%"}
@@ -95,19 +105,28 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
             alignItems={"center"}
           >
             <Config onClick={handleBackToTileConfig} />
-            {/*<SymbolButton index={tileIndex}>
-              {transformedData.symbol}
-            </SymbolButton>*/}
-            <h2 className={classes.title}>{transformedData.longName}</h2>
+            <h2 className={classes.title}>
+              {transformedData.longName || selectedSymbol || "Select a stock"}
+            </h2>
           </Stack>
-          <CandlestickChart
-            chartContainer={containerEl}
-            width={chartWidth}
-            index={index}
-            height={580}
-            candles={transformedData.candles}
-            tradeMarkers={tradeMarkers}
-          />
+          {!selectedSymbol ? (
+            <Typography level="body-md">
+              Select a stock tab to load chart data for this strategy run.
+            </Typography>
+          ) : transformedData.candles.length === 0 ? (
+            <Typography level="body-md">
+              No chart data is available for the selected stock yet.
+            </Typography>
+          ) : (
+            <CandlestickChart
+              chartContainer={containerEl}
+              width={chartWidth}
+              index={index}
+              height={580}
+              candles={transformedData.candles}
+              tradeMarkers={tradeMarkers}
+            />
+          )}
         </motion.div>
       )}
     </>

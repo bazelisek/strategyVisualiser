@@ -35,6 +35,7 @@ class EmaAdxTrendStrategyTest {
         Files.writeString(sourceFile, BuiltInStrategyCatalog.emaAdxTrend().code());
         Files.writeString(configFile, """
                 {
+                  "availableMoney": 100000.0,
                   "fastEmaPeriod": 2,
                   "slowEmaPeriod": 3,
                   "adxPeriod": 2,
@@ -58,18 +59,77 @@ class EmaAdxTrendStrategyTest {
         JsonNode trades = result.path("trades");
 
         assertThat(result.path("status").asText()).isEqualTo("ok");
+        assertThat(result.path("availableMoney").asDouble()).isEqualTo(100000.0);
         assertThat(trades).hasSize(2);
 
-        List<Integer> amounts = new ArrayList<>();
+        List<Double> amounts = new ArrayList<>();
         List<Long> times = new ArrayList<>();
         for (JsonNode trade : trades) {
-            amounts.add(trade.path("amount").asInt());
+            amounts.add(trade.path("amount").asDouble());
             times.add(trade.path("time").asLong());
         }
 
-        assertThat(amounts).containsExactly(1, -1);
+        assertThat(amounts.getFirst()).isPositive();
+        assertThat(amounts.getLast()).isNegative();
+        assertThat(Math.abs(amounts.getFirst() + amounts.getLast())).isLessThan(0.000001);
         assertThat(times.getLast()).isEqualTo(epochSeconds("2026-04-21", "00:00:00"));
         assertThat(times).allMatch(time -> time <= epochSeconds("2026-04-21", "00:00:00"));
+    }
+
+    @Test
+    void distributesCapitalAcrossSignalsWithoutExceedingAvailableMoney() throws Exception {
+        Path workspace = Files.createTempDirectory("ema-adx-trend-shared-cash");
+        Path sourceFile = workspace.resolve("StrategyMain.java");
+        Path classesDir = workspace.resolve("classes");
+        Path configFile = workspace.resolve("config.json");
+        Path stockDataFile = workspace.resolve("stock-data.csv");
+
+        Files.writeString(sourceFile, BuiltInStrategyCatalog.emaAdxTrend().code());
+        Files.writeString(configFile, """
+                {
+                  "availableMoney": 1000.0,
+                  "fastEmaPeriod": 2,
+                  "slowEmaPeriod": 3,
+                  "adxPeriod": 2,
+                  "adxThreshold": 1.0,
+                  "atrPeriod": 2,
+                  "atrMultiplier": 2.0
+                }
+                """);
+        Files.writeString(stockDataFile, """
+                ticker,period,tradeDate,tradeTime,open,high,low,close,volume,openInterest
+                AAA,1d,2026-04-16,00:00:00,100,104,99,103,1000,0
+                AAA,1d,2026-04-17,00:00:00,103,108,102,107,1000,0
+                AAA,1d,2026-04-18,00:00:00,107,113,106,112,1000,0
+                AAA,1d,2026-04-19,00:00:00,112,118,111,117,1000,0
+                AAA,1d,2026-04-20,00:00:00,117,123,116,122,1000,0
+                AAA,1d,2026-04-21,00:00:00,122,128,121,127,1000,0
+                BBB,1d,2026-04-16,00:00:00,200,204,199,203,1000,0
+                BBB,1d,2026-04-17,00:00:00,203,208,202,207,1000,0
+                BBB,1d,2026-04-18,00:00:00,207,213,206,212,1000,0
+                BBB,1d,2026-04-19,00:00:00,212,218,211,217,1000,0
+                BBB,1d,2026-04-20,00:00:00,217,223,216,222,1000,0
+                BBB,1d,2026-04-21,00:00:00,222,228,221,227,1000,0
+                """);
+
+        compileStrategy(sourceFile, classesDir);
+        JsonNode result = objectMapper.readTree(runStrategy(workspace, classesDir));
+        JsonNode trades = result.path("trades");
+
+        assertThat(trades).hasSize(4);
+        double grossEntryCost = 0D;
+        for (int index = 0; index < 2; index++) {
+            JsonNode trade = trades.get(index);
+            double amount = trade.path("amount").asDouble();
+            double openPrice = "AAA".equals(trade.path("symbol").asText()) ? 107D : 207D;
+            grossEntryCost += amount * openPrice;
+            assertThat(amount).isPositive();
+            assertThat(amount).isLessThan(10D);
+        }
+
+        assertThat(grossEntryCost).isLessThanOrEqualTo(1000.0 + 0.000001);
+        assertThat(result.path("endingCash").asDouble()).isGreaterThan(1000.0);
+        assertThat(result.path("endingEquity").asDouble()).isEqualTo(result.path("endingCash").asDouble());
     }
 
     private void compileStrategy(Path sourceFile, Path classesDir) throws Exception {

@@ -1,6 +1,6 @@
-﻿import { motion } from 'framer-motion';
-import React, { ReactNode, useMemo, useState } from 'react';
-import classes from './DropdownBox.module.css';
+﻿import { motion } from "framer-motion";
+import React, { ReactNode, useDeferredValue, useMemo, useState } from "react";
+import classes from "./DropdownBox.module.css";
 
 interface DropdownBoxProps {
   children?: ReactNode;
@@ -17,32 +17,43 @@ const DropdownBox: React.FC<DropdownBoxProps> = ({
   direction = "down", // 👈 default
 }) => {
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
+  const normalizedSearch = deferredSearch.trim().toLowerCase();
 
   const filteredOptions = useMemo(() => {
-    if (!search) return options;
+    if (!normalizedSearch) return options;
     return options.filter((opt) =>
-      opt.toLowerCase().includes(search.toLowerCase())
+      opt.toLowerCase().includes(normalizedSearch)
     );
-  }, [options, search]);
+  }, [normalizedSearch, options]);
+
+  const animateItems = filteredOptions.length <= 40;
 
   const listVariants = {
     hidden: {
       opacity: 0,
-      height: 0,
-      y: direction === "up" ? 10 : -10, // 👈 flip animation
+      y: direction === "up" ? 10 : -10,
     },
     visible: {
       opacity: 1,
-      height: "auto",
       y: 0,
-      transition: { staggerChildren: 0.05, duration: 0.3 },
+      transition: animateItems
+        ? { staggerChildren: 0.02, duration: 0.18 }
+        : { duration: 0.12 },
     },
     exit: {
       opacity: 0,
-      height: 0,
       y: direction === "up" ? 10 : -10,
-      transition: { staggerChildren: 0.03, staggerDirection: -1 },
+      transition: animateItems
+        ? { staggerChildren: 0.01, staggerDirection: -1 }
+        : { duration: 0.1 },
     },
+  };
+
+  const handleOptionSelect = (option: string) => {
+    onChange(option);
+    setOpen(false);
+    setSearch("");
   };
 
   return (
@@ -70,33 +81,32 @@ const DropdownBox: React.FC<DropdownBoxProps> = ({
           <li className={classes.noResults}>No results</li>
         )}
 
-        {filteredOptions.map((option, index) => (
-          <motion.li
-            key={option}
-            variants={
-              index < 12
-                ? {
-                    hidden: { opacity: 0, x: -20 },
-                    visible: {
-                      opacity: 1,
-                      x: 0,
-                      transition: { type: "spring" },
-                    },
-                  }
-                : {}
-            }
-            initial={index < 12 ? undefined : { opacity: 0 }}
-            animate={index < 12 ? undefined : { opacity: 1 }}
-            transition={index < 12 ? undefined : { duration: 0 }}
-            onClick={() => {
-              onChange(option);
-              setOpen(false);
-              setSearch("");
-            }}
-          >
-            {option}
-          </motion.li>
-        ))}
+        {filteredOptions.map((option, index) =>
+          animateItems ? (
+            <motion.li
+              key={option}
+              variants={
+                index < 12
+                  ? {
+                      hidden: { opacity: 0, x: -12 },
+                      visible: {
+                        opacity: 1,
+                        x: 0,
+                        transition: { duration: 0.14 },
+                      },
+                    }
+                  : undefined
+              }
+              onClick={() => handleOptionSelect(option)}
+            >
+              {option}
+            </motion.li>
+          ) : (
+            <li key={option} onClick={() => handleOptionSelect(option)}>
+              {option}
+            </li>
+          ),
+        )}
       </ul>
     </motion.div>
   );

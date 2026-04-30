@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import classes from "./CustomSelect.module.css";
 import DropdownBox from "./DropdownBox";
@@ -21,6 +21,17 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   direction = "down", // 👈 default
 }) => {
   const [open, setOpen] = useState(false);
+  const displayOptions = useMemo(() => mapping ?? options, [mapping, options]);
+  const selectedLabel = useMemo(() => {
+    if (!value) return "";
+    if (!mapping) return value;
+    const selectedIndex = options.indexOf(value);
+    return selectedIndex >= 0 ? mapping[selectedIndex] : value;
+  }, [mapping, options, value]);
+  const displayValueLookup = useMemo(() => {
+    if (!mapping) return null;
+    return new Map(mapping.map((label, index) => [label, options[index] ?? ""]));
+  }, [mapping, options]);
 
   return (
     <div className={classes.wrapper}>
@@ -28,7 +39,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         className={classes.selectionButton}
         onClick={() => setOpen((old) => !old)}
       >
-        {value || initialText}
+        {selectedLabel || initialText}
       </div>
 
       <AnimatePresence mode="sync">
@@ -36,11 +47,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <DropdownBox
             direction={direction} // 👈 pass it
             onChange={(value: string) => {
-              mapping
-                ? onChange(options[mapping.indexOf(value)])
-                : onChange(value);
+              onChange(displayValueLookup?.get(value) ?? value);
             }}
-            options={mapping ?? options}
+            options={displayOptions}
             setOpen={setOpen}
           />
         )}

@@ -9,10 +9,11 @@ export function checkFormValidity(formData: {
   period1: { value: number };
   period2: { value: number };
   strategy: { value: string };
-}): string {
+}, options: { requireSymbol?: boolean } = {}): string {
   const { symbol, interval, period1, period2 } = formData;
+  const { requireSymbol = true } = options;
 
-  if (!symbol.value) return "Symbol cannot be empty";
+  if (requireSymbol && !symbol.value) return "Symbol cannot be empty";
 
   const from = normalizeToDate(period1.value);
   const to = normalizeToDate(period2.value);

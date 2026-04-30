@@ -1,11 +1,21 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import ChartSection from "@/components/ChartSection";
 import React from "react";
 
 jest.mock("@mui/joy", () => {
   return {
-    Autocomplete: ({ value, placeholder }: { value?: string | null; placeholder?: string }) => (
-      <input value={value ?? ""} placeholder={placeholder} readOnly />
+    Autocomplete: ({
+      value,
+      placeholder,
+    }: {
+      value?: string[] | string | null;
+      placeholder?: string;
+    }) => (
+      <input
+        value={Array.isArray(value) ? value.join(",") : (value ?? "")}
+        placeholder={placeholder}
+        readOnly
+      />
     ),
     Button: ({
       children,
@@ -86,12 +96,16 @@ const mockGetAvailableStrategies = jest.fn(async () => [
 const mockUseChartDataState = {
   strategyData: [] as { time: number; amount: number }[],
   loading: false,
+  chartLoading: false,
   transformedData: { longName: "", symbol: "AAPL", candles: [] as unknown[] },
   error: "",
   runCalculation: mockRunCalculation,
   stage: "configuring" as "configuring" | "submitting" | "running" | "success" | "failed",
   statusMessage: "",
   consoleOutput: "",
+  jobResult: null as unknown,
+  lastRunConfig: {} as Record<string, unknown>,
+  loadCandlesForSymbols: jest.fn().mockResolvedValue({}),
 };
 
 const mockTiles = [
@@ -121,8 +135,7 @@ jest.mock("@/hooks/useChartData", () => ({
 }));
 
 jest.mock("@/util/strategies/strategies", () => ({
-  getAvailableStrategies: (...args: unknown[]) =>
-    mockGetAvailableStrategies(...args),
+  getAvailableStrategies: () => mockGetAvailableStrategies(),
 }));
 
 jest.mock("@/util/markers", () => ({
@@ -130,12 +143,26 @@ jest.mock("@/util/markers", () => ({
 }));
 
 jest.mock("@/components/Chart/CandlestickChartWrapper", () => {
-  return function MockChart() {
-    return <div data-testid="chart-wrapper">chart</div>;
+  return function MockChart({
+    selectedSymbol,
+    universe,
+    onSelectedSymbolChange,
+  }: {
+    selectedSymbol: string | null;
+    universe: string[];
+    onSelectedSymbolChange: (symbol: string | null) => void;
+  }) {
+    return (
+      <div data-testid="chart-wrapper">
+        <div>{selectedSymbol ?? "no-symbol"}</div>
+        <div>{universe.join(",")}</div>
+        <button onClick={() => onSelectedSymbolChange("MSFT")}>Switch stock</button>
+      </div>
+    );
   };
 });
 
-jest.mock("@/components/StrategyPerformanceOverview", () => {
+jest.mock("@/components/performance/StrategyPerformanceOverview", () => {
   return function MockPerformance() {
     return <div data-testid="performance-overview">performance</div>;
   };
@@ -172,11 +199,15 @@ describe("ChartSection", () => {
     };
     mockUseChartDataState.error = "";
     mockUseChartDataState.loading = false;
+    mockUseChartDataState.chartLoading = false;
     mockUseChartDataState.stage = "configuring";
     mockUseChartDataState.strategyData = [];
     mockUseChartDataState.transformedData = { longName: "", symbol: "AAPL", candles: [] };
     mockUseChartDataState.statusMessage = "";
     mockUseChartDataState.consoleOutput = "";
+    mockUseChartDataState.jobResult = null;
+    mockUseChartDataState.lastRunConfig = {};
+    mockUseChartDataState.loadCandlesForSymbols = jest.fn().mockResolvedValue({});
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -272,7 +303,180 @@ describe("ChartSection", () => {
     view.rerender(<ChartSection index={0} />);
 
     await waitFor(() => {
+      const chart = screen.getByTestId("chart-wrapper");
+      expect(chart).toBeInTheDocument();
+      expect(within(chart).getAllByText("AAPL").length).toBeGreaterThan(0);
+    });
+  });
+
+  test("allows running without a current stock when the universe is selected", async () => {
+    mockTiles[0] = {
+      symbol: "",
+      interval: "1d",
+      period1: "1700000000",
+      period2: "1700003600",
+      strategy: "12:Momentum",
+    };
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        configuration: JSON.stringify([
+          {
+            id: "universe",
+            label: "Universe",
+            type: "multi-select",
+            defaultValue: ["AAPL", "MSFT"],
+          },
+          {
+            id: "lookback",
+            label: "Lookback",
+            type: "number",
+            defaultValue: 14,
+            required: true,
+          },
+        ]),
+      }),
+    }) as unknown as typeof fetch;
+
+    renderChartSection();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("Configure strategy run")).toBeInTheDocument();
+    });
+
+    const button = screen.getByRole("button", { name: "Calculate strategy" });
+    await waitFor(() => expect(button).toBeEnabled());
+
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(mockRunCalculation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          universe: ["AAPL", "MSFT"],
+        }),
+      );
+    });
+  });
+
+  test("updates the tile symbol when a chart tab changes", async () => {
+    const view = renderChartSection();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("Configure strategy run")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Calculate strategy" }));
+
+    mockUseChartDataState.stage = "success";
+    mockUseChartDataState.strategyData = [{ time: 1700000000, amount: 5 }];
+    mockUseChartDataState.jobResult = { trades: [{ symbol: "MSFT", time: 1700000000, amount: 1 }] };
+    view.rerender(<ChartSection index={0} />);
+
+    await waitFor(() => {
       expect(screen.getByTestId("chart-wrapper")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Switch stock" }));
+
+    expect(mockUpdateTile).toHaveBeenCalledWith(0, { symbol: "MSFT" });
+  });
+
+  test("selects the first universe symbol after a universe-only run succeeds", async () => {
+    mockTiles[0] = {
+      symbol: "",
+      interval: "1d",
+      period1: "1700000000",
+      period2: "1700003600",
+      strategy: "12:Momentum",
+    };
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        configuration: JSON.stringify([
+          {
+            id: "universe",
+            label: "Universe",
+            type: "multi-select",
+            defaultValue: ["AAPL", "MSFT"],
+          },
+          {
+            id: "lookback",
+            label: "Lookback",
+            type: "number",
+            defaultValue: 14,
+            required: true,
+          },
+        ]),
+      }),
+    }) as unknown as typeof fetch;
+
+    const view = renderChartSection();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("Configure strategy run")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Calculate strategy" }));
+
+    mockUseChartDataState.stage = "success";
+    mockUseChartDataState.jobResult = {
+      trades: [{ symbol: "AAPL", time: 1700000000, amount: 1 }],
+    };
+    view.rerender(<ChartSection index={0} />);
+
+    await waitFor(() => {
+      expect(mockUpdateTile).toHaveBeenCalledWith(0, { symbol: "AAPL" });
+    });
+  });
+
+  test("prefetches the rest of the universe after the chart is shown", async () => {
+    const loadCandlesForSymbols = jest.fn().mockResolvedValue({});
+    mockUseChartDataState.loadCandlesForSymbols = loadCandlesForSymbols;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        configuration: JSON.stringify([
+          {
+            id: "universe",
+            label: "Universe",
+            type: "multi-select",
+            defaultValue: ["AAPL", "MSFT"],
+          },
+          {
+            id: "lookback",
+            label: "Lookback",
+            type: "number",
+            defaultValue: 14,
+            required: true,
+          },
+        ]),
+      }),
+    }) as unknown as typeof fetch;
+
+    const view = renderChartSection();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("Configure strategy run")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Calculate strategy" }));
+
+    mockUseChartDataState.stage = "success";
+    mockUseChartDataState.strategyData = [{ time: 1700000000, amount: 5 }];
+    mockUseChartDataState.jobResult = {
+      trades: [
+        { symbol: "AAPL", time: 1700000000, amount: 1 },
+        { symbol: "MSFT", time: 1700003600, amount: -1 },
+      ],
+    };
+    view.rerender(<ChartSection index={0} />);
+
+    await waitFor(() => {
+      expect(loadCandlesForSymbols).toHaveBeenCalledWith(["MSFT"]);
     });
   });
 

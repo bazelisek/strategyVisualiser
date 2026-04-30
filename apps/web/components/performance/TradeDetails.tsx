@@ -9,15 +9,17 @@ import CustomAccordion from "../common/CustomAccordion";
 import Table from "../common/Table";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
-import { StrategyPerformance } from "@/util/strategyPerformance/strategyPerformance";
 
 export default function TradeDetails({
   enriched,
-  performance,
 }: {
   enriched: EnrichedStrategyPerformance;
-  performance: StrategyPerformance;
 }) {
+  const rankedTrades = (enriched?.closedTrades.length ? enriched.closedTrades : enriched?.trades ?? [])
+    .toSorted((a, b) => a.result - b.result);
+  const bestTrade = rankedTrades.at(-1);
+  const worstTrade = rankedTrades[0];
+
   return (
     <>
       {enriched ? (
@@ -28,14 +30,14 @@ export default function TradeDetails({
                 Trades
               </Typography>
               {/* BEST / WORST */}
-              {performance.data?.bestTrade && performance.data?.worstTrade && (
+              {bestTrade && worstTrade && (
                 <>
                   <Chip color="success" startDecorator={<TrendingUpIcon />}>
-                    Best: {performance.data.bestTrade.result.toFixed(2)}
+                    Best: {bestTrade.result.toFixed(2)}
                   </Chip>
 
                   <Chip color="danger" startDecorator={<TrendingDownIcon />}>
-                    Worst: {performance.data.worstTrade.result.toFixed(2)}
+                    Worst: {worstTrade.result.toFixed(2)}
                   </Chip>
                 </>
               )}
@@ -44,6 +46,12 @@ export default function TradeDetails({
         >
           <Table
             columns={[
+              {
+                id: "symbol",
+                header: "Stock",
+                cell: (r: EnrichedTrade) => r.symbol ?? "-",
+                sortable: true,
+              },
               {
                 id: "buyTime",
                 header: "Buy",
@@ -58,15 +66,21 @@ export default function TradeDetails({
                 sortable: true,
               },
               {
+                id: "quantity",
+                header: "Qty",
+                cell: (r: EnrichedTrade) => r.quantity.toFixed(4),
+                sortable: true,
+              },
+              {
                 id: "buy",
-                header: "Buy",
-                cell: (r: EnrichedTrade) => r.buy.toFixed(2),
+                header: "Buy $",
+                cell: (r: EnrichedTrade) => r.buyValue.toFixed(2),
                 sortable: true,
               },
               {
                 id: "sell",
-                header: "Sell",
-                cell: (r: EnrichedTrade) => r.sell.toFixed(2),
+                header: "Sell $",
+                cell: (r: EnrichedTrade) => r.sellValue.toFixed(2),
                 sortable: true,
               },
               {
@@ -90,7 +104,7 @@ export default function TradeDetails({
             renderFooter={() => (
               <>
                 <TableRow>
-                  <TableCell colSpan={2}>
+                  <TableCell colSpan={4}>
                     <Typography>
                       <strong>Total</strong>
                     </Typography>
@@ -107,13 +121,13 @@ export default function TradeDetails({
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell colSpan={2}>
+                  <TableCell colSpan={4}>
                     <Typography>
                       <strong>Average</strong>
                     </Typography>
                   </TableCell>
-                  <TableCell>{enriched.avgBuy.toFixed(2)}</TableCell>
-                  <TableCell>{enriched.avgSell.toFixed(2)}</TableCell>
+                  <TableCell>{enriched.avgBuyValue.toFixed(2)}</TableCell>
+                  <TableCell>{enriched.avgSellValue.toFixed(2)}</TableCell>
                   <TableCell>{enriched.avgPnL.toFixed(2)}</TableCell>
                   <TableCell>
                     <Typography
