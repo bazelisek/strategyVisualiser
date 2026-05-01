@@ -157,6 +157,7 @@ public class AnalysisJobService {
             ), line -> appendConsoleOutput(job, line));
 
             String sanitizedOutput = sanitizeStrategyOutput(output);
+            validateStrategyResult(sanitizedOutput, stockData);
             job.setStatus("completed");
             job.setResult(sanitizedOutput.isBlank() ? "{\"status\":\"ok\"}" : sanitizedOutput);
             job.setCompletedAt(LocalDateTime.now());
@@ -168,6 +169,59 @@ public class AnalysisJobService {
         }
 
         analysisJobDao.save(job);
+    }
+
+    private void validateStrategyResult(String result, List<StockData> stockData) throws IOException {
+        if (result == null || result.isBlank()) {
+            return;
+        }
+
+        JsonNode root = objectMapper.readTree(result);
+        JsonNode tradesNode = root.get("trades");
+        if (tradesNode == null || !tradesNode.isArray()) {
+            return;
+        }
+
+        Map<String, Map<Long, StockData>> stockDataMap = new LinkedHashMap<>();
+        for (StockData row : stockData) {
+            long epochSeconds = java.time.LocalDateTime.of(row.getTradeDate(),
+                    row.getTradeTime() == null ? java.time.LocalTime.MIDNIGHT : row.getTradeTime())
+                    .toEpochSecond(java.time.ZoneOffset.UTC);
+            stockDataMap.computeIfAbsent(row.getTicker(), k -> new LinkedHashMap<>())
+                    .put(epochSeconds, row);
+        }
+
+        for (JsonNode trade : tradesNode) {
+            if (!trade.isObject()) continue;
+
+            String symbol = textOrNull(trade, "symbol");
+            if (symbol == null) symbol = textOrNull(trade, "ticker");
+            
+            JsonNode timeNode = trade.get("time");
+            if (timeNode == null || !timeNode.isNumber()) continue;
+            long time = timeNode.asLong();
+
+            JsonNode priceNode = trade.get("price");
+            if (priceNode == null || !priceNode.isNumber()) continue;
+            double price = priceNode.asDouble();
+
+            Map<Long, StockData> symbolData = stockDataMap.get(symbol);
+            if (symbolData == null) {
+                throw new IllegalArgumentException("Trade for unknown symbol: " + symbol);
+            }
+
+            StockData candle = symbolData.get(time);
+            if (candle == null) {
+                throw new IllegalArgumentException("Trade at unknown time " + time + " for symbol " + symbol);
+            }
+
+            if (price < candle.getLow().doubleValue() - 1e-9 || price > candle.getHigh().doubleValue() + 1e-9) {
+                throw new IllegalArgumentException(String.format(
+                    "Invalid execution price %.8f for %s at %s. Price must be between low (%.8f) and high (%.8f).",
+                    price, symbol, java.time.Instant.ofEpochSecond(time), candle.getLow(), candle.getHigh()
+                ));
+            }
+        }
     }
 
     private Path writeStrategySourceFiles(

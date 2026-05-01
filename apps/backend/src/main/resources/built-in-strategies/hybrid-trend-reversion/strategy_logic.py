@@ -43,11 +43,25 @@ def prepare_indicators(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     df = df.dropna(subset=required_cols).reset_index(drop=True)
     return df
 
+def get_valid_price(raw_price: float, slippage: float, is_buy: bool, low: float, high: float) -> float:
+    if is_buy:
+        price = raw_price * (1 + slippage)
+    else:
+        price = raw_price * (1 - slippage)
+    
+    clamped_price = max(low, min(high, price))
+    if abs(clamped_price - price) > 1e-9:
+        LOGGER.debug("Price %.8f clamped to %.8f (low: %.8f, high: %.8f)", price, clamped_price, low, high)
+    
+    return clamped_price
+
 def emit_trades(bars_by_symbol: Dict[str, pd.DataFrame], config: dict) -> List[dict]:
     """
     Simulates the strategy across multiple symbols using a shared cash balance.
-    Handles multiple symbols with position limits, risk management, and no lookahead.
+    Sells/Buys on signal happen at the open of the current candle.
+    Stop losses are checked after signal-based executions.
     """
+
     prepared_data = {}
     for symbol, df in bars_by_symbol.items():
         processed_df = prepare_indicators(df, config)
@@ -57,36 +71,32 @@ def emit_trades(bars_by_symbol: Dict[str, pd.DataFrame], config: dict) -> List[d
     if not prepared_data:
         return []
 
-    # Group events by time to process the portfolio collectively at each step
+    # === Build event timeline ===
     events_by_time = {}
     for symbol, df in prepared_data.items():
         for i in range(1, len(df)):
             row = df.iloc[i]
-            prev = df.iloc[i-1]
-            prev_prev = df.iloc[i-2] if i > 1 else prev
+            prev = df.iloc[i - 1]
+            prev_prev = df.iloc[i - 2] if i > 1 else prev
             t = int(row['epoch_seconds'])
-            if t not in events_by_time:
-                events_by_time[t] = []
-            events_by_time[t].append({
-                'symbol': symbol,
-                'row': row,
-                'prev': prev,
-                'prev_prev': prev_prev
+
+            events_by_time.setdefault(t, []).append({
+                "symbol": symbol,
+                "row": row,
+                "prev": prev,
+                "prev_prev": prev_prev
             })
 
     sorted_times = sorted(events_by_time.keys())
 
-    # Strategy Parameters
+    # === Config ===
     fee_rate = float(config.get("feeRate", 0.0005))
     slippage = float(config.get("slippage", 0.0005))
     initial_balance = float(config.get('initialBalance', 10000))
-    risk_per_trade = float(config.get('riskPerTrade', 1.0)) / 100.0
-    max_positions = int(config.get('maxPositions', 5))
-    max_allocation_pct = float(config.get('maxAllocationPerTrade', 20)) / 100.0
 
     cash = initial_balance
     trades = []
-    
+
     symbol_state = {
         symbol: {
             'shares': 0.0,
@@ -97,179 +107,355 @@ def emit_trades(bars_by_symbol: Dict[str, pd.DataFrame], config: dict) -> List[d
         } for symbol in prepared_data
     }
 
+    # === MAIN LOOP ===
     for t in sorted_times:
         current_events = events_by_time[t]
-        
-        # 1. Update prices and calculate current equity
+
+        # --- Update prices ---
         for event in current_events:
             symbol = event['symbol']
             symbol_state[symbol]['last_price'] = float(event['row']['open'])
 
-        current_equity = cash + sum(
-            s['shares'] * s['last_price'] for s in symbol_state.values()
-        )
-        
-        active_positions = [s for s in symbol_state.values() if s['in_position']]
-        num_active = len(active_positions)
+        # --- Build decision input ---
+        market_data = {
+            e["symbol"]: {
+                "row": e["row"],
+                "prev": e["prev"],
+                "prev_prev": e["prev_prev"]
+            }
+            for e in current_events
+        }
 
-        # 2. Process EXITS first (to free up cash and slots)
-        exited_this_step = set()
+        portfolio_state = {
+            "cash": cash,
+            "positions": symbol_state
+        }
+
+        # === DECISION ENGINE (Signals from prev candles) ===
+        actions = decide_actions(market_data, config, portfolio_state)
+
+        # Track which exited via signal (at open)
+        exited_at_open = set()
+
+        # === 1. EXECUTE SIGNAL-BASED SELLS (AT OPEN) ===
+        for event in current_events:
+            symbol = event['symbol']
+            action = actions.get(symbol, {"action": "HOLD", "amount": 0.0})
+            state = symbol_state[symbol]
+
+            if action["action"] != "SELL" or not state['in_position']:
+                continue
+
+            row = event['row']
+            low = float(row['low'])
+            high = float(row['high'])
+            open_price = float(row['open'])
+
+            exit_price = get_valid_price(open_price, slippage, False, low, high)
+            proceeds = state['shares'] * exit_price
+            fee = proceeds * fee_rate
+
+            cash += (proceeds - fee)
+            trades.append({
+                "symbol": symbol,
+                "time": t,
+                "amount": -float(state['shares']),
+                "price": float(exit_price)
+            })
+
+            state['shares'] = 0.0
+            state['in_position'] = False
+            exited_at_open.add(symbol)
+
+        # === 2. EXECUTE SIGNAL-BASED BUYS (AT OPEN) ===
+        for event in current_events:
+            symbol = event['symbol']
+            action = actions.get(symbol, {"action": "HOLD", "amount": 0.0})
+            state = symbol_state[symbol]
+
+            if action["action"] != "BUY" or state['in_position'] or symbol in exited_at_open:
+                continue
+
+            shares_to_buy = float(action["amount"])
+            if shares_to_buy <= 0:
+                continue
+
+            row = event['row']
+            prev = event['prev']
+            low = float(row['low'])
+            high = float(row['high'])
+            open_price = float(row['open'])
+
+            buy_price = get_valid_price(open_price, slippage, True, low, high)
+            cost = shares_to_buy * buy_price
+            fee = cost * fee_rate
+
+            # Cash constraint
+            if cost + fee > cash:
+                shares_to_buy = cash / (buy_price * (1 + fee_rate))
+                cost = shares_to_buy * buy_price
+                fee = cost * fee_rate
+
+            if shares_to_buy <= 0.01:
+                continue
+
+            trades.append({
+                "symbol": symbol,
+                "time": t,
+                "amount": float(shares_to_buy),
+                "price": float(buy_price)
+            })
+
+            state['shares'] = shares_to_buy
+            state['in_position'] = True
+            state['highest_price'] = buy_price
+            atr = float(prev['atr'])
+            stop_dist = atr * float(config['atrMultiplier'])
+            state['stop_loss'] = buy_price - stop_dist
+            cash -= (cost + fee)
+
+        # === 3. CHECK STOP LOSSES (INTRADAY) ===
+        # Note: This includes positions opened at open of THIS candle.
         for event in current_events:
             symbol = event['symbol']
             state = symbol_state[symbol]
+
+            if not state['in_position'] or symbol in exited_at_open:
+                continue
+
+            row = event['row']
+            low = float(row['low'])
+            high = float(row['high'])
+            open_price = float(row['open'])
+
+            if low < state['stop_loss']:
+                # Stop loss hit intraday
+                raw_exit_price = min(open_price, state['stop_loss'])
+                exit_price = get_valid_price(raw_exit_price, slippage, False, low, high)
+                
+                proceeds = state['shares'] * exit_price
+                exit_fee = proceeds * fee_rate
+
+                cash += (proceeds - exit_fee)
+                trades.append({
+                    "symbol": symbol,
+                    "time": t,
+                    "amount": -float(state['shares']),
+                    "price": float(exit_price)
+                })
+
+                state['shares'] = 0.0
+                state['in_position'] = False
+
+        # === 4. UPDATE TRAILING STOPS (for survivors) ===
+        for event in current_events:
+            symbol = event['symbol']
+            state = symbol_state[symbol]
+
             if not state['in_position']:
                 continue
 
             row = event['row']
             prev = event['prev']
-            prev_prev = event['prev_prev']
-            
-            open_price = float(row['open'])
-            low = float(row['low'])
-            close_prev = float(prev['close'])
-            sell_price_signal = open_price * (1 - slippage)
 
-            # Exit Signals
-            adx_val = float(prev['adx'])
-            prev_adx_val = float(prev_prev['adx'])
-            adx_rising = adx_val > prev_adx_val
-            adx_threshold = float(config['adxThreshold'])
-            
-            is_trending_bearish = (prev['ema_fast'] < prev['ema_slow'] and adx_val > adx_threshold and adx_rising)
-            is_flat = adx_val <= adx_threshold
-            is_overbought = (prev['rsi'] > config['rsiOverbought'] or close_prev > prev['bb_hband'])
-            
-            exit_signal = (is_trending_bearish or (is_flat and is_overbought))
-            
-            exited = False
-            exit_price = 0.0
+            high = float(row['high'])
+            state['highest_price'] = max(state['highest_price'], high)
 
-            # Check Stop Loss (Intra-candle)
-            if low < state['stop_loss']:
-                exit_price = state['stop_loss'] * (1 - slippage)
-                exited = True
-            elif exit_signal:
-                exit_price = sell_price_signal
-                exited = True
-
-            if exited:
-                proceeds = state['shares'] * exit_price
-                fee = proceeds * fee_rate
-                cash += (proceeds - fee)
-                
-                trades.append({
-                    "symbol": symbol,
-                    "time": t,
-                    "amount": -float(state['shares'])
-                })
-                state['shares'] = 0.0
-                state['in_position'] = False
-                exited_this_step.add(symbol)
-                num_active -= 1
-
-            else:
-                # Update Trailing Stop for surviving positions
-                high = float(row['high'])
-                state['highest_price'] = max(state['highest_price'], high)
-                trailing_stop = state['highest_price'] - (
-                    float(prev['atr']) * float(config['atrMultiplier'])
-                )
-                state['stop_loss'] = max(state['stop_loss'], trailing_stop)
-
-        # 3. Process ENTRIES
-        # Collect candidates
-        candidates = []
-        for event in current_events:
-            symbol = event['symbol']
-            state = symbol_state[symbol]
-            
-            # Skip if already in position or just exited
-            if state['in_position'] or symbol in exited_this_step:
-                continue
-
-            prev = event['prev']
-            prev_prev = event['prev_prev']
-            close_prev = float(prev['close'])
-            adx_val = float(prev['adx'])
-            prev_adx_val = float(prev_prev['adx'])
-            adx_threshold = float(config['adxThreshold'])
-            adx_rising = adx_val > prev_adx_val
-            rsi_val = float(prev['rsi'])
-
-            is_trending_bullish = (prev['ema_fast'] > prev['ema_slow'] and adx_val > adx_threshold and adx_rising)
-            is_flat = adx_val <= adx_threshold
-            is_oversold = (rsi_val < config['rsiOversold'] or close_prev < prev['bb_lband'])
-
-            long_signal = (
-                (is_trending_bullish and close_prev > prev['ema_fast']) or
-                (is_flat and is_oversold)
+            trailing_stop = state['highest_price'] - (
+                float(prev['atr']) * float(config['atrMultiplier'])
             )
 
-            if long_signal:
-                # Signal Strength for ranking
-                strength = adx_val if is_trending_bullish else (config['rsiOversold'] - rsi_val + 50)
-                candidates.append((symbol, event, strength))
-
-        # Sort candidates by strength (descending)
-        candidates.sort(key=lambda x: x[2], reverse=True)
-
-        # Execute ENTRIES up to max_positions
-        for symbol, event, strength in candidates:
-            if num_active >= max_positions or cash <= 0:
-                break
-            
-            state = symbol_state[symbol]
-            row = event['row']
-            prev = event['prev']
-            open_price = float(row['open'])
-            buy_price = open_price * (1 + slippage)
-            atr = float(prev['atr'])
-            stop_dist = atr * float(config['atrMultiplier'])
-
-            if stop_dist > 0:
-                # Risk-based sizing
-                risk_amount = current_equity * risk_per_trade
-                shares_to_buy = risk_amount / stop_dist
-                
-                # Allocation-cap sizing
-                max_alloc = current_equity * max_allocation_pct
-                shares_by_alloc = max_alloc / buy_price
-                shares_to_buy = min(shares_to_buy, shares_by_alloc)
-
-                # Cash-availability sizing
-                cost = shares_to_buy * buy_price
-                fee = cost * fee_rate
-                if cost + fee > cash:
-                    shares_to_buy = cash / (buy_price * (1 + fee_rate))
-                    cost = shares_to_buy * buy_price
-                    fee = cost * fee_rate
-
-                if shares_to_buy > 0.01: # Avoid dust
-                    trades.append({
-                        "symbol": symbol,
-                        "time": t,
-                        "amount": float(shares_to_buy)
-                    })
-                    state['shares'] = shares_to_buy
-                    state['in_position'] = True
-                    state['highest_price'] = buy_price
-                    state['stop_loss'] = buy_price - stop_dist
-                    cash -= (cost + fee)
-                    num_active += 1
-                    
-                    # Immediate stop-out check (Intra-candle)
-                    if float(row['low']) < state['stop_loss']:
-                        exit_price = state['stop_loss'] * (1 - slippage)
-                        proceeds = state['shares'] * exit_price
-                        exit_fee = proceeds * fee_rate
-                        cash += (proceeds - exit_fee)
-                        trades.append({
-                            "symbol": symbol,
-                            "time": t,
-                            "amount": -float(state['shares'])
-                        })
-                        state['shares'] = 0.0
-                        state['in_position'] = False
-                        num_active -= 1
+            state['stop_loss'] = max(state['stop_loss'], trailing_stop)
 
     return trades
+
+def check_exit_signal(prev, prev_prev, config) -> bool:
+    adx_val = float(prev['adx'])
+    prev_adx_val = float(prev_prev['adx'])
+    adx_rising = adx_val > prev_adx_val
+    adx_threshold = float(config['adxThreshold'])
+
+    is_trending_bearish = (
+        prev['ema_fast'] < prev['ema_slow'] and
+        adx_val > adx_threshold and
+        adx_rising
+    )
+
+    is_flat = adx_val <= adx_threshold
+    is_overbought = (
+        prev['rsi'] > config['rsiOverbought'] or
+        float(prev['close']) > prev['bb_hband']
+    )
+
+    return is_trending_bearish or (is_flat and is_overbought)
+
+def check_entry_signal(prev, prev_prev, config) -> tuple[bool, float]:
+    close_prev = float(prev['close'])
+    adx_val = float(prev['adx'])
+    prev_adx_val = float(prev_prev['adx'])
+    adx_threshold = float(config['adxThreshold'])
+    adx_rising = adx_val > prev_adx_val
+    rsi_val = float(prev['rsi'])
+
+    is_trending_bullish = (
+        prev['ema_fast'] > prev['ema_slow'] and
+        adx_val > adx_threshold and
+        adx_rising
+    )
+
+    is_flat = adx_val <= adx_threshold
+    is_oversold = (
+        rsi_val < config['rsiOversold'] or
+        close_prev < prev['bb_lband']
+    )
+
+    long_signal = (
+        (is_trending_bullish and close_prev > prev['ema_fast']) or
+        (is_flat and is_oversold)
+    )
+
+    if not long_signal:
+        return False, 0.0
+
+    strength = (
+        adx_val if is_trending_bullish
+        else (config['rsiOversold'] - rsi_val + 50)
+    )
+
+    return True, strength
+
+def calculate_position_size(
+    current_equity,
+    cash,
+    buy_price,
+    atr,
+    config
+):
+    risk_per_trade = float(config.get('riskPerTrade', 1.0)) / 100.0
+    max_allocation_pct = float(config.get('maxAllocationPerTrade', 20)) / 100.0
+    fee_rate = float(config.get("feeRate", 0.0005))
+
+    stop_dist = atr * float(config['atrMultiplier'])
+    if stop_dist <= 0:
+        return 0.0
+
+    risk_amount = current_equity * risk_per_trade
+    shares = risk_amount / stop_dist
+
+    max_alloc = current_equity * max_allocation_pct
+    shares = min(shares, max_alloc / buy_price)
+
+    cost = shares * buy_price
+    fee = cost * fee_rate
+
+    if cost + fee > cash:
+        shares = cash / (buy_price * (1 + fee_rate))
+
+    return shares if shares > 0.01 else 0.0
+
+def decide_actions(
+    market_data: Dict[str, dict],
+    config: dict,
+    portfolio_state: dict
+) -> Dict[str, dict]:
+    """
+    Production-ready decision engine.
+    """
+
+    fee_rate = float(config.get("feeRate", 0.0005))
+    slippage = float(config.get("slippage", 0.0005))
+    max_positions = int(config.get('maxPositions', 5))
+
+    cash = portfolio_state["cash"]
+    positions = portfolio_state["positions"]
+
+    # === Equity ===
+    equity = cash + sum(
+        s['shares'] * s['last_price']
+        for s in positions.values()
+    )
+
+    active = sum(1 for s in positions.values() if s['in_position'])
+
+    actions = {}
+    exited = set()
+
+    # ===== EXITS =====
+    for symbol, data in market_data.items():
+        state = positions[symbol]
+
+        if not state['in_position']:
+            continue
+
+        row, prev, prev_prev = data["row"], data["prev"], data["prev_prev"]
+
+        open_price = float(row['open'])
+        low = float(row['low'])
+        high = float(row['high'])
+
+        exit_signal = check_exit_signal(prev, prev_prev, config)
+
+        exit_price = None
+
+        if low < state['stop_loss']:
+            raw_exit_price = min(open_price, state['stop_loss'])
+            exit_price = get_valid_price(raw_exit_price, slippage, False, low, high)
+        elif exit_signal:
+            exit_price = get_valid_price(open_price, slippage, False, low, high)
+
+        if exit_price:
+            actions[symbol] = {
+                "action": "SELL",
+                "amount": state['shares']
+            }
+            exited.add(symbol)
+            active -= 1
+        else:
+            actions[symbol] = {"action": "HOLD", "amount": 0.0}
+
+    # ===== ENTRIES =====
+    candidates = []
+
+    for symbol, data in market_data.items():
+        state = positions[symbol]
+
+        if state['in_position'] or symbol in exited:
+            continue
+
+        prev, prev_prev = data["prev"], data["prev_prev"]
+
+        ok, strength = check_entry_signal(prev, prev_prev, config)
+
+        if ok:
+            candidates.append((symbol, data, strength))
+
+    candidates.sort(key=lambda x: x[2], reverse=True)
+
+    for symbol, data, _ in candidates:
+        if active >= max_positions or cash <= 0:
+            break
+
+        row = data["row"]
+        prev = data["prev"]
+
+        buy_price = float(row['open']) * (1 + slippage)
+        atr = float(prev['atr'])
+
+        shares = calculate_position_size(
+            equity, cash, buy_price, atr, config
+        )
+
+        if shares > 0:
+            actions[symbol] = {
+                "action": "BUY",
+                "amount": shares
+            }
+            active += 1
+        else:
+            actions.setdefault(symbol, {"action": "HOLD", "amount": 0.0})
+
+    # Fill missing
+    for symbol in market_data:
+        actions.setdefault(symbol, {"action": "HOLD", "amount": 0.0})
+
+    return actions

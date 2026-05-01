@@ -413,6 +413,7 @@ public class StrategyMain {
         tradeNode.put("symbol", trade.symbol());
         tradeNode.put("time", trade.time());
         tradeNode.put("amount", trade.amount());
+        tradeNode.put("price", trade.price());
         return tradeNode;
     }
 
@@ -456,7 +457,7 @@ public class StrategyMain {
     ) {
     }
 
-    private record Trade(String symbol, long time, double amount) {
+    private record Trade(String symbol, long time, double amount, double price) {
     }
 
     private record BarPoint(
@@ -469,4 +470,5 @@ public class StrategyMain {
             double volume
     ) {
     }
+}
 }

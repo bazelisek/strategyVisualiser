@@ -232,9 +232,11 @@ export function extractTradePointsFromJobResult(
       const entry = trade as Record<string, unknown>;
       const timeRaw = entry.time;
       const amountRaw = entry.amount;
+      const priceRaw = entry.price;
       const tradeSymbol = getTradeSymbol(entry);
       const time = typeof timeRaw === "number" ? timeRaw : Number(timeRaw);
       const amount = typeof amountRaw === "number" ? amountRaw : Number(amountRaw);
+      const price = typeof priceRaw === "number" ? priceRaw : Number(priceRaw);
       if (!Number.isFinite(time) || !Number.isFinite(amount)) {
         return null;
       }
@@ -245,7 +247,12 @@ export function extractTradePointsFromJobResult(
       ) {
         return null;
       }
-      return { time, amount, symbol: tradeSymbol };
+      return { 
+        time, 
+        amount, 
+        symbol: tradeSymbol, 
+        price: Number.isFinite(price) ? price : undefined 
+      };
     })
     .filter((entry): entry is StrategyTradePoint => entry !== null)
     .sort((a, b) => a.time - b.time);

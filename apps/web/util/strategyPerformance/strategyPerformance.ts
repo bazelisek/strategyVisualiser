@@ -135,6 +135,8 @@ function resolveTradeEvents(
     time: Number(candle.time),
   }));
 
+  const candleMap = new Map(candles.map(c => [Number(c.time), c]));
+
   if (strategyData.length === 0) {
     return { events: [], error: "No buy/sell data." };
   }
@@ -157,11 +159,16 @@ function resolveTradeEvents(
     }
 
     const symbol = normalizeSymbol(point.symbol) ?? normalizeSymbol(fallbackSymbol);
+    const candle = candleMap.get(opens[candleIndex].time);
+    const price = (point.price !== undefined && Number.isFinite(point.price)) 
+      ? point.price 
+      : opens[candleIndex].value;
+
     events.push({
       symbol: symbol ?? "",
       time: opens[candleIndex].time,
       amount: point.amount,
-      price: opens[candleIndex].value,
+      price: price,
     });
   }
 
