@@ -20,12 +20,7 @@ def main() -> None:
         logger.debug("Config loaded: %s", config)
         
         bars_by_symbol = load_bars()
-        all_trades = []
-        
-        for symbol, df in bars_by_symbol.items():
-            logger.debug("Processing %s with %s bars", symbol, len(df))
-            symbol_trades = emit_trades(symbol, df, config)
-            all_trades.extend(symbol_trades)
+        all_trades = emit_trades(bars_by_symbol, config)
             
         # Ensure trades are sorted by time
         all_trades.sort(key=lambda x: (x['time'], x['symbol']))
