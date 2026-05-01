@@ -77,6 +77,20 @@
     "required": true
   },
   {
+    "id": "maxPositions",
+    "label": "Max Simultaneous Positions",
+    "type": "number",
+    "defaultValue": 5,
+    "required": true
+  },
+  {
+    "id": "maxAllocationPerTrade",
+    "label": "Max Allocation Per Trade (%)",
+    "type": "number",
+    "defaultValue": 20,
+    "required": true
+  },
+  {
     "id": "initialBalance",
     "label": "Initial Balance",
     "type": "number",
