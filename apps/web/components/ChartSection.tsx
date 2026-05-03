@@ -418,7 +418,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
 
   const tradeMarkers = getTradeMarkers(strategyData);
   const availableMoney = useMemo(() => {
-    const configuredValue = lastRunConfig?.[AVAILABLE_MONEY_CONFIG_ID];
+    const configuredValue =
+      lastRunConfig?.[AVAILABLE_MONEY_CONFIG_ID] ??
+      lastRunConfig?.["initialBalance"];
     return typeof configuredValue === "number" && Number.isFinite(configuredValue)
       ? configuredValue
       : 10000;

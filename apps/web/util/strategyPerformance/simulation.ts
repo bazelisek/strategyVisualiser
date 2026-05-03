@@ -16,8 +16,8 @@ export function simulateTrades(
   const sortedEvents = [...resolvedEvents].sort((a, b) => {
     if (a.time !== b.time) return a.time - b.time;
     if (a.symbol !== b.symbol) return a.symbol.localeCompare(b.symbol);
-    // Process buys before sells at the same timestamp
-    return b.amount - a.amount;
+    // Process sells before buys at the same timestamp
+    return a.amount - b.amount;
   });
 
   const allTimes = Array.from(
@@ -62,21 +62,27 @@ export function simulateTrades(
 
       if (event.amount > 0) {
         totalBuys++;
+        const feeRate = 0.0005; // 0.05% default fee
         const buyValue = event.amount * event.price;
-        totalBuyValue += buyValue;
-        cash -= buyValue;
-        symbolLots.push({
-          symbol: event.symbol,
-          quantity: event.amount,
-          buyPrice: event.price,
-          buyTime: event.time,
-        });
-        symbolQuantity.set(
-          event.symbol,
-          (symbolQuantity.get(event.symbol) ?? 0) + event.amount,
-        );
+        const fee = buyValue * feeRate;
+        
+        if (cash >= buyValue + fee - EPSILON) {
+          totalBuyValue += buyValue;
+          cash -= (buyValue + fee);
+          symbolLots.push({
+            symbol: event.symbol,
+            quantity: event.amount,
+            buyPrice: event.price,
+            buyTime: event.time,
+          });
+          symbolQuantity.set(
+            event.symbol,
+            (symbolQuantity.get(event.symbol) ?? 0) + event.amount,
+          );
+        }
       } else {
         totalSells++;
+        const feeRate = 0.0005; // 0.05% default fee
         let remaining = Math.abs(event.amount);
         const currentQty = symbolQuantity.get(event.symbol) ?? 0;
         
@@ -94,6 +100,7 @@ export function simulateTrades(
           const lot = symbolLots[0];
           const matchedQuantity = Math.min(remaining, lot.quantity);
           const sellValue = matchedQuantity * event.price;
+          const fee = sellValue * feeRate;
           const buyValue = matchedQuantity * lot.buyPrice;
 
           trades.push({
@@ -103,14 +110,14 @@ export function simulateTrades(
             sell: event.price,
             buyValue,
             sellValue,
-            result: sellValue - buyValue,
+            result: sellValue - buyValue - fee, // Result includes sell fee (buy fee already subtracted from cash)
             buyTime: lot.buyTime,
             sellTime: event.time,
             isOpen: false,
           });
 
           totalSellValue += sellValue;
-          cash += sellValue;
+          cash += (sellValue - fee);
           remaining -= matchedQuantity;
           lot.quantity -= matchedQuantity;
 

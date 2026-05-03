@@ -55,4 +55,26 @@ describe("Strategy Performance - Unreal Results Investigation", () => {
     
     expect(result.data?.timeInvested).toBeLessThanOrEqual(2.0); 
   });
+
+  test("should use the price provided in strategyData instead of candle open", () => {
+    const initialCash = 10000;
+    const result = getAggregatedStrategyPerformance([
+      {
+        symbol: "TEST",
+        strategyData: [
+          { time: 1000, amount: 100, price: 100 }, // Buy at 100
+          { time: 2000, amount: -100, price: 150 }, // Sell at 150 (but candle open is 200)
+        ],
+        transformedData: {
+          candles: [
+            { time: at(1000), open: 100, high: 100, low: 100, close: 100, volume: 1 },
+            { time: at(2000), open: 200, high: 200, low: 200, close: 200, volume: 1 },
+          ]
+        }
+      }
+    ], initialCash);
+
+    expect(result.data?.endingValue).toBe(15000); // Should use 150, not 200
+    expect(result.data?.totalReturnPct).toBe(50);
+  });
 });

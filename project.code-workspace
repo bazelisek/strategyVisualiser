@@ -7,6 +7,10 @@
     {
       "name": "Java Backend",
       "path": "apps/backend"
+    },
+    {
+      "name": "Python Backtester",
+      "path": "apps/pythonBacktester"
     }
   ],
   "settings": {

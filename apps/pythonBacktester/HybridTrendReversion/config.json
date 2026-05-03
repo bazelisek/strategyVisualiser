@@ -1,0 +1,27 @@
+{
+  "trendFastPeriod": 20,
+  "trendSlowPeriod": 50,
+  "adxPeriod": 14,
+  "adxThreshold": 25,
+  "rsiPeriod": 14,
+  "rsiOversold": 30,
+  "rsiOverbought": 70,
+  "bbPeriod": 20,
+  "bbStdDev": 2.0,
+  "atrPeriod": 14,
+  "atrMultiplier": 2.5,
+  "maxPositions": 2,
+  "maxAllocationPerTrade": 50,
+  "initialBalance": 10000,
+  "riskPerTrade": 20.0,
+  "universe": [
+    "BTC-USD",
+    "ETH-USD"
+  ],
+  "slippage": 0.0001,
+  "fees": 0.0000,
+  "maxFillFraction": 0.8,
+  "interval": "1d",
+  "start": "2025-05-03",
+  "end": "2026-05-03"
+}
