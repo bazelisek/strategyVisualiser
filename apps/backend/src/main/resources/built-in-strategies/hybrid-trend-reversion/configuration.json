@@ -101,7 +101,7 @@
     "id": "riskPerTrade",
     "label": "Risk Per Trade (%)",
     "type": "number",
-    "defaultValue": 1.0,
+    "defaultValue": 20.0,
     "required": true
   }
 ]

@@ -6,7 +6,7 @@ function formatMarkerAmount(amount: number) {
     return absAmount.toString();
   }
 
-  return absAmount.toFixed(4).replace(/\.?0+$/, "");
+  return absAmount.toFixed(2).replace(/\.?0+$/, "");
 }
 
 export function getTradeMarkers(fetchData: { time: number; amount: number }[]) {
@@ -16,7 +16,7 @@ export function getTradeMarkers(fetchData: { time: number; amount: number }[]) {
     position: amount < 0 ? "aboveBar" : "belowBar",
     shape: amount < 0 ? "arrowDown" : "arrowUp",
     color: amount < 0 ? "#F7525F" : "#22AB94",
-    text: `${amount < 0 ? "Sell" : "Buy"} ${formatMarkerAmount(amount)}`,
+    text: `${formatMarkerAmount(amount)}`,
   }));
 }
 

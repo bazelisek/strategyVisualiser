@@ -72,15 +72,15 @@ export default function TradeDetails({
                 sortable: true,
               },
               {
-                id: "buy",
-                header: "Buy $",
-                cell: (r: EnrichedTrade) => r.buyValue.toFixed(2),
+                id: "buyPrice",
+                header: "Buy Price",
+                cell: (r: EnrichedTrade) => r.buy.toFixed(4),
                 sortable: true,
               },
               {
-                id: "sell",
-                header: "Sell $",
-                cell: (r: EnrichedTrade) => r.sellValue.toFixed(2),
+                id: "sellPrice",
+                header: "Sell Price",
+                cell: (r: EnrichedTrade) => r.sell.toFixed(4),
                 sortable: true,
               },
               {
