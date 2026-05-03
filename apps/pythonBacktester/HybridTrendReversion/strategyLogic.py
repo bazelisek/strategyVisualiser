@@ -66,8 +66,11 @@ def prepare_indicators(df: pd.DataFrame, config: dict) -> pd.DataFrame:
         config.get("rsiPeriod", 14),
         config.get("atrPeriod", 14),
     )
+    
+    #print("RAW LEN:", len(df))
+    #print(df[["close","high","low"]].head())
 
-    if len(df) < lookback + 2:
+    if len(df) < lookback:
         return pd.DataFrame()
 
     # Safe: backward-looking only
@@ -88,7 +91,13 @@ def prepare_indicators(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     ).average_true_range()
 
     required_cols = ["ema_fast", "ema_slow", "adx", "rsi", "bb_hband", "bb_lband", "atr"]
+    #print("NaNs before drop:")
+    #print(df[["ema_fast","ema_slow","adx","rsi","bb_hband","bb_lband","atr"]].isna().sum())
+
+    
     df = df.dropna(subset=required_cols).reset_index(drop=True)
+
+    #print("AFTER DROP:", len(df))
     return df
 
 
@@ -162,7 +171,7 @@ def calculate_position_size(
 ) -> float:
     risk_per_trade = float(config.get("riskPerTrade", 1.0)) / 100.0
     max_allocation_pct = float(config.get("maxAllocationPerTrade", 20)) / 100.0
-    fee_rate = float(config.get("feeRate", 0.0005))
+    fee_rate = float(config.get("feeRate", config.get("fees", 0.0005)))
 
     stop_dist = atr * float(config["atrMultiplier"])
     if stop_dist <= 0:
@@ -233,15 +242,31 @@ def get_signals(
     active_count = sum(1 for s in positions.values() if s["in_position"])
     signals: Dict[str, dict] = {}
 
+    # Support both 'feeRate' and 'fees' for consistency
+    fee_rate = float(config.get("feeRate", config.get("fees", 0.0005)))
+
     # Pre-process all symbols
     market_data = {}
     for symbol, df in candles_by_symbol.items():
-        processed_df = prepare_indicators(df, config)
-        if not processed_df.empty and len(processed_df) >= 2:
+        # The execution bar is the very last row provided (Day N)
+        # In production at Open, this bar only has the Open price.
+        if df.empty:
+            continue
+            
+        execution_row = df.iloc[-1]
+        
+        # Calculate indicators on data BEFORE the execution bar (up to Day N-1)
+        # to ensure no lookahead and consistent signals whether at Open or Close.
+        historical_df = df.iloc[:-1]
+        processed_df = prepare_indicators(historical_df, config)
+        
+        if not processed_df.empty:
             market_data[symbol] = {
-                "prev": processed_df.iloc[-1],
-                "prev_prev": processed_df.iloc[-2],
+                "row": execution_row, # Day N (where trade happens)
+                "prev": processed_df.iloc[-1], # Day N-1 (Signals ready)
+                "prev_prev": processed_df.iloc[-2] if len(processed_df) >= 2 else processed_df.iloc[-1],
             }
+
 
     # 1. Check Exits first
     exited_symbols = set()
@@ -258,9 +283,19 @@ def get_signals(
                 "signal": "SELL",
                 "shares": float(state["shares"]),
                 "trailing_stop_atr_multiplier": float(config["atrMultiplier"]),
+                "atr": float(prev["atr"]),
+                "prev_high": float(prev["high"]),
             }
             exited_symbols.add(symbol)
             active_count -= 1
+        else:
+            signals[symbol] = {
+                "signal": "HOLD",
+                "shares": 0.0,
+                "trailing_stop_atr_multiplier": float(config["atrMultiplier"]),
+                "atr": float(prev["atr"]),
+                "prev_high": float(prev["high"]),
+            }
 
     # 2. Check Entries second
     candidates: List[tuple[str, float]] = []
@@ -285,17 +320,18 @@ def get_signals(
             break
 
         data = market_data[symbol]
+        row = data["row"]
         prev = data["prev"]
         
-        # We use prev['close'] as proxy for next open for sizing estimation
-        # In actual execution at next open, the caller might re-adjust.
-        est_buy_price = float(prev["close"])
+        # Match emit_trades: Use the open of the execution bar for sizing, including slippage
+        slippage = float(config.get("slippage", 0.0005))
+        buy_price = float(row["open"]) * (1 + slippage)
         atr = float(prev["atr"])
 
         shares = calculate_position_size(
             equity,
             available_cash,
-            est_buy_price,
+            buy_price,
             atr,
             config
         )
@@ -305,10 +341,12 @@ def get_signals(
                 "signal": "BUY",
                 "shares": float(shares),
                 "trailing_stop_atr_multiplier": float(config["atrMultiplier"]),
+                "atr": atr,
+                "prev_high": float(prev["high"]),
             }
             active_count += 1
             # Simple cash reservation for next symbol sizing
-            available_cash -= (shares * est_buy_price * (1 + float(config.get("feeRate", 0.0005))))
+            available_cash -= (shares * buy_price * (1 + fee_rate))
 
     # 3. Fill the rest with HOLD
     for symbol in market_data:
@@ -567,7 +605,7 @@ class ProductionStrategy:
         actions = decide_actions(market_data, self.config, portfolio_state)
 
         exited_this_step = set()
-        fee_rate = float(self.config.get("feeRate", 0.0005))
+        fee_rate = float(self.config.get("feeRate", self.config.get("fees", 0.0005)))
         slippage = float(self.config.get("slippage", 0.0005))
 
         # Sells first
