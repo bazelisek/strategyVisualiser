@@ -815,6 +815,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
             universe={chartSymbols}
             loadCandlesForSymbols={loadCandlesForSymbols}
             availableMoney={availableMoney}
+            lastRunConfig={lastRunConfig}
           />
           <StrategyConsoleCollapsible
             consoleOutput={consoleOutput}

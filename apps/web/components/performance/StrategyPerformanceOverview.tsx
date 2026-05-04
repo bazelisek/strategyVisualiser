@@ -56,6 +56,7 @@ interface StrategyPerformanceOverviewProps {
     symbols: string[],
   ) => Promise<Record<string, TransformedData>>;
   availableMoney: number;
+  lastRunConfig: Record<string, unknown>;
 }
 
 export type EnrichedStrategyPerformance = {
@@ -116,7 +117,7 @@ function enrichPerformance(
       closedTrades.length
     : 0;
   const avgSellValue = closedTrades.length
-    ? closedTrades.reduce((sum, trade) => sum + trade.sellValue, 0) /
+    ? closedTrades.reduce((sum, trade) => sum + trade.buyValue, 0) /
       closedTrades.length
     : 0;
   const avgPnL = closedTrades.length ? pnl / closedTrades.length : 0;
@@ -158,6 +159,7 @@ const StrategyPerformanceOverview: React.FC<
   universe,
   loadCandlesForSymbols,
   availableMoney,
+  lastRunConfig,
 }) => {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<PerformanceScope>("current");
@@ -310,7 +312,10 @@ const StrategyPerformanceOverview: React.FC<
       return { error: "Loading global performance..." };
     }
 
-    return getAggregatedStrategyPerformance(inputs, availableMoney);
+    const feeRateValue = lastRunConfig?.["feeRate"] ?? lastRunConfig?.["fees"];
+    const feeRate = typeof feeRateValue === "number" ? feeRateValue : 0.0005;
+
+    return getAggregatedStrategyPerformance(inputs, availableMoney, feeRate);
   }, [
     availableMoney,
     allTradePoints,
@@ -318,6 +323,7 @@ const StrategyPerformanceOverview: React.FC<
     globalError,
     globalLoading,
     globalSymbols,
+    lastRunConfig,
   ]);
 
   const currentContribution = useMemo(() => {

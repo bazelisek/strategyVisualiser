@@ -193,7 +193,19 @@ def containerMain():
         print(json.dumps(result))
         return
 
-    all_data = pd.concat(dfs).sort_values('date').reset_index(drop=True)
+    all_data = pd.concat(dfs)
+    
+    # Robustly find the date column (handle 'Date', 'date', 'Datetime', etc.)
+    date_col = next((c for c in all_data.columns if c.lower() in ['date', 'datetime']), None)
+    if date_col:
+        all_data = all_data.rename(columns={date_col: 'date'})
+    elif all_data.index.name and all_data.index.name.lower() in ['date', 'datetime']:
+        all_data = all_data.reset_index().rename(columns={all_data.index.name: 'date'})
+    
+    if 'date' not in all_data.columns:
+        raise KeyError(f"Could not find date column. Available columns: {all_data.columns.tolist()}")
+
+    all_data = all_data.sort_values('date').reset_index(drop=True)
     dates = all_data['date'].drop_duplicates().tolist()
     
     portfolio_state: PortfolioState = { 

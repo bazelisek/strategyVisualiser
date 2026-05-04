@@ -163,11 +163,13 @@ function buildPerformanceResult(
   candlesBySymbol: Record<string, candleData>,
   resolvedEvents: ResolvedTradeEvent[],
   initialCash?: number,
+  feeRate?: number,
 ): StrategyPerformance {
   const simulation = simulateTrades(
     resolvedEvents,
     candlesBySymbol,
     initialCash,
+    feeRate,
   );
   if (!simulation.data) {
     return {
@@ -232,7 +234,7 @@ function buildPerformanceResult(
 export function getStrategyPerformance(
   strategyData: StrategyPoint[],
   transformedData: { candles: candleData },
-  options?: { initialCash?: number; symbol?: string },
+  options?: { initialCash?: number; symbol?: string; feeRate?: number },
 ): StrategyPerformance {
   const resolved = resolveTradeEvents(
     strategyData,
@@ -254,12 +256,14 @@ export function getStrategyPerformance(
     { [symbolKey]: transformedData.candles },
     resolved.events.map((event) => ({ ...event, symbol: symbolKey })),
     options?.initialCash,
+    options?.feeRate,
   );
 }
 
 export function getAggregatedStrategyPerformance(
   inputs: StrategyPerformanceInput[],
   initialCash?: number,
+  feeRate?: number,
 ): StrategyPerformance {
   const candlesBySymbol: Record<string, candleData> = {};
   const resolvedEvents: ResolvedTradeEvent[] = [];
@@ -306,8 +310,8 @@ export function getAggregatedStrategyPerformance(
   }
 
   if (!hasTrades) {
-    return buildPerformanceResult(candlesBySymbol, [], initialCash);
+    return buildPerformanceResult(candlesBySymbol, [], initialCash, feeRate);
   }
 
-  return buildPerformanceResult(candlesBySymbol, resolvedEvents, initialCash);
+  return buildPerformanceResult(candlesBySymbol, resolvedEvents, initialCash, feeRate);
 }

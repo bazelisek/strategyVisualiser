@@ -12,6 +12,7 @@ export function simulateTrades(
   resolvedEvents: ResolvedTradeEvent[],
   candlesBySymbol: Record<string, candleData>,
   initialCash?: number,
+  feeRate: number = 0.0005,
 ): { data?: SimulationResult; error?: string } {
   const sortedEvents = [...resolvedEvents].sort((a, b) => {
     if (a.time !== b.time) return a.time - b.time;
@@ -62,7 +63,6 @@ export function simulateTrades(
 
       if (event.amount > 0) {
         totalBuys++;
-        const feeRate = 0.0005; // 0.05% default fee
         const buyValue = event.amount * event.price;
         const fee = buyValue * feeRate;
         
@@ -79,21 +79,45 @@ export function simulateTrades(
             event.symbol,
             (symbolQuantity.get(event.symbol) ?? 0) + event.amount,
           );
+        } else {
+          // Partial buy
+          const maxBuyValue = cash;
+          if (maxBuyValue > fee) {
+            const actualBuyValue = maxBuyValue - fee;
+            const actualAmount = actualBuyValue / event.price;
+            if (actualAmount > EPSILON) {
+              totalBuyValue += actualBuyValue;
+              cash -= maxBuyValue;
+              symbolLots.push({
+                symbol: event.symbol,
+                quantity: actualAmount,
+                buyPrice: event.price,
+                buyTime: event.time,
+              });
+              symbolQuantity.set(
+                event.symbol,
+                (symbolQuantity.get(event.symbol) ?? 0) + actualAmount,
+              );
+            }
+          }
         }
       } else {
         totalSells++;
-        const feeRate = 0.0005; // 0.05% default fee
         let remaining = Math.abs(event.amount);
         const currentQty = symbolQuantity.get(event.symbol) ?? 0;
         
-        // Validation: Cannot sell more than we have
+        // Adjust to not sell more than held
         if (remaining > currentQty + EPSILON) {
-          return { error: `Attempted to sell ${remaining.toFixed(4)} of ${event.symbol}, but only ${currentQty.toFixed(4)} is held at time ${time}.` };
+          remaining = currentQty;
+        }
+
+        if (remaining <= EPSILON) {
+          continue;
         }
 
         symbolQuantity.set(
           event.symbol,
-          Math.max(0, currentQty + event.amount),
+          Math.max(0, currentQty - remaining),
         );
 
         while (remaining > EPSILON && symbolLots.length > 0) {
@@ -104,15 +128,13 @@ export function simulateTrades(
           const buyValue = matchedQuantity * lot.buyPrice;
 
           trades.push({
-            symbol: event.symbol || undefined,
-            quantity: matchedQuantity,
-            buy: lot.buyPrice,
-            sell: event.price,
+            symbol: event.symbol,
+            time: event.time,
+            amount: -matchedQuantity,
+            price: event.price,
             buyValue,
             sellValue,
-            result: sellValue - buyValue - fee, // Result includes sell fee (buy fee already subtracted from cash)
-            buyTime: lot.buyTime,
-            sellTime: event.time,
+            result: sellValue - buyValue - fee,
             isOpen: false,
           });
 
@@ -172,15 +194,13 @@ export function simulateTrades(
       const buyValue = lot.quantity * lot.buyPrice;
 
       trades.push({
-        symbol: symbol || undefined,
-        quantity: lot.quantity,
-        buy: lot.buyPrice,
-        sell: lastPrice,
+        symbol: symbol,
+        time: lot.buyTime,
+        amount: lot.quantity,
+        price: lot.buyPrice,
         buyValue,
         sellValue,
         result: sellValue - buyValue,
-        buyTime: lot.buyTime,
-        sellTime: lastTime,
         isOpen: true,
       });
     }
