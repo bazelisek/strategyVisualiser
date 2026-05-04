@@ -10,7 +10,7 @@ from math import inf
 from typing import TypedDict, Dict
 from workspace_io_container import load_bars, load_config
 
-USE_CONTAINER = False
+USE_CONTAINER = True
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)

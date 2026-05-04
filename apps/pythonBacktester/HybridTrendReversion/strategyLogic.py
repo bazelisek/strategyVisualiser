@@ -727,6 +727,13 @@ class ProductionStrategy:
 
             self.state.cash -= (cost + fee)
 
+        # Update last price for all positions to the close of the current bar
+        for event in current_events:
+            symbol = event["symbol"]
+            state = self._ensure_symbol_state(symbol)
+            if state.in_position:
+                state.last_price = float(event["row"]["close"])
+
             # Removing for realism
             """
             # Immediate stop-out on the entry bar, same as your original logic
