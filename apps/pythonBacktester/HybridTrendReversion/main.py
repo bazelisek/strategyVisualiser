@@ -41,9 +41,9 @@ def execute_signals(
     slippage = float(config.get("slippage", 0.0005))
     max_fill_fraction = config.get("maxFillFraction", 0.25)
 
+    # ================= EXIT (Signal or Stop Loss) =================
     for symbol, signal_data in signals.items():
         signal = signal_data.get("signal", "HOLD")
-
         if symbol not in current_data:
             continue
 
@@ -51,15 +51,10 @@ def execute_signals(
         open_price = float(row["open"])
         low_price = float(row["low"])
         high_price = float(row["high"])
-        volume = float(row.get("volume", 0))
         epoch = int(row["epoch_seconds"])
 
         position = portfolio_state["positions"][symbol]
 
-        # --- simulace likvidity ---
-        max_shares_liquidity = volume * max_fill_fraction if volume > 0 else float("inf")
-
-        # ================= EXIT (Signal or Stop Loss) =================
         if position["in_position"]:
             exit_price = None
             
@@ -79,6 +74,9 @@ def execute_signals(
                 exit_price = max(low_price, min(high_price, exit_price))
                 
                 shares = position["shares"]
+                # (liquidity check omitted for brevity in thought, but must be in code)
+                volume = float(row.get("volume", 0))
+                max_shares_liquidity = volume * max_fill_fraction if volume > 0 else float("inf")
                 shares = min(shares, max_shares_liquidity)
                 
                 if shares > 0:
@@ -100,19 +98,43 @@ def execute_signals(
                         position["stop_loss"] = float("inf")
                         position["highest_price"] = float("-inf")
                         position["last_price"] = float("-inf")
-                        # Skip BUY on the same bar if we just exited (to match ProductionStrategy)
-                        continue
                     else:
                         position["shares"] = remaining
 
-        # ================= BUY =================
-        if signal == "BUY" and not position["in_position"]:
+    # ================= UPDATE Trailing Stop (Survivors) =================
+    for symbol, signal_data in signals.items():
+        position = portfolio_state["positions"].get(symbol)
+        if position and position["in_position"]:
+            atr_val = float(signal_data.get("atr", 0.0))
+            atr_mult = float(signal_data.get("trailing_stop_atr_multiplier", 2.5))
+            prev_high = float(signal_data.get("prev_high", 0.0))
+            
+            position["highest_price"] = max(position["highest_price"], prev_high)
+            trailing_stop = position["highest_price"] - (atr_val * atr_mult)
+            position["stop_loss"] = max(position.get("stop_loss", 0.0), trailing_stop)
+
+    # ================= BUY =================
+    for symbol, signal_data in signals.items():
+        signal = signal_data.get("signal", "HOLD")
+        if signal != "BUY" or symbol not in current_data:
+            continue
+            
+        row = current_data[symbol]
+        position = portfolio_state["positions"][symbol]
+        
+        if not position["in_position"]:
+            open_price = float(row["open"])
+            low_price = float(row["low"])
+            high_price = float(row["high"])
+            volume = float(row.get("volume", 0))
+            epoch = int(row["epoch_seconds"])
+            max_shares_liquidity = volume * max_fill_fraction if volume > 0 else float("inf")
+
             shares = float(signal_data.get("shares", 0.0))
             shares = min(shares, max_shares_liquidity)
 
             if shares > 0.01:
                 buy_price = open_price * (1 + slippage)
-                # Clamp to [low, high]
                 buy_price = max(low_price, min(high_price, buy_price))
 
                 cost = shares * buy_price
@@ -131,7 +153,6 @@ def execute_signals(
                 position["highest_price"] = buy_price
                 position["last_price"] = buy_price
                 
-                # Initial stop loss (matches ProductionStrategy.step)
                 atr_val = float(signal_data.get("atr", 0.0))
                 atr_mult = float(signal_data.get("trailing_stop_atr_multiplier", 2.5))
                 position["stop_loss"] = buy_price - (atr_val * atr_mult)
@@ -143,23 +164,11 @@ def execute_signals(
                     "price": float(buy_price)
                 })
 
-        # ================= UPDATE Trailing Stop =================
-        if position["in_position"]:
-            position["last_price"] = float(row["close"])
-            # Update highest price seen (using high of current bar)
-            pass
-
-    # Update stops after the execution loop to match ProductionStrategy's end-of-step update
-    for symbol, signal_data in signals.items():
+    # ================= UPDATE Last Price =================
+    for symbol, row in current_data.items():
         position = portfolio_state["positions"].get(symbol)
         if position and position["in_position"]:
-            atr_val = float(signal_data.get("atr", 0.0))
-            atr_mult = float(signal_data.get("trailing_stop_atr_multiplier", 2.5))
-            prev_high = float(signal_data.get("prev_high", 0.0))
-            
-            position["highest_price"] = max(position["highest_price"], prev_high)
-            trailing_stop = position["highest_price"] - (atr_val * atr_mult)
-            position["stop_loss"] = max(position.get("stop_loss", 0.0), trailing_stop)
+            position["last_price"] = float(row["close"])
 
     return trades_made
 
@@ -240,6 +249,11 @@ def containerMain():
             row['symbol']: float(row['open'])
             for _, row in current_bars.iterrows()
         }
+
+        # Update last_price to current open for equity calculation
+        for symbol, open_price in execution_opens.items():
+            if symbol in portfolio_state["positions"]:
+                portfolio_state["positions"][symbol]["last_price"] = open_price
         
         signals = get_signals(history_by_symbol, execution_opens, portfolio_state, config)
         
@@ -383,9 +397,14 @@ if __name__ == "__main__":
             history_by_symbol[symbol] = historical_data[historical_data['symbol'] == symbol]
             
         execution_opens = {
-            row['symbol']: row['open']
+            row['symbol']: float(row['open'])
             for _, row in current_bars.iterrows()
         }
+
+        # Update last_price to current open for equity calculation
+        for symbol, open_price in execution_opens.items():
+            if symbol in portfolio_state["positions"]:
+                portfolio_state["positions"][symbol]["last_price"] = open_price
         
         signals = get_signals(history_by_symbol, execution_opens, portfolio_state, config)
         

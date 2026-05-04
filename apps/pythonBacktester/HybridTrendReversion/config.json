@@ -10,13 +10,19 @@
   "bbStdDev": 2.0,
   "atrPeriod": 14,
   "atrMultiplier": 2.5,
-  "maxPositions": 2,
-  "maxAllocationPerTrade": 50,
+  "maxPositions": 5,
+  "maxAllocationPerTrade": 20,
   "initialBalance": 10000,
   "riskPerTrade": 20.0,
   "universe": [
     "BTC-USD",
-    "ETH-USD"
+    "ETH-USD",
+    "TRX-USD",
+    "XRP-USD",
+    "SOL-USD",
+    "DOGE-USD",
+    "BNB-USD",
+    "WBT-USD"
   ],
   "slippage": 0.0001,
   "fees": 0.0000,

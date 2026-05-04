@@ -171,7 +171,7 @@ def calculate_position_size(
 ) -> float:
     risk_per_trade = float(config.get("riskPerTrade", 1.0)) / 100.0
     max_allocation_pct = float(config.get("maxAllocationPerTrade", 20)) / 100.0
-    fee_rate = float(config.get("feeRate", config.get("fees", 0.0005)))
+    fee_rate = float(config.get("feeRate", config.get("fees", 0.0)))
 
     stop_dist = atr * float(config["atrMultiplier"])
     if stop_dist <= 0:
@@ -246,7 +246,7 @@ def get_signals(
     signals: Dict[str, dict] = {}
 
     # Support both 'feeRate' and 'fees' for consistency
-    fee_rate = float(config.get("feeRate", config.get("fees", 0.0005)))
+    fee_rate = float(config.get("feeRate", config.get("fees", 0.0)))
 
     # Pre-process all symbols
     market_data = {}
@@ -273,14 +273,18 @@ def get_signals(
     # 1. Check Exits first
     exited_symbols = set()
     for symbol, data in market_data.items():
-        state = positions.get(symbol, {"in_position": False, "shares": 0.0})
+        state = positions.get(symbol, {"in_position": False, "shares": 0.0, "stop_loss": float("inf")})
         if not state["in_position"]:
             continue
 
         prev = data["prev"]
         prev_prev = data["prev_prev"]
+        open_price = data["open"]
 
-        if check_exit_signal(prev, prev_prev, config):
+        exit_signal = check_exit_signal(prev, prev_prev, config)
+        stop_hit_at_open = open_price < float(state.get("stop_loss", float("inf")))
+
+        if exit_signal or stop_hit_at_open:
             signals[symbol] = {
                 "signal": "SELL",
                 "shares": float(state["shares"]),
@@ -395,6 +399,7 @@ def decide_actions(
     """
     slippage = float(config.get("slippage", 0.0005))
     max_positions = int(config.get("maxPositions", 5))
+    fee_rate = float(config.get("feeRate", config.get("fees", 0.0)))
 
     cash = float(portfolio_state["cash"])
     positions = portfolio_state["positions"]
@@ -411,9 +416,8 @@ def decide_actions(
 
     # Exits first
     for symbol, data in market_data.items():
-        state = positions[symbol]
-
-        if not state["in_position"]:
+        state = positions.get(symbol)
+        if not state or not state["in_position"]:
             continue
 
         row = data["row"]
@@ -421,17 +425,12 @@ def decide_actions(
         prev_prev = data["prev_prev"]
 
         open_price = float(row["open"])
-        low = float(row["low"])
-
+        
+        # Only Signal Exit or Gap-down Stop Loss is known at Open
         exit_signal = check_exit_signal(prev, prev_prev, config)
-        exit_price = None
+        stop_hit_at_open = open_price < float(state["stop_loss"])
 
-        if low < float(state["stop_loss"]):
-            exit_price = float(state["stop_loss"]) * (1 - slippage)
-        elif exit_signal:
-            exit_price = open_price * (1 - slippage)
-
-        if exit_price is not None:
+        if exit_signal or stop_hit_at_open:
             actions[symbol] = {
                 "action": "SELL",
                 "amount": float(state["shares"]),
@@ -473,7 +472,7 @@ def decide_actions(
 
         shares = calculate_position_size(
             equity,
-            available_cash,   # <-- CRITICAL CHANGE
+            available_cash,
             buy_price,
             atr,
             config
@@ -481,13 +480,13 @@ def decide_actions(
 
         if shares > 0:
             estimated_cost = shares * buy_price
-            estimated_fee = estimated_cost * float(config.get("feeRate", 0.0005))
+            estimated_fee = estimated_cost * fee_rate
 
             total_cost = estimated_cost + estimated_fee
 
             if total_cost > available_cash:
-                shares = available_cash / (buy_price * (1 + float(config.get("feeRate", 0.0005))))
-                total_cost = shares * buy_price * (1 + float(config.get("feeRate", 0.0005)))
+                shares = available_cash / (buy_price * (1 + fee_rate))
+                total_cost = shares * buy_price * (1 + fee_rate)
 
             if shares > 0:
                 actions[symbol] = {
@@ -498,6 +497,7 @@ def decide_actions(
                 available_cash -= total_cost   # <-- reserve cash
                 active += 1
             else:
+                actions.setdefault(symbol, {"action": "HOLD", "amount": 0.0})
                 actions.setdefault(symbol, {"action": "HOLD", "amount": 0.0})
 
     for symbol in market_data:
@@ -607,7 +607,7 @@ class ProductionStrategy:
         actions = decide_actions(market_data, self.config, portfolio_state)
 
         exited_this_step = set()
-        fee_rate = float(self.config.get("feeRate", self.config.get("fees", 0.0005)))
+        fee_rate = float(self.config.get("feeRate", self.config.get("fees", 0.0)))
         slippage = float(self.config.get("slippage", 0.0005))
 
         # Sells first
@@ -616,7 +616,7 @@ class ProductionStrategy:
             action = actions.get(symbol, {"action": "HOLD", "amount": 0.0})
             state = self._ensure_symbol_state(symbol)
 
-            if action["action"] != "SELL" or not state.in_position:
+            if not state.in_position:
                 continue
 
             row = event["row"]
@@ -624,15 +624,19 @@ class ProductionStrategy:
             low = float(row["low"])
             high = float(row["high"])
 
+            exit_price = None
             if open_price < state.stop_loss:
                 # Gap down below stop loss - exit at open
                 exit_price = open_price * (1 - slippage)
             elif low < state.stop_loss:
                 # Hit stop loss during the bar
                 exit_price = state.stop_loss * (1 - slippage)
-            else:
+            elif action["action"] == "SELL":
                 # Exit signal (from previous bar)
                 exit_price = open_price * (1 - slippage)
+
+            if exit_price is None:
+                continue
 
             # Clamp price to [low, high]
             exit_price = max(low, min(high, exit_price))
