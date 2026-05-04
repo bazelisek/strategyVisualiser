@@ -1,10 +1,21 @@
+import sys
+
 import workspace_io
+import json
+import logging
 from strategyLogic import get_signals
 from datetime import datetime
 import pandas as pd
 from math import inf
 from typing import TypedDict, Dict
 from strategyLogic import emit_trades
+from workspace_io_container import load_bars, load_config
+
+USE_CONTAINER = True
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Position(TypedDict):
     shares: float
@@ -154,6 +165,94 @@ def execute_signals(
     return trades_made
 
 
+def containerMain():
+    config = load_config()
+    logger.debug("Config loaded: %s", config)
+    
+    start = datetime.fromisoformat(config['start']) if config.get('start') else None
+    end = datetime.fromisoformat(config['end']) if config.get('end') else None
+    interval = config.get('interval', '1d')
+    universe = config.get('universe') or []
+    
+    bars_data = load_bars()
+    
+    dfs = []
+    for symbol, df in bars_data.items():
+        temp = df.copy()
+        temp['symbol'] = symbol
+        dfs.append(temp)
+
+    if not dfs:
+        result = {
+            "status": "ok",
+            "strategy": "Hybrid Trend Reversion",
+            "runtime": "python",
+            "tradeCount": 0,
+            "trades": [],
+        }
+        print(json.dumps(result))
+        return
+
+    all_data = pd.concat(dfs).sort_values('date').reset_index(drop=True)
+    dates = all_data['date'].drop_duplicates().tolist()
+    
+    portfolio_state: PortfolioState = { 
+        "cash": float(config.get("initialBalance", 1000.0)), 
+        "positions": {
+            s: {
+                "shares" : 0.0, 
+                "in_position" : False, 
+                "stop_loss": inf, 
+                "highest_price": -inf, 
+                "last_price": 0.0
+            } for s in universe
+        }
+    }
+
+    all_trades = []
+
+    for current_date in dates:
+        # historical_data up to but NOT including current_date
+        historical_data = all_data[all_data['date'] < current_date]
+        # current_bars is the data FOR current_date
+        current_bars = all_data[all_data['date'] == current_date]
+        
+        if current_bars.empty:
+            continue
+
+        history_by_symbol = {}
+        for symbol in historical_data['symbol'].unique():
+            history_by_symbol[symbol] = historical_data[historical_data['symbol'] == symbol]
+            
+        execution_opens = {
+            row['symbol']: float(row['open'])
+            for _, row in current_bars.iterrows()
+        }
+        
+        signals = get_signals(history_by_symbol, execution_opens, portfolio_state, config)
+        
+        current_data = {
+            row['symbol']: row
+            for _, row in current_bars.iterrows()
+        }
+                
+        trades = execute_signals(signals, portfolio_state, current_data, config)
+        all_trades.extend(trades)
+
+    # Ensure trades are sorted by time
+    all_trades.sort(key=lambda x: (x['time'], x['symbol']))
+    
+    result = {
+        "status": "ok",
+        "strategy": "Hybrid Trend Reversion",
+        "runtime": "python",
+        "tradeCount": len(all_trades),
+        "trades": all_trades,
+    }
+    
+    logger.debug("Emitting final result with %s trades", len(all_trades))
+    # Print exactly one JSON object on the last line
+    print(json.dumps(result))
 
 
 def compare_signals(legacy_trades: list, step_trades: list):
@@ -197,6 +296,9 @@ def compare_signals(legacy_trades: list, step_trades: list):
         print("No differences found between Legacy and Step trades.")
 
 if __name__ == "__main__":
+    if USE_CONTAINER:
+        containerMain()
+        sys.exit(0)
     config = workspace_io.load_config()
     start = datetime.fromisoformat(config['start']) if config.get('start') else None
     end = datetime.fromisoformat(config['end']) if config.get('end') else None
