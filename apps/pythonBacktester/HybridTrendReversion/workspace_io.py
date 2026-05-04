@@ -16,7 +16,7 @@ def resolve_input_path(env_key: str, fallback: str) -> Path:
     return Path(fallback)
 
 def load_config() -> dict:
-    config_path = resolve_input_path("STRATEGY_CONFIG_FILE", "config.json")
+    config_path = resolve_input_path("STRATEGY_CONFIG_FILE", "HybridTrendReversion/config.json")
     LOGGER.debug("Loading config from %s", config_path)
     with config_path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
@@ -34,6 +34,7 @@ def load_bars(symbols: list[str], start: datetime | None, end: datetime | None, 
         auto_adjust=True,
         progress=False,
     )
+    df = df if df is not None else pd.DataFrame()
 
     bars_by_symbol = {}
 

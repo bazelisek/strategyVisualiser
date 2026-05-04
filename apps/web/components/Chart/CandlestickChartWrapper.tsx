@@ -96,18 +96,28 @@ const CandlestickChartWrapper: React.FC<CandlestickChartWrapperProps> = ({
               onTabChange={onSelectedSymbolChange}
             />
           </div>
-          <ShowModalButton index={index} className={classes.button} />
           <Stack
-            width={"100%"}
-            gap={2}
             direction={"row"}
-            justifyContent={"flex-start"}
+            justifyContent={"space-between"}
             alignItems={"center"}
+            width={"100%"}
+            m={0}
           >
-            <Config onClick={handleBackToTileConfig} />
-            <h2 className={classes.title}>
-              {transformedData.longName || selectedSymbol || "Select a stock"}
-            </h2>
+            <Stack
+              width={"100%"}
+              gap={2}
+              direction={"row"}
+              justifyContent={"flex-start"}
+              alignItems={"center"}
+            >
+              <Config onClick={handleBackToTileConfig} />
+              <h2 className={classes.title}>
+                {transformedData.longName || selectedSymbol || "Select a stock"}
+              </h2>
+            </Stack>
+            <div>
+              <ShowModalButton index={index} className={classes.button} />
+            </div>
           </Stack>
           {!selectedSymbol ? (
             <Typography level="body-md">

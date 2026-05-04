@@ -198,6 +198,7 @@ def calculate_position_size(
 
 def get_signals(
     candles_by_symbol: Dict[str, pd.DataFrame],
+    execution_opens: Dict[str, float],
     portfolio_state: dict,
     config: dict,
 ) -> Dict[str, dict]:
@@ -205,6 +206,8 @@ def get_signals(
     Core signal generation logic for external execution.
     Calculates technical indicators on the fly and returns signals.
 
+    candles_by_symbol: Dict of historical dataframes (UP TO Day N-1)
+    execution_opens: Dict of Open prices for Day N
     portfolio_state:
         {
             "cash": float,
@@ -248,21 +251,20 @@ def get_signals(
     # Pre-process all symbols
     market_data = {}
     for symbol, df in candles_by_symbol.items():
-        # The execution bar is the very last row provided (Day N)
-        # In production at Open, this bar only has the Open price.
         if df.empty:
             continue
             
-        execution_row = df.iloc[-1]
+        execution_open = execution_opens.get(symbol)
+        if execution_open is None:
+            continue
         
-        # Calculate indicators on data BEFORE the execution bar (up to Day N-1)
-        # to ensure no lookahead and consistent signals whether at Open or Close.
-        historical_df = df.iloc[:-1]
-        processed_df = prepare_indicators(historical_df, config)
+        # Calculate indicators on historical data
+        # Ensure no lookahead and consistent signals whether at Open or Close.
+        processed_df = prepare_indicators(df, config)
         
         if not processed_df.empty:
             market_data[symbol] = {
-                "row": execution_row, # Day N (where trade happens)
+                "open": execution_open, # Day N Open (where trade happens)
                 "prev": processed_df.iloc[-1], # Day N-1 (Signals ready)
                 "prev_prev": processed_df.iloc[-2] if len(processed_df) >= 2 else processed_df.iloc[-1],
             }
@@ -320,12 +322,12 @@ def get_signals(
             break
 
         data = market_data[symbol]
-        row = data["row"]
+        open_price = data["open"]
         prev = data["prev"]
         
         # Match emit_trades: Use the open of the execution bar for sizing, including slippage
         slippage = float(config.get("slippage", 0.0005))
-        buy_price = float(row["open"]) * (1 + slippage)
+        buy_price = float(open_price) * (1 + slippage)
         atr = float(prev["atr"])
 
         shares = calculate_position_size(

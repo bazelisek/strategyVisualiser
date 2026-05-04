@@ -201,12 +201,12 @@ if __name__ == "__main__":
     start = datetime.fromisoformat(config['start']) if config.get('start') else None
     end = datetime.fromisoformat(config['end']) if config.get('end') else None
     interval = config.get('interval', '1d')
-    universe = config.get('universe', [])
-    dict = workspace_io.load_bars(universe, start, end, interval)
+    universe = config.get('universe') or []
+    bars_data = workspace_io.load_bars(universe, start, end, interval)
     
     # Legacy non safe
     
-    all_trades = emit_trades(dict, config)
+    all_trades = emit_trades(bars_data, config)
             
     # Ensure trades are sorted by time
     all_trades.sort(key=lambda x: (x['time'], x['symbol']))
@@ -225,7 +225,7 @@ if __name__ == "__main__":
     
     dfs = []
 
-    for symbol, df in dict.items():
+    for symbol, df in bars_data.items():
         temp = df.copy()
         temp['symbol'] = symbol
         dfs.append(temp)
@@ -251,20 +251,28 @@ if __name__ == "__main__":
     step_trades_history = []
 
     for current_date in dates:
-        history = all_data[all_data['date'] <= current_date]
+        # historical_data up to but NOT including current_date
+        historical_data = all_data[all_data['date'] < current_date]
+        # current_bars is the data FOR current_date
+        current_bars = all_data[all_data['date'] == current_date]
         
+        if current_bars.empty:
+            continue
 
-        history_by_symbol = {
-            symbol: df
-            for symbol, df in history.groupby('symbol')
+        history_by_symbol = {}
+        for symbol in historical_data['symbol'].unique():
+            history_by_symbol[symbol] = historical_data[historical_data['symbol'] == symbol]
+            
+        execution_opens = {
+            row['symbol']: row['open']
+            for _, row in current_bars.iterrows()
         }
-        # print(history_by_symbol)
-        signals = get_signals(history_by_symbol, portfolio_state, config)
+        
+        signals = get_signals(history_by_symbol, execution_opens, portfolio_state, config)
         
         current_data = {
-            symbol: df.iloc[-1]
-            for symbol, df in history_by_symbol.items()
-            if len(df) > 0
+            row['symbol']: row
+            for _, row in current_bars.iterrows()
         }
                 
         trades = execute_signals(signals, portfolio_state, current_data, config)
