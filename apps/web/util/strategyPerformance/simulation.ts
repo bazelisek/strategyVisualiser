@@ -12,7 +12,7 @@ export function simulateTrades(
   resolvedEvents: ResolvedTradeEvent[],
   candlesBySymbol: Record<string, candleData>,
   initialCash?: number,
-  feeRate: number = 0.0005,
+  feeRate: number = 0.0001,
 ): { data?: SimulationResult; error?: string } {
   const sortedEvents = [...resolvedEvents].sort((a, b) => {
     if (a.time !== b.time) return a.time - b.time;
@@ -79,72 +79,50 @@ export function simulateTrades(
             event.symbol,
             (symbolQuantity.get(event.symbol) ?? 0) + event.amount,
           );
-        } else {
-          // Partial buy
-          const maxBuyValue = cash;
-          if (maxBuyValue > fee) {
-            const actualBuyValue = maxBuyValue - fee;
-            const actualAmount = actualBuyValue / event.price;
-            if (actualAmount > EPSILON) {
-              totalBuyValue += actualBuyValue;
-              cash -= maxBuyValue;
-              symbolLots.push({
-                symbol: event.symbol,
-                quantity: actualAmount,
-                buyPrice: event.price,
-                buyTime: event.time,
-              });
-              symbolQuantity.set(
-                event.symbol,
-                (symbolQuantity.get(event.symbol) ?? 0) + actualAmount,
-              );
-            }
-          }
         }
+        // Skip if insufficient cash
       } else {
         totalSells++;
         let remaining = Math.abs(event.amount);
         const currentQty = symbolQuantity.get(event.symbol) ?? 0;
         
         // Adjust to not sell more than held
-        if (remaining > currentQty + EPSILON) {
-          remaining = currentQty;
-        }
+        remaining = Math.min(remaining, currentQty);
 
-        if (remaining <= EPSILON) {
-          continue;
-        }
+        if (remaining > EPSILON) {
+          symbolQuantity.set(
+            event.symbol,
+            Math.max(0, currentQty - remaining),
+          );
 
-        symbolQuantity.set(
-          event.symbol,
-          Math.max(0, currentQty - remaining),
-        );
+          while (remaining > EPSILON && symbolLots.length > 0) {
+            const lot = symbolLots[0];
+            const matchedQuantity = Math.min(remaining, lot.quantity);
+            const sellValue = matchedQuantity * event.price;
+            const fee = sellValue * feeRate;
+            const buyValue = matchedQuantity * lot.buyPrice;
 
-        while (remaining > EPSILON && symbolLots.length > 0) {
-          const lot = symbolLots[0];
-          const matchedQuantity = Math.min(remaining, lot.quantity);
-          const sellValue = matchedQuantity * event.price;
-          const fee = sellValue * feeRate;
-          const buyValue = matchedQuantity * lot.buyPrice;
+            trades.push({
+              symbol: event.symbol,
+              quantity: matchedQuantity,
+              buy: lot.buyPrice,
+              sell: event.price,
+              buyValue,
+              sellValue,
+              result: sellValue - buyValue - fee,
+              buyTime: lot.buyTime,
+              sellTime: event.time,
+              isOpen: false,
+            });
 
-          trades.push({
-            symbol: event.symbol,
-            time: event.time,
-            amount: -matchedQuantity,
-            price: event.price,
-            buyValue,
-            sellValue,
-            result: sellValue - buyValue - fee,
-            isOpen: false,
-          });
+            totalSellValue += sellValue;
+            cash += (sellValue - fee);
+            remaining -= matchedQuantity;
+            lot.quantity -= matchedQuantity;
 
-          totalSellValue += sellValue;
-          cash += (sellValue - fee);
-          remaining -= matchedQuantity;
-          lot.quantity -= matchedQuantity;
-
-          if (lot.quantity <= EPSILON) {
-            symbolLots.shift();
+            if (lot.quantity <= EPSILON) {
+              symbolLots.shift();
+            }
           }
         }
       }
@@ -195,12 +173,14 @@ export function simulateTrades(
 
       trades.push({
         symbol: symbol,
-        time: lot.buyTime,
-        amount: lot.quantity,
-        price: lot.buyPrice,
+        quantity: lot.quantity,
+        buy: lot.buyPrice,
+        sell: lastPrice,
         buyValue,
         sellValue,
         result: sellValue - buyValue,
+        buyTime: lot.buyTime,
+        sellTime: lastTime,
         isOpen: true,
       });
     }

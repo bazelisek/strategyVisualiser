@@ -3,15 +3,14 @@ import sys
 import workspace_io
 import json
 import logging
-from strategyLogic import get_signals
+from strategyLogic import get_signals, emit_trades, ProductionStrategy
 from datetime import datetime
 import pandas as pd
 from math import inf
 from typing import TypedDict, Dict
-from strategyLogic import emit_trades
 from workspace_io_container import load_bars, load_config
 
-USE_CONTAINER = True
+USE_CONTAINER = False
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -194,6 +193,7 @@ def containerMain():
         return
 
     all_data = pd.concat(dfs)
+    all_data = all_data.dropna(subset=['open', 'high', 'low', 'close'])
     
     # Robustly find the date column (handle 'Date', 'date', 'Datetime', etc.)
     date_col = next((c for c in all_data.columns if c.lower() in ['date', 'datetime']), None)
@@ -319,8 +319,12 @@ if __name__ == "__main__":
     bars_data = workspace_io.load_bars(universe, start, end, interval)
     
     # Legacy non safe
-    
-    all_trades = emit_trades(bars_data, config)
+    legacy_strategy = ProductionStrategy(config)
+    all_trades = legacy_strategy.emit_trades(bars_data)
+    legacy_final_state = legacy_strategy.snapshot()
+    legacy_final_money = legacy_final_state["cash"] + sum(
+        p["shares"] * p["last_price"] for p in legacy_final_state["positions"].values()
+    )
             
     # Ensure trades are sorted by time
     all_trades.sort(key=lambda x: (x['time'], x['symbol']))
@@ -345,12 +349,13 @@ if __name__ == "__main__":
         dfs.append(temp)
 
     all_data = pd.concat(dfs)    
+    all_data = all_data.dropna(subset=['open', 'high', 'low', 'close'])
     all_data = all_data.sort_values('date').reset_index(drop=True)
 
     dates = all_data['date'].drop_duplicates().tolist()
     
     portfolio_state: PortfolioState = { 
-        "cash": config.get("initialBalance", 1000), 
+        "cash": float(config.get("initialBalance", 1000.0)), 
         "positions": {
             s: {
                 "shares" : 0.0, 
@@ -398,6 +403,12 @@ if __name__ == "__main__":
             print(current_date, portfolio_state["cash"])
     
     print(portfolio_state)
+    step_final_money = portfolio_state["cash"] + sum(
+        p["shares"] * p["last_price"] for p in portfolio_state["positions"].values() if p["last_price"] > 0
+    )
+    
+    print(f"Legacy Final Value: {legacy_final_money}")
+    print(f"Step Final Value: {step_final_money}")
     
     compare_signals(all_trades, step_trades_history)
             
