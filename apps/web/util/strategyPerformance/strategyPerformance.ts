@@ -6,6 +6,7 @@ import {
   ResolvedTradeEvent,
   Trade,
   SymbolContribution,
+  EquityPoint,
 } from "./types";
 import {
   EPSILON,
@@ -268,6 +269,8 @@ export function getAggregatedStrategyPerformance(
   const candlesBySymbol: Record<string, candleData> = {};
   const resolvedEvents: ResolvedTradeEvent[] = [];
   let hasTrades = false;
+  console.log("Inputs (" + inputs.length + "):");
+  console.log(inputs);
 
   for (const input of inputs) {
     const symbol =

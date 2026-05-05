@@ -301,8 +301,8 @@ const StrategyPerformanceOverview: React.FC<
       .filter(
         (
           item,
-        ): item is {
-          strategyData: { time: number; amount: number; symbol?: string }[];
+        ): item is typeof item & {
+          strategyData: { symbol?: string; time: number; amount: number }[];
           transformedData: TransformedData;
           symbol: string;
         } => item !== null,
