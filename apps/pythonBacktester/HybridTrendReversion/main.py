@@ -7,7 +7,7 @@ from strategyLogic import get_signals, emit_trades, ProductionStrategy
 from datetime import datetime
 import pandas as pd
 from math import inf
-from typing import TypedDict, Dict
+from typing import TypedDict, Dict, Any, cast
 from workspace_io_container import load_bars, load_config
 
 USE_CONTAINER = True
@@ -34,11 +34,11 @@ def execute_signals(
     signals: Dict[str, dict],
     portfolio_state: PortfolioState,
     current_data: Dict[str, pd.Series],
-    config: dict,
+    config: Dict[str, Any],
 ) -> list:
     trades_made = []
     fee_rate = float(config.get("feeRate", config.get("fees", 0.0)))
-    slippage = float(config.get("slippage", 0.0005))
+    slippage = float(config.get("slippage", 0.0001))
     max_fill_fraction = config.get("maxFillFraction", 0.25)
 
     # ================= EXIT (Signal or Stop Loss) =================
@@ -173,15 +173,88 @@ def execute_signals(
     return trades_made
 
 
+def run_step_by_step(all_data: pd.DataFrame, config: Dict[str, Any], universe: list):
+    start_str = config.get('start')
+    end_str = config.get('end')
+    
+    # Pre-parse start/end for comparison if they exist
+    start_dt = pd.to_datetime(start_str) if start_str else None
+    end_dt = pd.to_datetime(end_str) if end_str else None
+
+    # Ensure date column is datetime and sorted
+    all_data = all_data.copy()
+    all_data['date'] = pd.to_datetime(all_data['date'])
+    all_data = all_data.sort_values('date').reset_index(drop=True)
+    
+    # Filter all_data to match local behavior (no history before start)
+    if start_dt:
+        all_data = all_data[all_data['date'] >= start_dt]
+    if end_dt:
+        all_data = all_data[all_data['date'] <= end_dt]
+
+    # Filter dates for the trading loop
+    all_dates = sorted(all_data['date'].unique())
+    trading_dates = all_dates
+
+    portfolio_state: PortfolioState = { 
+        "cash": float(config.get("initialBalance", 10000.0)), 
+        "positions": {
+            s: {
+                "shares" : 0.0, 
+                "in_position" : False, 
+                "stop_loss": inf, 
+                "highest_price": -inf, 
+                "last_price": 0.0
+            } for s in universe
+        }
+    }
+
+    all_trades = []
+
+    for current_date in trading_dates:
+        # historical_data up to but NOT including current_date
+        historical_data = all_data[all_data['date'] < current_date]
+        # current_bars is the data FOR current_date
+        current_bars = all_data[all_data['date'] == current_date]
+        
+        if current_bars.empty:
+            continue
+
+        history_by_symbol = {}
+        for symbol in historical_data['symbol'].unique():
+            history_by_symbol[symbol] = historical_data[historical_data['symbol'] == symbol]
+            
+        execution_opens = {
+            row['symbol']: float(row['open'])
+            for _, row in current_bars.iterrows()
+        }
+
+        # Update last_price to current open for equity calculation
+        for symbol, open_price in execution_opens.items():
+            if symbol in portfolio_state["positions"]:
+                portfolio_state["positions"][symbol]["last_price"] = open_price
+        
+        signals = get_signals(history_by_symbol, execution_opens, cast(Dict[str, Any], portfolio_state), config)
+        
+        current_data = {
+            row['symbol']: row
+            for _, row in current_bars.iterrows()
+        }
+                
+        trades = execute_signals(signals, portfolio_state, current_data, config)
+        all_trades.extend(trades)
+        
+        if len(trades) > 0 and not USE_CONTAINER:
+            print(f"Trades at {current_date}: {trades}")
+            print(current_date, portfolio_state["cash"])
+            
+    return all_trades, portfolio_state
+
 def containerMain():
     config = load_config()
     logger.debug("Config loaded: %s", config)
     
-    start = datetime.fromisoformat(config['start']) if config.get('start') else None
-    end = datetime.fromisoformat(config['end']) if config.get('end') else None
-    interval = config.get('interval', '1d')
     universe = config.get('universe') or []
-    
     bars_data = load_bars()
     
     dfs = []
@@ -214,56 +287,7 @@ def containerMain():
     if 'date' not in all_data.columns:
         raise KeyError(f"Could not find date column. Available columns: {all_data.columns.tolist()}")
 
-    all_data = all_data.sort_values('date').reset_index(drop=True)
-    dates = all_data['date'].drop_duplicates().tolist()
-    
-    portfolio_state: PortfolioState = { 
-        "cash": float(config.get("initialBalance", 1000.0)), 
-        "positions": {
-            s: {
-                "shares" : 0.0, 
-                "in_position" : False, 
-                "stop_loss": inf, 
-                "highest_price": -inf, 
-                "last_price": 0.0
-            } for s in universe
-        }
-    }
-
-    all_trades = []
-
-    for current_date in dates:
-        # historical_data up to but NOT including current_date
-        historical_data = all_data[all_data['date'] < current_date]
-        # current_bars is the data FOR current_date
-        current_bars = all_data[all_data['date'] == current_date]
-        
-        if current_bars.empty:
-            continue
-
-        history_by_symbol = {}
-        for symbol in historical_data['symbol'].unique():
-            history_by_symbol[symbol] = historical_data[historical_data['symbol'] == symbol]
-            
-        execution_opens = {
-            row['symbol']: float(row['open'])
-            for _, row in current_bars.iterrows()
-        }
-
-        # Update last_price to current open for equity calculation
-        for symbol, open_price in execution_opens.items():
-            if symbol in portfolio_state["positions"]:
-                portfolio_state["positions"][symbol]["last_price"] = open_price
-        
-        signals = get_signals(history_by_symbol, execution_opens, portfolio_state, config)
-        
-        current_data = {
-            row['symbol']: row
-            for _, row in current_bars.iterrows()
-        }
-                
-        trades = execute_signals(signals, portfolio_state, current_data, config)
-        all_trades.extend(trades)
+    all_trades, _ = run_step_by_step(all_data, config, universe)
 
     # Ensure trades are sorted by time
     all_trades.sort(key=lambda x: (x['time'], x['symbol']))
@@ -364,62 +388,15 @@ if __name__ == "__main__":
 
     all_data = pd.concat(dfs)    
     all_data = all_data.dropna(subset=['open', 'high', 'low', 'close'])
-    all_data = all_data.sort_values('date').reset_index(drop=True)
-
-    dates = all_data['date'].drop_duplicates().tolist()
     
-    portfolio_state: PortfolioState = { 
-        "cash": float(config.get("initialBalance", 1000.0)), 
-        "positions": {
-            s: {
-                "shares" : 0.0, 
-                "in_position" : False, 
-                "stop_loss": inf, 
-                "highest_price": -inf, 
-                "last_price": 0.0
-            } for s in universe
-        }
-    }
+    # Robustly find the date column (handle 'Date', 'date', 'Datetime', etc.)
+    date_col = next((c for c in all_data.columns if c.lower() in ['date', 'datetime']), None)
+    if date_col:
+        all_data = all_data.rename(columns={date_col: 'date'})
+    elif all_data.index.name and all_data.index.name.lower() in ['date', 'datetime']:
+        all_data = all_data.reset_index().rename(columns={all_data.index.name: 'date'})
 
-    step_trades_history = []
-
-    for current_date in dates:
-        # historical_data up to but NOT including current_date
-        historical_data = all_data[all_data['date'] < current_date]
-        # current_bars is the data FOR current_date
-        current_bars = all_data[all_data['date'] == current_date]
-        
-        if current_bars.empty:
-            continue
-
-        history_by_symbol = {}
-        for symbol in historical_data['symbol'].unique():
-            history_by_symbol[symbol] = historical_data[historical_data['symbol'] == symbol]
-            
-        execution_opens = {
-            row['symbol']: float(row['open'])
-            for _, row in current_bars.iterrows()
-        }
-
-        # Update last_price to current open for equity calculation
-        for symbol, open_price in execution_opens.items():
-            if symbol in portfolio_state["positions"]:
-                portfolio_state["positions"][symbol]["last_price"] = open_price
-        
-        signals = get_signals(history_by_symbol, execution_opens, portfolio_state, config)
-        
-        current_data = {
-            row['symbol']: row
-            for _, row in current_bars.iterrows()
-        }
-                
-        trades = execute_signals(signals, portfolio_state, current_data, config)
-        step_trades_history.extend(trades)
-
-        debug_arr = [(symbol, data["signal"]) for symbol, data in signals.items() if data["signal"] != 'HOLD']
-        if len(trades) > 0:
-            print(f"Trades at {current_date}: {trades}")
-            print(current_date, portfolio_state["cash"])
+    step_trades_history, portfolio_state = run_step_by_step(all_data, config, universe)
     
     print(portfolio_state)
     step_final_money = portfolio_state["cash"] + sum(

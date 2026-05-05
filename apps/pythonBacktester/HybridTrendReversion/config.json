@@ -24,10 +24,10 @@
     "BNB-USD",
     "WBT-USD"
   ],
-  "slippage": 0.0001,
+  "slippage": 0.0000,
   "fees": 0.0000,
   "maxFillFraction": 0.8,
   "interval": "1d",
   "start": "2025-05-03",
-  "end": "2026-05-03"
+  "end": "2026-05-04"
 }

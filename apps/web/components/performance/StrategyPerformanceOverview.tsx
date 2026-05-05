@@ -313,7 +313,7 @@ const StrategyPerformanceOverview: React.FC<
     }
 
     const feeRateValue = lastRunConfig?.["feeRate"] ?? lastRunConfig?.["fees"];
-    const feeRate = typeof feeRateValue === "number" ? feeRateValue : 0.0005;
+    const feeRate = typeof feeRateValue === "number" ? feeRateValue : 0.0000;
 
     return getAggregatedStrategyPerformance(inputs, availableMoney, feeRate);
   }, [

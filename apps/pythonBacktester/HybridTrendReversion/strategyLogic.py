@@ -199,8 +199,8 @@ def calculate_position_size(
 def get_signals(
     candles_by_symbol: Dict[str, pd.DataFrame],
     execution_opens: Dict[str, float],
-    portfolio_state: dict,
-    config: dict,
+    portfolio_state: Dict[str, Any],
+    config: Dict[str, Any],
 ) -> Dict[str, dict]:
     """
     Core signal generation logic for external execution.
@@ -330,7 +330,7 @@ def get_signals(
         prev = data["prev"]
         
         # Match emit_trades: Use the open of the execution bar for sizing, including slippage
-        slippage = float(config.get("slippage", 0.0005))
+        slippage = float(config.get("slippage", 0.0001))
         buy_price = float(open_price) * (1 + slippage)
         atr = float(prev["atr"])
 
@@ -368,8 +368,8 @@ def get_signals(
 
 def decide_actions(
     market_data: Dict[str, dict],
-    config: dict,
-    portfolio_state: dict,
+    config: Dict[str, Any],
+    portfolio_state: Dict[str, Any],
 ) -> Dict[str, dict]:
     """
     Decision layer only. No fills here.
@@ -397,7 +397,7 @@ def decide_actions(
             }
         }
     """
-    slippage = float(config.get("slippage", 0.0005))
+    slippage = float(config.get("slippage", 0.0001))
     max_positions = int(config.get("maxPositions", 5))
     fee_rate = float(config.get("feeRate", config.get("fees", 0.0)))
 
@@ -608,7 +608,7 @@ class ProductionStrategy:
 
         exited_this_step = set()
         fee_rate = float(self.config.get("feeRate", self.config.get("fees", 0.0)))
-        slippage = float(self.config.get("slippage", 0.0005))
+        slippage = float(self.config.get("slippage", 0.0001))
 
         # Sells first
         for event in current_events:

@@ -12,7 +12,7 @@ export function simulateTrades(
   resolvedEvents: ResolvedTradeEvent[],
   candlesBySymbol: Record<string, candleData>,
   initialCash?: number,
-  feeRate: number = 0.0001,
+  feeRate: number = 0.0000,
 ): { data?: SimulationResult; error?: string } {
   const sortedEvents = [...resolvedEvents].sort((a, b) => {
     if (a.time !== b.time) return a.time - b.time;
