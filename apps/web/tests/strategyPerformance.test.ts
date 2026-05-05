@@ -47,6 +47,7 @@ describe("getStrategyPerformance", () => {
           { time: at(3000), open: 100, high: 100, low: 100, close: 100, volume: 1 },
         ],
       },
+      { feeRate: 0 },
     );
 
     expect(result.error).toBeUndefined();
@@ -82,6 +83,7 @@ describe("getStrategyPerformance", () => {
           },
         ],
       },
+      { initialCash: 1000, feeRate: 0 },
     );
 
     expect(result.error).toBeUndefined();
@@ -120,7 +122,7 @@ describe("getStrategyPerformance", () => {
           ],
         },
       },
-    ], 30);
+    ], 30, 0);
 
     expect(result.error).toBeUndefined();
     expect(result.data?.closedTrades).toBe(1);
@@ -145,7 +147,7 @@ describe("getStrategyPerformance", () => {
           { time: at(2000), open: 110, high: 110, low: 110, close: 110, volume: 1 },
         ],
       },
-      { initialCash: 1000, symbol: "AAPL" },
+      { initialCash: 1000, symbol: "AAPL", feeRate: 0 },
     );
 
     expect(result.error).toBeUndefined();

@@ -5,11 +5,27 @@ export function findFirstCandleIndexAtOrAfter(
   targetTime: number,
   startIndex: number,
 ): number {
-  let index = startIndex;
-  while (index < opens.length && opens[index].time < targetTime) {
-    index++;
+  if (opens.length === 0) return -1;
+
+  // Most backtests emit trades at the end of the bar or during the bar.
+  // We want to find the candle that *covers* this trade time.
+  // Usually this is the candle that starts at or just before the trade.
+  
+  let bestIndex = -1;
+  for (let i = startIndex; i < opens.length; i++) {
+    if (opens[i].time <= targetTime) {
+      bestIndex = i;
+    } else {
+      // If we found a candle starting AFTER the targetTime, and we haven't found any candle starting BEFORE it,
+      // we take this first candle AFTER it as a fallback (some strategies trade on the very first available bar).
+      if (bestIndex === -1) {
+        return i;
+      }
+      break;
+    }
   }
-  return index < opens.length ? index : -1;
+
+  return bestIndex;
 }
 
 export function normalizeSymbol(symbol?: string): string | undefined {

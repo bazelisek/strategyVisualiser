@@ -32,7 +32,7 @@ describe("Strategy Performance - Unreal Results Investigation", () => {
           ]
         }
       }
-    ], initialCash);
+    ], initialCash, 0);
 
     expect(result.error).toBeUndefined();
     
@@ -72,7 +72,7 @@ describe("Strategy Performance - Unreal Results Investigation", () => {
           ]
         }
       }
-    ], initialCash);
+    ], initialCash, 0);
 
     expect(result.data?.endingValue).toBe(15000); // Should use 150, not 200
     expect(result.data?.totalReturnPct).toBe(50);

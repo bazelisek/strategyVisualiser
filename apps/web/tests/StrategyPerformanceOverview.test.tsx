@@ -43,6 +43,12 @@ jest.mock("@/components/performance/TradeDetails", () => {
   };
 });
 
+jest.mock("@/components/Chart/EquityChart", () => {
+  return function MockEquityChart() {
+    return <div>Equity chart</div>;
+  };
+});
+
 describe("StrategyPerformanceOverview", () => {
   beforeEach(() => {
     window.scrollTo = jest.fn();
@@ -91,6 +97,7 @@ describe("StrategyPerformanceOverview", () => {
         universe={["AAPL", "MSFT"]}
         loadCandlesForSymbols={loadCandlesForSymbols}
         availableMoney={30}
+        lastRunConfig={{ feeRate: 0 }}
       />,
     );
 

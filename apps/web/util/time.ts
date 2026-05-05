@@ -22,6 +22,15 @@ const toDate = (value: number | string | Date) => {
   return new Date(normalizeTimestampString(trimmedValue));
 };
 
+export const formatLocalDate = (value: number | string | Date) => {
+  const date = toDate(value);
+  if (Number.isNaN(date.getTime())) return "Invalid date";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const formatLocalDateTime = (value: number | string | Date) => {
   const date = toDate(value);
   if (Number.isNaN(date.getTime())) return "Invalid date";

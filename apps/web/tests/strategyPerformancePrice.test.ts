@@ -18,6 +18,7 @@ describe("getStrategyPerformance with custom price", () => {
           { time: at(2000), open: 12, high: 13, low: 11, close: 12, volume: 1 },
         ],
       },
+      { feeRate: 0 },
     );
 
     expect(result.error).toBeUndefined();
@@ -42,6 +43,7 @@ describe("getStrategyPerformance with custom price", () => {
           { time: at(2000), open: 12, high: 13, low: 11, close: 12, volume: 1 },
         ],
       },
+      { feeRate: 0 },
     );
 
     expect(result.error).toBeUndefined();
@@ -63,6 +65,7 @@ describe("getStrategyPerformance with custom price", () => {
           { time: at(2000), open: 102, high: 103, low: 90, close: 92, volume: 1 },
         ],
       },
+      { feeRate: 0 },
     );
 
     expect(result.error).toBeUndefined();
