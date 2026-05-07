@@ -50,7 +50,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--poll-interval-seconds", type=float, default=0.5)
-    parser.add_argument("--timeout-seconds", type=float, default=300.0)
+    parser.add_argument("--timeout-seconds", type=float, default=1200.0)
     parser.add_argument("--output")
     return parser.parse_args()
 
