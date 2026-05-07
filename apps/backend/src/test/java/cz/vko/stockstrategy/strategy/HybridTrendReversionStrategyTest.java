@@ -93,5 +93,10 @@ class HybridTrendReversionStrategyTest {
         JsonNode result = objectMapper.readTree(resultLine);
         assertThat(result.path("status").asText()).isEqualTo("ok");
         assertThat(result.path("trades")).isNotEmpty();
+        assertThat(StreamSupport.stream(result.path("trades").spliterator(), false))
+                .allMatch(trade -> trade.hasNonNull("symbol")
+                        && trade.hasNonNull("time")
+                        && trade.hasNonNull("amount")
+                        && trade.hasNonNull("price"));
     }
 }

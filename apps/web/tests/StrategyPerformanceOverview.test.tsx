@@ -54,7 +54,7 @@ describe("StrategyPerformanceOverview", () => {
     window.scrollTo = jest.fn();
   });
 
-  test("toggles between current-stock and global performance", async () => {
+  test("opens on global performance and can toggle to current-stock contribution", async () => {
     const loadCandlesForSymbols = jest.fn().mockResolvedValue({
       AAPL: {
         symbol: "AAPL",
@@ -104,6 +104,16 @@ describe("StrategyPerformanceOverview", () => {
     fireEvent.click(screen.getByRole("button", { name: "Momentum" }));
 
     await waitFor(() => {
+      expect(loadCandlesForSymbols).toHaveBeenCalledWith(["AAPL", "MSFT"]);
+      expect(
+        screen.getByText("Global performance aggregates every stock in the resolved universe."),
+      ).toBeInTheDocument();
+      expect(screen.getAllByText("10.00%").length).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Current Stock" }));
+
+    await waitFor(() => {
       expect(
         screen.getByText(
           "Current stock performance shows how the selected stock contributed to the portfolio result.",
@@ -115,16 +125,6 @@ describe("StrategyPerformanceOverview", () => {
       expect(screen.getByText("6.67%")).toBeInTheDocument();
       // Avg Trade (2 / 10)
       expect(screen.getByText("20.00%")).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Global" }));
-
-    await waitFor(() => {
-      expect(loadCandlesForSymbols).toHaveBeenCalledWith(["AAPL", "MSFT"]);
-      expect(
-        screen.getByText("Global performance aggregates every stock in the resolved universe."),
-      ).toBeInTheDocument();
-      expect(screen.getAllByText("10.00%").length).toBeGreaterThan(0);
     });
   });
 });

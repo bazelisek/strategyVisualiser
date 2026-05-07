@@ -162,7 +162,7 @@ const StrategyPerformanceOverview: React.FC<
   lastRunConfig,
 }) => {
   const [open, setOpen] = useState(false);
-  const [scope, setScope] = useState<PerformanceScope>("current");
+  const [scope, setScope] = useState<PerformanceScope>("global");
   const [globalCandles, setGlobalCandles] = useState<Record<string, TransformedData>>(
     {},
   );
@@ -419,7 +419,7 @@ const StrategyPerformanceOverview: React.FC<
                   <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ mt: 2 }}>
                     <Card>
                       <Typography level="body-sm">
-                        {scope === "global" ? "Portfolio Return" : "Stock Return"}
+                        {scope === "global" ? "Portfolio Return" : "Return Contribution"}
                       </Typography>
                       <Typography fontSize="xl" fontWeight="lg">
                         {enriched.totalReturnPct.toFixed(2)}%

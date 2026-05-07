@@ -61,7 +61,7 @@ def prepare_indicators(df: pd.DataFrame, config: dict) -> pd.DataFrame:
 
     lookback = max(
         config.get("trendSlowPeriod", 50),
-        config.get("adxPeriod", 14),
+        config.get("adxPeriod", 14) * 2,
         config.get("bbPeriod", 20),
         config.get("rsiPeriod", 14),
         config.get("atrPeriod", 14),

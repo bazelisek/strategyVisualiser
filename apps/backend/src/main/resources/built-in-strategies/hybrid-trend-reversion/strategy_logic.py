@@ -61,7 +61,7 @@ def prepare_indicators(df: pd.DataFrame, config: dict) -> pd.DataFrame:
 
     lookback = max(
         config.get("trendSlowPeriod", 50),
-        config.get("adxPeriod", 14),
+        config.get("adxPeriod", 14) * 2,
         config.get("bbPeriod", 20),
         config.get("rsiPeriod", 14),
         config.get("atrPeriod", 14),
@@ -171,7 +171,7 @@ def calculate_position_size(
 ) -> float:
     risk_per_trade = float(config.get("riskPerTrade", 1.0)) / 100.0
     max_allocation_pct = float(config.get("maxAllocationPerTrade", 20)) / 100.0
-    fee_rate = float(config.get("feeRate", config.get("fees", 0.0005)))
+    fee_rate = float(config.get("feeRate", config.get("fees", 0.0)))
 
     stop_dist = atr * float(config["atrMultiplier"])
     if stop_dist <= 0:
@@ -198,8 +198,9 @@ def calculate_position_size(
 
 def get_signals(
     candles_by_symbol: Dict[str, pd.DataFrame],
-    portfolio_state: dict,
-    config: dict,
+    execution_opens: Dict[str, float],
+    portfolio_state: Dict[str, Any],
+    config: Dict[str, Any],
 ) -> Dict[str, dict]:
     """
     Core signal generation logic for external execution.
@@ -243,7 +244,7 @@ def get_signals(
     signals: Dict[str, dict] = {}
 
     # Support both 'feeRate' and 'fees' for consistency
-    fee_rate = float(config.get("feeRate", config.get("fees", 0.0005)))
+    fee_rate = float(config.get("feeRate", config.get("fees", 0.0)))
 
     # Pre-process all symbols
     market_data = {}
@@ -252,18 +253,17 @@ def get_signals(
         # In production at Open, this bar only has the Open price.
         if df.empty:
             continue
-            
-        execution_row = df.iloc[-1]
-        
-        # Calculate indicators on data BEFORE the execution bar (up to Day N-1)
-        # to ensure no lookahead and consistent signals whether at Open or Close.
-        historical_df = df.iloc[:-1]
-        processed_df = prepare_indicators(historical_df, config)
-        
+
+        execution_open = execution_opens.get(symbol)
+        if execution_open is None:
+            continue
+
+        processed_df = prepare_indicators(df, config)
+
         if not processed_df.empty:
             market_data[symbol] = {
-                "row": execution_row, # Day N (where trade happens)
-                "prev": processed_df.iloc[-1], # Day N-1 (Signals ready)
+                "open": execution_open,
+                "prev": processed_df.iloc[-1],
                 "prev_prev": processed_df.iloc[-2] if len(processed_df) >= 2 else processed_df.iloc[-1],
             }
 
@@ -271,14 +271,18 @@ def get_signals(
     # 1. Check Exits first
     exited_symbols = set()
     for symbol, data in market_data.items():
-        state = positions.get(symbol, {"in_position": False, "shares": 0.0})
+        state = positions.get(symbol, {"in_position": False, "shares": 0.0, "stop_loss": float("inf")})
         if not state["in_position"]:
             continue
 
         prev = data["prev"]
         prev_prev = data["prev_prev"]
+        open_price = data["open"]
 
-        if check_exit_signal(prev, prev_prev, config):
+        exit_signal = check_exit_signal(prev, prev_prev, config)
+        stop_hit_at_open = open_price < float(state.get("stop_loss", float("inf")))
+
+        if exit_signal or stop_hit_at_open:
             signals[symbol] = {
                 "signal": "SELL",
                 "shares": float(state["shares"]),
@@ -320,12 +324,10 @@ def get_signals(
             break
 
         data = market_data[symbol]
-        row = data["row"]
         prev = data["prev"]
         
-        # Match emit_trades: Use the open of the execution bar for sizing, including slippage
-        slippage = float(config.get("slippage", 0.0005))
-        buy_price = float(row["open"]) * (1 + slippage)
+        slippage = float(config.get("slippage", 0.0001))
+        buy_price = float(data["open"]) * (1 + slippage)
         atr = float(prev["atr"])
 
         shares = calculate_position_size(
@@ -362,8 +364,8 @@ def get_signals(
 
 def decide_actions(
     market_data: Dict[str, dict],
-    config: dict,
-    portfolio_state: dict,
+    config: Dict[str, Any],
+    portfolio_state: Dict[str, Any],
 ) -> Dict[str, dict]:
     """
     Decision layer only. No fills here.
@@ -391,7 +393,7 @@ def decide_actions(
             }
         }
     """
-    slippage = float(config.get("slippage", 0.0005))
+    slippage = float(config.get("slippage", 0.0001))
     max_positions = int(config.get("maxPositions", 5))
 
     cash = float(portfolio_state["cash"])
@@ -479,13 +481,17 @@ def decide_actions(
 
         if shares > 0:
             estimated_cost = shares * buy_price
-            estimated_fee = estimated_cost * float(config.get("feeRate", 0.0005))
+            estimated_fee = estimated_cost * float(config.get("feeRate", config.get("fees", 0.0)))
 
             total_cost = estimated_cost + estimated_fee
 
             if total_cost > available_cash:
-                shares = available_cash / (buy_price * (1 + float(config.get("feeRate", 0.0005))))
-                total_cost = shares * buy_price * (1 + float(config.get("feeRate", 0.0005)))
+                shares = available_cash / (
+                    buy_price * (1 + float(config.get("feeRate", config.get("fees", 0.0))))
+                )
+                total_cost = shares * buy_price * (
+                    1 + float(config.get("feeRate", config.get("fees", 0.0)))
+                )
 
             if shares > 0:
                 actions[symbol] = {
@@ -605,8 +611,8 @@ class ProductionStrategy:
         actions = decide_actions(market_data, self.config, portfolio_state)
 
         exited_this_step = set()
-        fee_rate = float(self.config.get("feeRate", self.config.get("fees", 0.0005)))
-        slippage = float(self.config.get("slippage", 0.0005))
+        fee_rate = float(self.config.get("feeRate", self.config.get("fees", 0.0)))
+        slippage = float(self.config.get("slippage", 0.0001))
 
         # Sells first
         for event in current_events:

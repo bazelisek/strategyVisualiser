@@ -15,19 +15,23 @@
   "initialBalance": 10000,
   "riskPerTrade": 20.0,
   "universe": [
-    "BTC-USD",
-    "ETH-USD",
-    "TRX-USD",
-    "XRP-USD",
-    "SOL-USD",
-    "DOGE-USD",
-    "BNB-USD",
-    "WBT-USD"
+    "GOOGL",
+    "NVDA",
+    "AMD",
+    "MC.PA",
+    "ASML",
+    "AMZN",
+    "META",
+    "TSLA",
+    "AAPL",
+    "MSFT",
+    "INTC",
+    "ADBE"
   ],
   "slippage": 0.0000,
   "fees": 0.0000,
   "maxFillFraction": 0.8,
   "interval": "1d",
-  "start": "2025-05-03",
+  "start": "2021-05-03",
   "end": "2026-05-04"
 }
