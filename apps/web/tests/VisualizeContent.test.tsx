@@ -12,7 +12,6 @@ jest.mock("react-redux", () => ({
   useSelector: (selector: (state: unknown) => unknown) =>
     selector({
       config: {
-        symbol: { defaultValue: "AAPL" },
         strategy: { defaultValue: "12:Momentum" },
         interval: { defaultValue: "1d" },
         period1: { defaultValue: "2024-01-10T10:15" },
@@ -92,7 +91,6 @@ describe("VisualizeContent", () => {
     await waitFor(() => {
       expect(handleTilesChange).toHaveBeenCalledWith([
         {
-          symbol: "AAPL",
           strategy: "12:Momentum",
           interval: "1d",
           period1: String(

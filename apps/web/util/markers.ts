@@ -1,7 +1,7 @@
 import { IChartApi, SeriesMarker, Time } from "lightweight-charts";
 
 function formatMarkerAmount(amount: number) {
-  const absAmount = Math.abs(amount);
+  const absAmount = Math.round(100 * Math.abs(amount)) / 100;
   if (Number.isInteger(absAmount)) {
     return absAmount.toString();
   }
@@ -10,14 +10,16 @@ function formatMarkerAmount(amount: number) {
 }
 
 export function getTradeMarkers(fetchData: { time: number; amount: number }[]) {
-  return fetchData.map(({ time, amount }, index): SeriesMarker<Time> => ({
-    id: `${time}-${index}-${amount < 0 ? "sell" : "buy"}`,
-    time: time as Time,
-    position: amount < 0 ? "aboveBar" : "belowBar",
-    shape: amount < 0 ? "arrowDown" : "arrowUp",
-    color: amount < 0 ? "#F7525F" : "#22AB94",
-    text: `${amount < 0 ? "Sell" : "Buy"} ${formatMarkerAmount(amount)}`,
-  }));
+  return fetchData.map(
+    ({ time, amount }, index): SeriesMarker<Time> => ({
+      id: `${time}-${index}-${amount < 0 ? "sell" : "buy"}`,
+      time: time as Time,
+      position: amount < 0 ? "aboveBar" : "belowBar",
+      shape: amount < 0 ? "arrowDown" : "arrowUp",
+      color: amount < 0 ? "#F7525F" : "#22AB94",
+      text: `${formatMarkerAmount(amount)}`,
+    }),
+  );
 }
 
 export function centerToMarker(markerTime: Time, chart: IChartApi) {
@@ -36,16 +38,15 @@ export function centerToMarker(markerTime: Time, chart: IChartApi) {
   });
 }
 
-
 export function toUTCTimestamp(time: Time): number | null {
-  if (typeof time === 'number') {
+  if (typeof time === "number") {
     return time; // already UTCTimestamp
-  } 
-  if (typeof time === 'string') {
+  }
+  if (typeof time === "string") {
     const date = new Date(time);
     return isNaN(date.getTime()) ? null : Math.floor(date.getTime() / 1000);
-  } 
-  if ('year' in time && 'month' in time && 'day' in time) {
+  }
+  if ("year" in time && "month" in time && "day" in time) {
     const date = new Date(Date.UTC(time.year, time.month - 1, time.day));
     return Math.floor(date.getTime() / 1000);
   }

@@ -50,7 +50,6 @@ const VisualizeContent = ({
 
   function handleAddTile() {
     const nextTile: TileSearchParam = {
-      symbol: config.symbol.defaultValue,
       strategy: config.strategy.defaultValue,
       interval: config.interval.defaultValue,
       period1: toUnixString(config.period1.defaultValue),

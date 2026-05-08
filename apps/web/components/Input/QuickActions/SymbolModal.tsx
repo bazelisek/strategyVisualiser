@@ -22,7 +22,7 @@ const SymbolModal: React.FC<SymbolModalProps> = ({index}) => {
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
   function handleSymbolClick(symbol: string) {
-    updateTile(index, { symbol });
+    updateTile(index, { selectedSymbol: symbol });
     dispatch(setModal({ modal: {index, modal:"symbol"}, value: false }));
   }
 

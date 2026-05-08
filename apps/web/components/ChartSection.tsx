@@ -91,6 +91,32 @@ function hasValue(value: unknown): boolean {
   return value !== undefined && value !== null && value !== "";
 }
 
+function sanitizeUniverse(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is string => typeof item === "string" && item.trim().length > 0,
+  );
+}
+
+function areConfigValuesEqual(left: unknown, right: unknown): boolean {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right)) return false;
+    if (left.length !== right.length) return false;
+    return left.every((item, index) => item === right[index]);
+  }
+  return left === right;
+}
+
+function areJobConfigsEqual(
+  left: Record<string, unknown>,
+  right: Record<string, unknown>,
+): boolean {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  if (leftKeys.length !== rightKeys.length) return false;
+  return leftKeys.every((key) => areConfigValuesEqual(left[key], right[key]));
+}
+
 const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   const { tiles, updateTile } = useTiles();
   const tile = tiles[index];
@@ -106,10 +132,14 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   const [isConfigReady, setIsConfigReady] = useState(false);
 
   const strategy = tile?.strategy ?? "";
-  const symbol = tile?.symbol ?? "";
+  const persistedSelectedSymbol = tile?.selectedSymbol ?? "";
   const interval = tile?.interval ?? "";
   const period1 = tile?.period1 ?? "";
   const period2 = tile?.period2 ?? "";
+  const persistedJobConfig = useMemo(
+    () => tile?.jobConfig ?? {},
+    [tile?.jobConfig],
+  );
   const strategyId = parseStrategyId(strategy);
   const strategyInfo = availableStrategies.find(
     (item) => item.id === strategyId,
@@ -164,17 +194,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     requirements.interval?.whitelist,
     validIntervals,
   ]);
-  const availableSymbolLabels = useMemo(
-    () => availableSymbols.map((item) => getSymbolDisplayLabel(item)),
-    [availableSymbols],
-  );
-
-  useEffect(() => {
-    if (symbol && availableSymbols.length > 0 && !availableSymbols.includes(symbol)) {
-      updateTile(index, { symbol: "" });
-    }
-  }, [availableSymbols, index, symbol, updateTile]);
-
   useEffect(() => {
     if (
       interval &&
@@ -232,25 +251,38 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
             ? parsed
             : buildStrategyConfiguration(parsed)
           : buildStrategyConfiguration([]);
-        if (!isActive) return;
-        setConfigOptions(mergedOptions);
-        setFormValues(
-          mergedOptions.reduce<Record<string, unknown>>((acc, option) => {
+        const nextFormValues = mergedOptions.reduce<Record<string, unknown>>(
+          (acc, option) => {
+            const savedValue = persistedJobConfig[option.id];
+            const hasSavedValue =
+              savedValue !== undefined &&
+              (option.type !== "multi-select" || Array.isArray(savedValue));
             const hasExplicitMultiSelectDefault =
               option.type === "multi-select" &&
               Array.isArray(option.defaultValue) &&
               option.defaultValue.length > 0;
+
+            if (hasSavedValue) {
+              acc[option.id] = savedValue;
+              return acc;
+            }
+
             if (option.id === UNIVERSE_CONFIG_ID) {
               acc[option.id] = hasExplicitMultiSelectDefault
                 ? option.defaultValue
                 : [];
               return acc;
             }
+
             acc[option.id] =
               option.defaultValue ?? (option.type === "multi-select" ? [] : "");
             return acc;
-          }, {}),
+          },
+          {},
         );
+        if (!isActive) return;
+        setConfigOptions(mergedOptions);
+        setFormValues(nextFormValues);
         setConfigError("");
       } catch (error) {
         if (!isActive) return;
@@ -267,25 +299,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     return () => {
       isActive = false;
     };
-  }, [strategyId]);
-
-  useEffect(() => {
-    if (!symbol) {
-      return;
-    }
-    setFormValues((prev) => {
-      const currentUniverse = Array.isArray(prev[UNIVERSE_CONFIG_ID])
-        ? (prev[UNIVERSE_CONFIG_ID] as string[])
-        : [];
-      if (currentUniverse.length > 0) {
-        return prev;
-      }
-      return {
-        ...prev,
-        [UNIVERSE_CONFIG_ID]: [symbol],
-      };
-    });
-  }, [symbol]);
+  }, [persistedJobConfig, strategyId]);
 
   const tileValidationErrors = useMemo(() => {
     const errors: string[] = [];
@@ -309,14 +323,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     }
 
     if (
-      symbol &&
-      availableSymbols.length > 0 &&
-      !availableSymbols.includes(symbol)
-    ) {
-      errors.push("Strategy-compatible symbol");
-    }
-
-    if (
       requirements.period?.min &&
       fromDate &&
       fromDate.getTime() < requirements.period.min * 1000
@@ -335,7 +341,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     return Array.from(new Set(errors));
   }, [
     availableIntervals,
-    availableSymbols,
     fromDate,
     interval,
     period1,
@@ -343,7 +348,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     requirements.period?.max,
     requirements.period?.min,
     strategy,
-    symbol,
     toDate,
   ]);
 
@@ -355,29 +359,43 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   }, [configOptions, formValues]);
 
   const selectedUniverse = useMemo(
-    () =>
-      Array.isArray(formValues[UNIVERSE_CONFIG_ID])
-        ? (formValues[UNIVERSE_CONFIG_ID] as string[]).filter(
-            (item) => typeof item === "string" && item.trim().length > 0,
-          )
-        : [],
+    () => sanitizeUniverse(formValues[UNIVERSE_CONFIG_ID]),
     [formValues],
   );
 
-  const chartSymbols = useMemo(() => {
-    const unique = new Set<string>();
-    if (symbol) unique.add(symbol);
-    selectedUniverse.forEach((item) => unique.add(item));
-    return Array.from(unique);
-  }, [selectedUniverse, symbol]);
+  const chartSymbols = useMemo(
+    () =>
+      selectedUniverse.filter(
+        (item) =>
+          availableSymbols.length === 0 || availableSymbols.includes(item),
+      ),
+    [availableSymbols, selectedUniverse],
+  );
+
+  const selectedSymbol = useMemo(() => {
+    if (
+      persistedSelectedSymbol &&
+      chartSymbols.includes(persistedSelectedSymbol)
+    ) {
+      return persistedSelectedSymbol;
+    }
+    return chartSymbols[0] ?? "";
+  }, [chartSymbols, persistedSelectedSymbol]);
 
   const jobValidationErrors = useMemo(() => {
     const errors = [...validationErrors];
-    if (!symbol && selectedUniverse.length === 0) {
-      errors.push("Current stock or universe");
+    if (selectedUniverse.length === 0) {
+      errors.push("Universe");
+    }
+    if (
+      selectedUniverse.some(
+        (item) => availableSymbols.length > 0 && !availableSymbols.includes(item),
+      )
+    ) {
+      errors.push("Strategy-compatible universe");
     }
     return errors;
-  }, [selectedUniverse.length, symbol, validationErrors]);
+  }, [availableSymbols, selectedUniverse, validationErrors]);
 
   const isTileReady = tileValidationErrors.length === 0;
   useEffect(() => {
@@ -404,14 +422,14 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
       () =>
         isTileReady
           ? {
-              symbol,
+              symbol: selectedSymbol,
               interval,
               period1: period1Num,
               period2: period2Num,
               strategy,
             }
           : null,
-      [interval, isTileReady, period1Num, period2Num, strategy, symbol],
+      [interval, isTileReady, period1Num, period2Num, selectedSymbol, strategy],
     ),
     "/",
   );
@@ -437,19 +455,26 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     }
   }, [stage]);
 
+  useEffect(() => {
+    if (configOptions.length === 0) {
+      return;
+    }
+    if (areJobConfigsEqual(formValues, persistedJobConfig)) {
+      return;
+    }
+    updateTile(index, { jobConfig: formValues });
+  }, [configOptions.length, formValues, index, persistedJobConfig, updateTile]);
+
   const renderOptionInput = (option: ConfigOption) => {
     const value = formValues[option.id];
+    const setPersistedFormValue = (nextValue: unknown) =>
+      setFormValues((prev) => ({ ...prev, [option.id]: nextValue }));
     if (option.type === "boolean") {
       return (
         <Select
           name={option.id}
           value={typeof value === "boolean" ? String(value) : null}
-          onChange={(_, newValue) =>
-            setFormValues((prev) => ({
-              ...prev,
-              [option.id]: newValue === "true",
-            }))
-          }
+          onChange={(_, newValue) => setPersistedFormValue(newValue === "true")}
         >
           <Option value="true">True</Option>
           <Option value="false">False</Option>
@@ -463,11 +488,9 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
           type="number"
           value={typeof value === "number" ? String(value) : ""}
           onChange={(event) =>
-            setFormValues((prev) => ({
-              ...prev,
-              [option.id]:
-                event.target.value === "" ? "" : Number(event.target.value),
-            }))
+            setPersistedFormValue(
+              event.target.value === "" ? "" : Number(event.target.value),
+            )
           }
         />
       );
@@ -477,12 +500,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
         <Select
           name={option.id}
           value={typeof value === "string" && value !== "" ? value : null}
-          onChange={(_, newValue) =>
-            setFormValues((prev) => ({
-              ...prev,
-              [option.id]: newValue ?? "",
-            }))
-          }
+          onChange={(_, newValue) => setPersistedFormValue(newValue ?? "")}
         >
           {(option.options ?? []).map((choice) => (
             <Option key={choice} value={choice}>
@@ -494,16 +512,20 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     }
     if (option.type === "multi-select") {
       const selected = Array.isArray(value) ? (value as string[]) : [];
+      const rawOptions =
+        option.id === UNIVERSE_CONFIG_ID ? availableSymbols : option.options ?? [];
       return (
         <Autocomplete
           multiple
           placeholder={`Select ${option.label.toLowerCase()}`}
-          options={option.options ?? []}
-          getOptionLabel={(choice) => choice}
-          value={selected}
-          onChange={(_, newValue) =>
-            setFormValues((prev) => ({ ...prev, [option.id]: newValue }))
+          options={rawOptions}
+          getOptionLabel={(choice) =>
+            option.id === UNIVERSE_CONFIG_ID
+              ? getSymbolDisplayLabel(choice)
+              : choice
           }
+          value={selected}
+          onChange={(_, newValue) => setPersistedFormValue(newValue)}
         />
       );
     }
@@ -512,29 +534,30 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
         name={option.id}
         type="text"
         value={typeof value === "string" ? value : ""}
-        onChange={(event) =>
-          setFormValues((prev) => ({
-            ...prev,
-            [option.id]: event.target.value,
-          }))
-        }
+        onChange={(event) => setPersistedFormValue(event.target.value)}
       />
     );
   };
 
   const handleTileValueChange = (
-    field: "strategy" | "symbol" | "interval",
+    field: "strategy" | "interval",
     value: string,
   ) => {
-    updateTile(index, { [field]: value });
     if (field === "strategy") {
+      updateTile(index, {
+        strategy: value,
+        jobConfig: {},
+        selectedSymbol: "",
+      });
       setActiveTab("tile");
       setIsConfigReady(false);
+      return;
     }
+    updateTile(index, { [field]: value });
   };
 
   const handleChartSymbolChange = (nextSymbol: string | null) => {
-    updateTile(index, { symbol: nextSymbol ?? "" });
+    updateTile(index, { selectedSymbol: nextSymbol ?? "" });
   };
 
   const handleDateChange = (
@@ -549,27 +572,25 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
   const showChart = stage === "success" && !error && isConfigReady;
 
   useEffect(() => {
-    if (!showChart || chartSymbols.length === 0) {
+    if (!showChart || chartSymbols.length === 0 || persistedSelectedSymbol) {
       return;
     }
 
-    if (!symbol || !chartSymbols.includes(symbol)) {
-      updateTile(index, { symbol: chartSymbols[0] });
-    }
-  }, [chartSymbols, index, showChart, symbol, updateTile]);
+    updateTile(index, { selectedSymbol: chartSymbols[0] });
+  }, [chartSymbols, index, persistedSelectedSymbol, showChart, updateTile]);
 
   useEffect(() => {
     if (!showChart || chartSymbols.length <= 1) {
       return;
     }
 
-    const symbolsToPrefetch = chartSymbols.filter((item) => item !== symbol);
+    const symbolsToPrefetch = chartSymbols.filter((item) => item !== selectedSymbol);
     if (symbolsToPrefetch.length === 0) {
       return;
     }
 
     void loadCandlesForSymbols(symbolsToPrefetch).catch(() => undefined);
-  }, [chartSymbols, loadCandlesForSymbols, showChart, symbol]);
+  }, [chartSymbols, loadCandlesForSymbols, selectedSymbol, showChart]);
 
   const tilePanel = (
     <motion.div key="tile-panel" {...panelMotionProps}>
@@ -591,18 +612,6 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
             value={strategyInfo?.name ?? ""}
             onChange={(newValue) => handleTileValueChange("strategy", newValue)}
             initialText="Select a strategy"
-          />
-        </FormControl>
-        <FormControl className={classes.field}>
-          <FormLabel>Symbol</FormLabel>
-          <CustomSelect
-            options={availableSymbols}
-            mapping={availableSymbolLabels}
-            value={symbol || ""}
-            onChange={(newValue) =>
-              handleTileValueChange("symbol", newValue ?? "")
-            }
-            initialText="Select a symbol"
           />
         </FormControl>
         <FormControl className={classes.field} required>
@@ -697,7 +706,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
           <Typography level="h3">Configure strategy run</Typography>
           <Typography level="body-sm">
             Review the job inputs below, then run the strategy on the selected
-            chart data.
+            universe.
           </Typography>
         </div>
         {configError && <Typography color="danger">{configError}</Typography>}
@@ -800,7 +809,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
           tradeMarkers={tradeMarkers}
           handleBackToTileConfig={handleBackToTileConfig}
           universe={chartSymbols}
-          selectedSymbol={symbol || null}
+          selectedSymbol={selectedSymbol || null}
           onSelectedSymbolChange={handleChartSymbolChange}
         />
       )}
@@ -811,7 +820,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
             strategy={strategy}
             className={classes.div}
             jobResult={jobResult}
-            selectedSymbol={symbol}
+            selectedSymbol={selectedSymbol}
             universe={chartSymbols}
             loadCandlesForSymbols={loadCandlesForSymbols}
             availableMoney={availableMoney}

@@ -73,7 +73,7 @@ describe("useChartData", () => {
     );
 
     await act(async () => {
-      await result.current.runCalculation({ lookback: 14 });
+      await result.current.runCalculation({ lookback: 14, universe: ["AAPL"] });
     });
 
     await waitFor(() => {
@@ -83,7 +83,10 @@ describe("useChartData", () => {
         "[strategy-runner] Starting StrategyMain",
       );
       expect(result.current.transformedData.symbol).toBe("AAPL");
-      expect(result.current.lastRunConfig).toEqual({ lookback: 14 });
+      expect(result.current.lastRunConfig).toEqual({
+        lookback: 14,
+        universe: ["AAPL"],
+      });
     });
   });
 
@@ -107,7 +110,7 @@ describe("useChartData", () => {
     );
 
     await act(async () => {
-      await result.current.runCalculation({});
+      await result.current.runCalculation({ universe: ["AAPL"] });
     });
 
     await waitFor(() => {
@@ -161,7 +164,7 @@ describe("useChartData", () => {
     );
 
     await act(async () => {
-      await result.current.runCalculation({});
+      await result.current.runCalculation({ universe: ["AAPL"] });
     });
 
     await waitFor(() => {

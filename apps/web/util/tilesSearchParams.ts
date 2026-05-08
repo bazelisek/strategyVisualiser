@@ -1,5 +1,6 @@
 import { ReadonlyURLSearchParams } from "next/navigation";
 import type { IndicatorKey, IndicatorValue } from "@/util/indicators";
+import { UNIVERSE_CONFIG_ID } from "@/util/strategies/configuration";
 
 export type TileIndicator = {
   id: string;
@@ -13,16 +14,16 @@ export type TileIndicator = {
 };
 
 export type TileSearchParam = {
-  symbol: string;
+  selectedSymbol?: string;
   strategy: string;
   interval: string;
   period1: string;
   period2: string;
+  jobConfig?: Record<string, unknown>;
   indicators?: TileIndicator[];
 };
 
 const TILE_FIELDS: (keyof TileSearchParam)[] = [
-  "symbol",
   "strategy",
   "interval",
   "period1",
@@ -32,14 +33,59 @@ const TILE_FIELDS: (keyof TileSearchParam)[] = [
 function isTileLike(value: unknown): value is TileSearchParam {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
-  return TILE_FIELDS.every((k) => typeof v[k] === "string");
+  const hasCoreFields = TILE_FIELDS.every((k) => typeof v[k] === "string");
+  if (!hasCoreFields) return false;
+  if (v.selectedSymbol !== undefined && typeof v.selectedSymbol !== "string") {
+    return false;
+  }
+  if (
+    v.jobConfig !== undefined &&
+    (typeof v.jobConfig !== "object" || v.jobConfig === null || Array.isArray(v.jobConfig))
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function normalizeTile(value: TileSearchParam & { symbol?: unknown }): TileSearchParam {
+  const legacySymbol =
+    typeof value.symbol === "string" ? value.symbol.trim() : "";
+  const selectedSymbol =
+    typeof value.selectedSymbol === "string" && value.selectedSymbol.trim().length > 0
+      ? value.selectedSymbol.trim()
+      : legacySymbol;
+  const jobConfig =
+    value.jobConfig && typeof value.jobConfig === "object" && !Array.isArray(value.jobConfig)
+      ? { ...value.jobConfig }
+      : {};
+  const universe = Array.isArray(jobConfig[UNIVERSE_CONFIG_ID])
+    ? (jobConfig[UNIVERSE_CONFIG_ID] as unknown[]).filter(
+        (item): item is string => typeof item === "string" && item.trim().length > 0,
+      )
+    : [];
+
+  if (universe.length === 0 && legacySymbol) {
+    jobConfig[UNIVERSE_CONFIG_ID] = [legacySymbol];
+  }
+
+  return {
+    selectedSymbol,
+    strategy: value.strategy,
+    interval: value.interval,
+    period1: value.period1,
+    period2: value.period2,
+    ...(Object.keys(jobConfig).length > 0 ? { jobConfig } : {}),
+    ...(value.indicators ? { indicators: value.indicators } : {}),
+  };
 }
 
 function parseTilesJson(raw: string): TileSearchParam[] {
   const decoded = decodeURIComponent(raw);
   const parsed = JSON.parse(decoded) as unknown;
   if (!Array.isArray(parsed)) return [];
-  return parsed.filter(isTileLike);
+  return parsed
+    .filter(isTileLike)
+    .map((tile) => normalizeTile(tile as TileSearchParam & { symbol?: unknown }));
 }
 
 function parseLegacyRepeatedParams(params: ReadonlyURLSearchParams): TileSearchParam[] {
@@ -59,17 +105,30 @@ function parseLegacyRepeatedParams(params: ReadonlyURLSearchParams): TileSearchP
 
   const tiles: TileSearchParam[] = [];
   for (let i = 0; i < count; i++) {
-    const tile = {
-      symbol: symbols[i] ?? "",
+    const tile = normalizeTile({
+      selectedSymbol: symbols[i] ?? "",
       strategy: strategies[i] ?? "",
       interval: intervals[i] ?? "",
       period1: period1s[i] ?? "",
       period2: period2s[i] ?? "",
-    };
+      jobConfig:
+        symbols[i] && symbols[i].trim().length > 0
+          ? { [UNIVERSE_CONFIG_ID]: [symbols[i]] }
+          : undefined,
+    });
     if (isTileLike(tile)) tiles.push(tile);
   }
 
   return tiles;
+}
+
+export function getTileUniverse(tile: TileSearchParam): string[] {
+  if (!tile.jobConfig) return [];
+  const universe = tile.jobConfig[UNIVERSE_CONFIG_ID];
+  if (!Array.isArray(universe)) return [];
+  return universe.filter(
+    (item): item is string => typeof item === "string" && item.trim().length > 0,
+  );
 }
 
 export function readTilesFromSearchParams(

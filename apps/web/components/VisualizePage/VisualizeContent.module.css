@@ -55,14 +55,6 @@
   justify-items: center; /* center tiles inside their column */
 }
 
-/* If the last row has only 1 tile (odd number), center it */
-.tileGrid > :nth-last-child(1):nth-child(odd) {
-  grid-column: 1 / -1;   /* span both columns */
-  justify-self: center;  /* but don’t stretch, keep centered */
-  max-width: 800px;      /* control how wide the odd tile can get */
-  width: 100%;           /* but still responsive */
-}
-
 @media (max-width: 900px) {
   .tileGrid {
     grid-template-columns: minmax(0, 1fr);
