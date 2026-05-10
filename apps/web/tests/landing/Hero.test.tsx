@@ -22,7 +22,7 @@ describe("Hero", () => {
 
     expect(
       screen.getByRole("link", { name: /explore public strategies/i }),
-    ).toHaveAttribute("href", "/login");
+    ).toHaveAttribute("href", "/strategies");
 
     expect(screen.getByRole("link", { name: /^sign in$/i })).toHaveAttribute(
       "href",

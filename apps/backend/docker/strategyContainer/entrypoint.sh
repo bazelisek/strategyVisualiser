@@ -4,7 +4,7 @@ set -euo pipefail
 lib_dir="${STRATEGY_LIB_DIR:-/opt/strategy/lib}"
 workdir="${STRATEGY_WORKDIR:-/opt/strategy/workspace}"
 tmpdir="${STRATEGY_TMP_DIR:-/opt/strategy/tmp}"
-timeout_seconds="${RUN_TIMEOUT_SECONDS:-300}"
+timeout_seconds="${RUN_TIMEOUT_SECONDS:-1200}"
 java_tmpdir=""
 export PYTHONPATH="${workdir}${PYTHONPATH:+:${PYTHONPATH}}"
 

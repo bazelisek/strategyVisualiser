@@ -16,6 +16,11 @@ import {
 import { calculateSupertrendSeriesData, createSTGraph } from "./supertrend";
 import { calculateADXSeriesData, createADXGraph } from "./ADX";
 import { calculateATRSeriesData, createATRGraph } from "./ATR";
+import { calculateRSISeriesData, createRSIGraph } from "./RSI";
+import {
+  calculateBollingerBandsSeriesData,
+  createBollingerBandsGraph,
+} from "./bollingerBands";
 
 export type IndicatorValue = Record<string, number | string>;
 
@@ -246,6 +251,72 @@ const indicators: IndicatorDefinition[] = [
       createATRGraph(
         chart,
         config as { atrLength: number; color: string } | undefined,
+        candles,
+      );
+    },
+  },
+  {
+    key: "bollingerBands",
+    displayName: "Bollinger Bands",
+    parameters: {
+      bbPeriod: {
+        displayName: "Period",
+        type: "number",
+        default: 20,
+        min: 1,
+      },
+      bbStdDev: {
+        displayName: "StdDev",
+        type: "number",
+        default: 2,
+        min: 0.1,
+      },
+      color: {
+        displayName: "Color",
+        type: "color",
+        default: "#ffff00",
+      },
+    },
+    ui: { defaultChartIndex: 0 },
+    calculateData: (candles, config) =>
+      calculateBollingerBandsSeriesData(
+        candles,
+        (config as any).bbPeriod,
+        (config as any).bbStdDev,
+      ),
+    createGraph: ({ chart, candles, config }) => {
+      if (!chart) return;
+      createBollingerBandsGraph(
+        chart,
+        config as { bbPeriod: number; bbStdDev: number; color: string } | undefined,
+        candles,
+      );
+    },
+  },
+  {
+    key: "relativeStrengthIndex",
+    displayName: "Relative Strength Index",
+    parameters: {
+      rsiLength: {
+        displayName: "RSI Length",
+        type: "number",
+        default: 14,
+        min: 1,
+      },
+      color: {
+        displayName: "Color",
+        type: "color",
+        default: "#00ff00",
+      },
+    },
+    ui: { defaultChartIndex: 5 },
+    calculateData: (candles, config) =>
+      calculateRSISeriesData(candles, (config as any).rsiLength),
+    createGraph: ({ chart, candles, config }) => {
+      if (!chart) return;
+      createRSIGraph(
+        chart,
+        config as { rsiLength: number; color: string } | undefined,
         candles,
       );
     },

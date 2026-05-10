@@ -1,6 +1,7 @@
 // serverFetch.ts
 import { UTCTimestamp } from "lightweight-charts";
 import { parseStrategyId } from "./strategies/strategyId";
+import { formatLocalDate } from "./time";
 
 export type candleData = {
   time: UTCTimestamp;
@@ -29,8 +30,8 @@ export async function getCandlestickChartData({
   period2: number;
   strategy: string;
 }) {
-  const fromIso = new Date(period1 * 1000).toISOString().slice(0, 10);
-  const toIso = new Date(period2 * 1000).toISOString().slice(0, 10);
+  const fromIso = formatLocalDate(period1);
+  const toIso = formatLocalDate(period2);
   let yahooError: string | null = null;
 
   try {
@@ -138,7 +139,7 @@ export async function getCandlestickChartData({
     return {
       symbol,
       longName: symbol,
-      candles: candles.filter((candle) => candle.time >= period1 && candle.time <= period2),
+      candles: candles,
     };
   }
 }
@@ -167,8 +168,8 @@ export async function getTradeDataForStrategy({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...(symbol ? { symbol } : {}),
-        fromDate: new Date(period1 * 1000).toISOString().slice(0, 10),
-        toDate: new Date(period2 * 1000).toISOString().slice(0, 10),
+        fromDate: formatLocalDate(period1),
+        toDate: formatLocalDate(period2),
         config,
       }),
     });
@@ -232,9 +233,11 @@ export function extractTradePointsFromJobResult(
       const entry = trade as Record<string, unknown>;
       const timeRaw = entry.time;
       const amountRaw = entry.amount;
+      const priceRaw = entry.price;
       const tradeSymbol = getTradeSymbol(entry);
       const time = typeof timeRaw === "number" ? timeRaw : Number(timeRaw);
       const amount = typeof amountRaw === "number" ? amountRaw : Number(amountRaw);
+      const price = typeof priceRaw === "number" ? priceRaw : Number(priceRaw);
       if (!Number.isFinite(time) || !Number.isFinite(amount)) {
         return null;
       }
@@ -245,7 +248,12 @@ export function extractTradePointsFromJobResult(
       ) {
         return null;
       }
-      return { time, amount, symbol: tradeSymbol };
+      return { 
+        time, 
+        amount, 
+        symbol: tradeSymbol, 
+        price: Number.isFinite(price) ? price : undefined 
+      };
     })
     .filter((entry): entry is StrategyTradePoint => entry !== null)
     .sort((a, b) => a.time - b.time);

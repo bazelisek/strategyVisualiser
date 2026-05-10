@@ -50,7 +50,6 @@ const VisualizeContent = ({
 
   function handleAddTile() {
     const nextTile: TileSearchParam = {
-      symbol: config.symbol.defaultValue,
       strategy: config.strategy.defaultValue,
       interval: config.interval.defaultValue,
       period1: toUnixString(config.period1.defaultValue),
@@ -82,11 +81,11 @@ const VisualizeContent = ({
   }
 
   return (
-    <Grid container sx={{ width: "100%" }} spacing={2}>
-      <Grid xs={2}>
+    <Grid container sx={{ width: "100%", margin: 0 }} spacing={2}>
+      <Grid xs={2} sx={{ minWidth: 0 }}>
         <Sidebar />
       </Grid>
-      <Grid xs={8}>
+      <Grid xs={8} sx={{ minWidth: 0 }}>
         <div className={classes.centerContainer}>
           <main id="main" className={classes.main}>
             <VisualizationName id={id} />
@@ -96,7 +95,7 @@ const VisualizeContent = ({
           </main>
         </div>
       </Grid>
-      <Grid xs={2}>
+      <Grid xs={2} sx={{ minWidth: 0 }}>
         <div className="side-div"></div>
       </Grid>
     </Grid>

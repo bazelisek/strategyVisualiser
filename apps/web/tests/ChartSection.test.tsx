@@ -110,7 +110,8 @@ const mockUseChartDataState = {
 
 const mockTiles = [
   {
-    symbol: "AAPL",
+    selectedSymbol: "AAPL",
+    jobConfig: { universe: ["AAPL"] },
     interval: "1d",
     period1: "1700000000",
     period2: "1700003600",
@@ -191,7 +192,8 @@ describe("ChartSection", () => {
       },
     ]);
     mockTiles[0] = {
-      symbol: "AAPL",
+      selectedSymbol: "AAPL",
+      jobConfig: { universe: ["AAPL"] },
       interval: "1d",
       period1: "1700000000",
       period2: "1700003600",
@@ -233,7 +235,8 @@ describe("ChartSection", () => {
 
   test("clears a blacklisted interval from the tile state", async () => {
     mockTiles[0] = {
-      symbol: "AAPL",
+      selectedSymbol: "AAPL",
+      jobConfig: { universe: ["AAPL"] },
       interval: "3mo",
       period1: "1700000000",
       period2: "1860000000",
@@ -311,7 +314,7 @@ describe("ChartSection", () => {
 
   test("allows running without a current stock when the universe is selected", async () => {
     mockTiles[0] = {
-      symbol: "",
+      selectedSymbol: "",
       interval: "1d",
       period1: "1700000000",
       period2: "1700003600",
@@ -359,7 +362,7 @@ describe("ChartSection", () => {
     });
   });
 
-  test("updates the tile symbol when a chart tab changes", async () => {
+  test("updates the selected tab when a chart tab changes", async () => {
     const view = renderChartSection();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Job configuration" })[0]);
@@ -380,12 +383,12 @@ describe("ChartSection", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Switch stock" }));
 
-    expect(mockUpdateTile).toHaveBeenCalledWith(0, { symbol: "MSFT" });
+    expect(mockUpdateTile).toHaveBeenCalledWith(0, { selectedSymbol: "MSFT" });
   });
 
   test("selects the first universe symbol after a universe-only run succeeds", async () => {
     mockTiles[0] = {
-      symbol: "",
+      selectedSymbol: "",
       interval: "1d",
       period1: "1700000000",
       period2: "1700003600",
@@ -428,13 +431,21 @@ describe("ChartSection", () => {
     view.rerender(<ChartSection index={0} />);
 
     await waitFor(() => {
-      expect(mockUpdateTile).toHaveBeenCalledWith(0, { symbol: "AAPL" });
+      expect(mockUpdateTile).toHaveBeenCalledWith(0, { selectedSymbol: "AAPL" });
     });
   });
 
   test("prefetches the rest of the universe after the chart is shown", async () => {
     const loadCandlesForSymbols = jest.fn().mockResolvedValue({});
     mockUseChartDataState.loadCandlesForSymbols = loadCandlesForSymbols;
+    mockTiles[0] = {
+      selectedSymbol: "AAPL",
+      jobConfig: { universe: ["AAPL", "MSFT"] },
+      interval: "1d",
+      period1: "1700000000",
+      period2: "1700003600",
+      strategy: "12:Momentum",
+    };
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({

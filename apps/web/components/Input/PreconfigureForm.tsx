@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import classes from "./PreconfigureForm.module.css";
 import GlobalizeButton from "./Buttons/GlobalizeButton";
 import { ConfigKey, type ConfigState } from "@/store/slices/configSlice";
-import Symbol from "./Form/Symbol";
 import Time from "./Form/Time";
 import Interval from "./Form/Interval";
 import Strategy from "./Form/Strategy";
@@ -131,16 +130,6 @@ const PreconfigureForm: React.FC<PreconfigureFormProps> = ({
               setAvailableStrategies={setAvailableStrategies}
             />
             <GlobalizeButton onClick={() => handleGlobalize("strategy")} />
-          </motion.li>
-          <motion.li className={classes.li} layout>
-            <Symbol
-              value={formData.symbol.defaultValue}
-              onChange={handleChange}
-              handleContinue={() => {}}
-              requirements={requirements}
-              
-            />
-            <GlobalizeButton onClick={() => handleGlobalize("symbol")} />
           </motion.li>
           <motion.li className={classes.timeLi} layout>
             <div className={classes.left}>

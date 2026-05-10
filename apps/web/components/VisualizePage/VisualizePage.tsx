@@ -28,10 +28,6 @@ const normalizeDefaults = (
   defaults?: Partial<ConfigState>,
 ): ConfigState => {
   return {
-    symbol: {
-      defaultValue:
-        defaults?.symbol?.defaultValue ?? configInitialState.symbol.defaultValue,
-    },
     interval: {
       defaultValue:
         defaults?.interval?.defaultValue ??

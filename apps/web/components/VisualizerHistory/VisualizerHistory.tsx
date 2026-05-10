@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import DeleteButton from "../Input/Buttons/DeleteButton";
 import { useHistory } from "@/hooks/useHistory";
 import ChartLoading from "../common/ChartLoading";
+import { getTileUniverse } from "@/util/tilesSearchParams";
 
 interface VisualizerHistoryProps {
   hasSheet?: boolean;
@@ -19,14 +20,12 @@ interface VisualizerHistoryProps {
 
 const formatStockSymbols = (tiles: VisualizerParams["tiles"]) => {
   if (!tiles?.length) return "No stocks";
-  const symbols = tiles.reduce<string[]>((acc, tile, index) => {
-    if (index < 3) {
-      acc.push(tile.symbol);
-    } else if (index === 3) {
-      acc.push("...");
-    }
-    return acc;
-  }, []);
+  const uniqueSymbols = Array.from(
+    new Set(tiles.flatMap((tile) => getTileUniverse(tile))),
+  );
+  if (uniqueSymbols.length === 0) return "No stocks";
+  const symbols = uniqueSymbols.slice(0, 3);
+  if (uniqueSymbols.length > 3) symbols.push("...");
   return symbols.join(", ");
 };
 

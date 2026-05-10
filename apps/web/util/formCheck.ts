@@ -69,9 +69,6 @@ export function addToArrayAndHandleEdgeCases(
   tiles: TileSearchParam[],
   field: ConfigKey,
   formData: {
-    symbol: {
-      defaultValue: string;
-    };
     interval: {
       defaultValue: string;
     };
@@ -147,8 +144,6 @@ export function addToArrayAndHandleEdgeCases(
       }
     }
     newParamsArray.push({
-      symbol:
-        field === "symbol" ? handledFormData.symbol.defaultValue : current.symbol,
       strategy:
         field === "strategy"
           ? handledFormData.strategy.defaultValue
@@ -165,6 +160,9 @@ export function addToArrayAndHandleEdgeCases(
         field === "period2"
           ? String(handledFormData.period2.defaultValue)
           : current.period2,
+      ...(current.selectedSymbol ? { selectedSymbol: current.selectedSymbol } : {}),
+      ...(current.jobConfig ? { jobConfig: current.jobConfig } : {}),
+      ...(current.indicators ? { indicators: current.indicators } : {}),
     });
   }
 

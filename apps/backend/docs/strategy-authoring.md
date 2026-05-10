@@ -1,11 +1,12 @@
 # Strategy authoring guide
 
-This document describes how **user-supplied Java strategies** run in Strategize: what the backend prepares for each job, what your code must output, and what the web UI consumes.
+This document describes how **user-supplied Java and Python strategies** run in Strategize: what the backend prepares for each job, what your code must output, and what the web UI consumes.
 
 Implementation references (for maintainers):
 
 - Job workspace and I/O: `cz.vko.stockstrategy.service.AnalysisJobService`
 - Container invocation: `cz.vko.stockstrategy.service.StrategyExecutionService`
+- Runtime resolution: `cz.vko.stockstrategy.service.StrategySourceFiles`
 - Result parsing (last JSON line): `sanitizeStrategyOutput` in `AnalysisJobService`
 - Chart trade markers: `extractTradeMarkersFromJobResult` in the web app (`util/serverFetch.ts`)
 - Example strategy sources: `src/main/resources/built-in-strategies/` (e.g. moving average crossover)
@@ -22,7 +23,10 @@ Strategies are stored in the backend database with at least:
 |-----------------|------|
 | `name`          | Display name |
 | `description`   | Optional |
-| `code`          | **Full Java source** of your entry class (see §3). Typically one file: `StrategyMain.java`. |
+| `runtime`       | `java` or `python` (default inferred from file extensions) |
+| `code`          | **Primary source code** (legacy field, still supported for single-file Java strategies) |
+| `sourceFiles`   | **List of source files** (recommended): `[{ "path": "main.py", "content": "..." }]` |
+| `entryFile`     | Path to the entry file (e.g. `StrategyMain.java` or `main.py`) |
 | `configuration` | JSON describing configurable parameters and universe (see §5). |
 | `requirements`  | JSON describing configurable requirements and their boundaries (see §5). |
 | `ownerEmail`, `isPublic` | Ownership / visibility |
@@ -59,7 +63,7 @@ The web app builds configuration by prepending a reserved **`universe`** multi-s
 
 - **Request:** `GET /api/jobs/{jobId}?symbol=AAPL` (symbol optional).
 
-  When `symbol` is present, the backend may **filter** JSON arrays/objects whose elements carry `symbol`, `ticker`, or `instrument` so the result focuses on that ticker (`filterResultBySymbol` in `AnalysisJobService`).
+  When `symbol` is present, the backend **filters** the strategy output so the result focuses on that ticker (see §8 for filtering logic).
 
 - **Useful fields:** `status` (`pending` | `running` | `completed` | `failed`), `result` (string holding JSON), `errorMessage`, `consoleOutput`.
 
@@ -70,7 +74,7 @@ The web app builds configuration by prepending a reserved **`universe`** multi-s
 For each job the backend uses a **Docker/Podman** image (default name `strategy-runner`, override `STRATEGY_CONTAINER_IMAGE`). Typical limits match `StrategyExecutionService`:
 
 - **Network:** disabled (`--network=none`).
-- **CPU / memory / processes:** `--cpus=1`, `--memory=512m`, `--pids-limit=128`.
+- **CPU / memory / processes:** `--cpus=1`, `--memory=1g`, `--pids-limit=128`.
 - **Filesystem:** container root is read-only; the **job workspace is bind-mounted** read-write at `/opt/strategy/workspace`.
 - **Writable temps:** tmpfs at `/tmp` and `/opt/strategy/tmp` (sizes configured on the backend side).
 
@@ -82,6 +86,7 @@ Environment variables passed into the container include:
 | `STRATEGY_STOCK_DATA_FILE` | Absolute path to `stock-data.csv` |
 | `STRATEGY_JOB_CONTEXT_FILE` | Absolute path to `job-context.json` |
 | `STRATEGY_TMP_DIR` | Temp directory (typically `/tmp`) |
+| `STRATEGY_RUNTIME` | Current runtime (`java` or `python`) |
 | `STRATEGY_JOB_ID` | Current analysis job id |
 | `STRATEGY_ID` | Strategy record id |
 
@@ -91,8 +96,7 @@ Optional entrypoint behavior (image `entrypoint.sh`): `RUN_TIMEOUT_SECONDS` (def
 
 ## 3. Java entry contract
 
-- Source file written by the backend is always named **`StrategyMain.java`**.
-- The entrypoint compiles that file and runs the class **`StrategyMain`** (`RUN_MAIN_CLASS` can override, but the platform does not set it).
+- The entrypoint compiles all `.java` files in the workspace and runs the specified **`entryFile`** (defaulting to `StrategyMain.java`).
 - Required shape:
 
   ```java
@@ -104,16 +108,26 @@ Optional entrypoint behavior (image `entrypoint.sh`): `RUN_TIMEOUT_SECONDS` (def
   ```
 
 - **Classpath:** `.` (compiled classes under a temp dir) plus `/opt/strategy/lib/*` (see §6).
+- **Packages:** Supported. The platform automatically resolves the full class name if a `package` declaration is present.
 
 Use **UTF-8** source encoding (`javac -encoding UTF-8`).
 
 ---
 
-## 4. Input files and schemas
+## 4. Python entry contract
+
+- The entrypoint runs the specified **`entryFile`** with `python3` (defaulting to `main.py`, `StrategyMain.py`, or `__main__.py`).
+- **`PYTHONPATH`:** Automatically includes the workspace directory.
+- **Shebang:** The platform ensures `#!/usr/bin/env python3` is present and files are executable.
+- **Environment:** A virtual environment is pre-configured with common data science and trading libraries (see §6).
+
+---
+
+## 5. Input files and schemas
 
 All paths below are under the job workspace on the host (e.g. `/tmp/strategyVisualizer/job_<id>/`); inside the container they appear under `/opt/strategy/workspace/`.
 
-### 4.1 `config.json`
+### 5.1 `config.json`
 
 Pretty-printed JSON. Produced from your strategy’s **resolved** configuration (defaults merged with any overrides from the analyze request).
 
@@ -124,7 +138,7 @@ Pretty-printed JSON. Produced from your strategy’s **resolved** configuration 
 
 Universe resolution prefers explicit JSON arrays of ticker strings; duplicates are removed while preserving order.
 
-### 4.2 `stock-data.csv`
+### 5.2 `stock-data.csv`
 
 Written by `writeStockDataCsv`. Header row (exactly):
 
@@ -137,9 +151,9 @@ ticker,period,tradeDate,tradeTime,open,high,low,close,volume,openInterest
 - **Prices / volume:** decimal numbers as strings; missing numeric cells may be empty.
 - **Semantics:** one row per bar; rows are sorted by ticker, date, time. Multiple tickers appear in one file when the universe has multiple symbols.
 
-**Time alignment:** the chart and performance helpers treat **`time` on trades as UNIX epoch seconds (UTC)** derived from `tradeDate` + `tradeTime` the same way as the reference strategy (`LocalDateTime` → `toEpochSecond(ZoneOffset.UTC)`). Your emitted trade times should match that convention so markers align with candles.
+**Time alignment:** the chart and performance helpers treat **`time` on trades as UNIX epoch seconds (UTC)** derived from `tradeDate` + `tradeTime`. Your emitted trade times should match that convention so markers align with candles.
 
-### 4.3 `job-context.json`
+### 5.3 `job-context.json`
 
 Metadata only (safe to ignore for logic, useful for logging):
 
@@ -158,63 +172,37 @@ Metadata only (safe to ignore for logic, useful for logging):
 
 ---
 
-## 5. Configuration and Requirements JSON for authors
+## 6. Configuration and Requirements JSON for authors
 
-### 5.1 Option list format (used by the web UI)
+### 6.1 Option list format (used by the web UI)
 
-The UI expects `configuration` to be a **JSON array** of options with fields such as `id`, `label`, `type`, `defaultValue`, `required`. Supported types include `number`, `boolean`, `select`, `string`, `multi-select`. The app injects a **`universe`** option automatically when saving from the UI.
+The UI expects `configuration` to be a **JSON array** of options. Supported types include `number`, `boolean`, `select`, `string`, `multi-select`.
 
-Authors hand-writing JSON should:
+Supported fields per option:
+- `id`: Unique identifier (used as key in `config.json`)
+- `label`: Display name in UI
+- `type`: One of the supported types above
+- `defaultValue`: Initial value
+- `options`: Array of strings (for `select` or `multi-select`)
+- `required`: Boolean
 
-- Include an option with `"id": "universe"` and a `defaultValue` string array of tickers **unless** you rely solely on legacy configuration (§5.2).
+The app injects a **`universe`** option automatically when saving from the UI.
 
-### 5.2 Legacy object format
+### 6.2 Requirements list format
 
-A single JSON object may include:
+The UI expects `requirements` to be a **JSON object** with optional fields:
 
-```json
-{
-  "universe": ["SPY", "QQQ"],
-  "marketData": { "symbol": "SPY" }
-}
-```
-
-The backend flattens overrides from `analyze` into this object when resolving.
+- **`symbol`**: `{ "whitelist": [...], "blacklist": [...] }`
+- **`interval`**: `{ "whitelist": [...], "blacklist": [...] }`. Supported: `1m`, `2m`, `5m`, `15m`, `30m`, `60m`, `90m`, `1d`, `5d`, `1wk`, `1mo`, `3mo`.
+- **`period`**: `{ "min": <unix_ts>, "max": <unix_ts> }`
 
 ---
 
-### 5.3 Reqirements list format
+## 7. Libraries available in the container
 
-The UI expects `requirements` to be a **JSON object** of requirements with optional fields: `interval`, `period`, `symbol`.
+### 7.1 Java libraries
 
-The `interval` field expects an object with an array of intervals keyed by `whitelist` or `blacklist`, note that all specified values might not be displayed, as Yahoo nly accepts certain intervals for certain ranges of data. Accepted values are "1m", "2m", "5m", "15m", "30m", "60m", "90m", "1d", "5d", "1wk", "1mo", "3mo". Both whitelist and blacklist cannot be defined. If they are, only whitelist will be taken into account.
-
-The `period` expects an object with keys `min` and `max`, which have values of type `int`. These values represent the range of possible selectable values in unix seconds.
-
-The `symbol` field expects an object with an array of symbols keyed by `whitelist` or `blacklist`. Both whitelist and blacklist cannot be defined. If they are, only whitelist will be taken into account.
-
-### 5.4 Requirements example
-
-{
-  "interval": {
-    "blacklist": ["1m", "2m", "5m", "15m", "30m", "60m", "90m"]
-  },
-  "period1": {
-    "min": 1650437952
-  },
-  "period2": {
-    "max": 1776668352
-  },
-  "symbol": {
-    "whitelist": ["NVDA", "AAPL", "GOOG"]
-  }
-}
-
-## 6. Libraries available in the container
-
-The image preloads dependencies declared in `apps/backend/docker/strategyContainer/strategy-libs-pom.xml`. Maven `dependency:copy-dependencies` also places **transitive** JARs under `/opt/strategy/lib`.
-
-**Directly declared:**
+The container preloads dependencies from `strategy-libs-pom.xml` under `/opt/strategy/lib`.
 
 - `org.ta4j:ta4j-core` (technical analysis)
 - `com.yahoofinance-api:YahooFinanceAPI`
@@ -223,19 +211,14 @@ The image preloads dependencies declared in `apps/backend/docker/strategyContain
 - `com.fasterxml.jackson.core:jackson-databind`
 - `org.slf4j:slf4j-simple`
 
-Use only APIs present on that classpath. There is **no network** in the default sandbox, so YahooFinance API calls will fail at runtime—stick to files provided by the job (`stock-data.csv`, `config.json`).
+### 7.2 Python libraries
 
----
+A pre-configured virtual environment includes:
 
-## 7. Files you can read or write
-
-| Location | Read | Write |
-|----------|------|--------|
-| Workspace (`/opt/strategy/workspace` → host job dir) | `StrategyMain.java`, `config.json`, `stock-data.csv`, `job-context.json` | Same directory (e.g. debug files)—avoid relying on persistence after the job exits |
-| `/tmp`, `/opt/strategy/tmp` | Yes | Yes (temp files, compiled classes during compile step) |
-| Rest of container filesystem | System libraries, `/opt/strategy/lib` | Effectively no (read-only root) |
-
-Do not depend on reading arbitrary host paths: only the mounted workspace is guaranteed.
+- **Trading:** `backtrader`, `ccxt`, `ta`, `yfinance`
+- **Data Science:** `pandas`, `numpy`, `scipy`, `scikit-learn`, `statsmodels`
+- **Visualization:** `matplotlib`, `seaborn`
+- **Other:** `requests`, `pyyaml`, `numba`, `networkx`, `torch` (CPU)
 
 ---
 
@@ -243,16 +226,14 @@ Do not depend on reading arbitrary host paths: only the mounted workspace is gua
 
 ### 8.1 How the backend picks “the result”
 
-The combined stdout from the container may include compiler/runner log lines. The backend extracts **`sanitizeStrategyOutput`**:
-
 - It scans stdout **from the last line upward** and uses the **last non-blank line that starts with `{` or `[`** as the persisted job result.
 - If nothing matches, the stored result is **`{"status":"ok"}`**.
 
-Therefore your program should print **one JSON value** (object or array) on a **single line** as the **last** meaningful line, typically with `System.out.println(json)`.
+Therefore your program should print **one JSON value** (object or array) on a **single line** as the **last** meaningful line.
 
 ### 8.2 `trades` — required shape for chart markers
 
-The web chart loads `result` and calls `extractTradeMarkersFromJobResult`, which expects:
+The web chart loads `result` and expects:
 
 ```json
 {
@@ -264,88 +245,33 @@ The web chart loads `result` and calls `extractTradeMarkersFromJobResult`, which
 }
 ```
 
-| Field | Type | Meaning |
-|-------|------|---------|
-| `time` | number | UNIX time in **seconds** (UTC), aligned with candle timestamps used by the app. This time must be the `open` time of the market.
-| `amount` | number | **> 0** buy / long entry, **< 0** sell / exit. Magnitude can represent size; the performance helper expands integer magnitudes into discrete legs. |
-| `symbol` | string | Recommended when multiple tickers; enables server-side filtering via `?symbol=` |
+- **`time`**: UNIX time in **seconds** (UTC), aligned with candle timestamps.
+- **`amount`**: **> 0** buy / long, **< 0** sell / exit.
+- **`symbol`**: Required for multi-symbol strategies to enable filtering.
 
-Extra keys on trade objects are allowed but ignored by the extractor.
+### 8.3 Result Filtering by Symbol
 
-### 8.3 Signals
+When the UI requests a result for a specific symbol (e.g. `?symbol=AAPL`), the backend applies filtering:
 
-There is **no separate backend schema** for “signals.” Encode discretionary signals as extra arrays/objects on the root JSON if you need them for downstream tooling; the shipped UI does not consume them.
+1. **Arrays:** Only elements matching the symbol (via `symbol`, `ticker`, or `instrument` fields) are kept.
+2. **Objects:** If a field's value is an object containing the symbol as a key, that value is extracted.
 
-### 8.4 Metrics
-
-There is **no required metrics schema.** Optional numeric summaries (`profitFactor`, `maxDrawdown`, etc.) may be added as JSON fields alongside `trades`; they will be stored and returned to clients but **are not used** by the default chart/calculation pipeline unless a future UI reads them.
-
-### 8.5 Status field
-
-Including `"status": "ok"` is conventional and readable by humans; it does not change execution semantics beyond documentation value.
+Example output:
+```json
+{
+  "trades": {
+    "AAPL": [{"time": 123, "amount": 1}],
+    "MSFT": [{"time": 456, "amount": 1}]
+  }
+}
+```
+Result for `?symbol=AAPL`: `{"trades": [{"time": 123, "amount": 1}]}`.
 
 ---
 
 ## 9. Minimal examples (copy-paste)
 
-Replace package/import statements as needed; the sandbox compiles a single file.
-
-### 9.1 Smallest valid program (no trades)
-
-Prints a JSON object on the last line. Useful for checking wiring.
-
-```java
-public class StrategyMain {
-    public static void main(String[] args) throws Exception {
-        System.out.println("{\"status\":\"ok\",\"trades\":[]}");
-    }
-}
-```
-
-### 9.2 Read config and data paths from the environment
-
-```java
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-public class StrategyMain {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    public static void main(String[] args) throws Exception {
-        Path cfg = Path.of(envOr("STRATEGY_CONFIG_FILE", "config.json"));
-        Path csv = Path.of(envOr("STRATEGY_STOCK_DATA_FILE", "stock-data.csv"));
-        Path ctx = Path.of(envOr("STRATEGY_JOB_CONTEXT_FILE", "job-context.json"));
-
-        JsonNode config = MAPPER.readTree(Files.readString(cfg));
-        JsonNode jobCtx = MAPPER.readTree(Files.readString(ctx));
-
-        int rows = (int) Files.lines(csv).skip(1).count();
-
-        ObjectNode root = MAPPER.createObjectNode();
-        root.put("status", "ok");
-        root.put("note", "read-only demo");
-        root.put("maRange1", config.path("maRange1").asInt(0));
-        root.put("stockRowCount", rows);
-        root.put("jobId", jobCtx.path("jobId").asLong());
-        root.putArray("trades");
-
-        System.out.println(MAPPER.writeValueAsString(root));
-    }
-
-    private static String envOr(String key, String fallback) {
-        String v = System.getenv(key);
-        return (v == null || v.isBlank()) ? fallback : v;
-    }
-}
-```
-
-### 9.3 Emit a trade marker compatible with the chart
-
-Use epoch seconds that match a row in `stock-data.csv` for the ticker you care about.
+### 9.1 Java (Simple)
 
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -357,34 +283,40 @@ public class StrategyMain {
         ObjectNode root = m.createObjectNode();
         root.put("status", "ok");
         var trades = root.putArray("trades");
-        ObjectNode t = m.createObjectNode();
-        t.put("symbol", "AAPL");
-        t.put("time", 1704067200L); // replace with a real bar timestamp from your run
-        t.put("amount", 1);
-        trades.add(t);
-
+        trades.addObject().put("symbol", "AAPL").put("time", 1704067200L).put("amount", 1);
         System.out.println(m.writeValueAsString(root));
     }
 }
 ```
 
-### 9.4 Pattern used by the shipped MA crossover example
+### 9.2 Python (Simple)
 
-The repository includes a fuller sample under:
+```python
+import json
+import os
 
-`apps/backend/src/main/resources/built-in-strategies/moving-average-crossover/StrategyMain.java`
+def main():
+    # Read config path from environment
+    config_path = os.getenv("STRATEGY_CONFIG_FILE", "config.json")
+    
+    # Emit result
+    result = {
+        "status": "ok",
+        "trades": [
+            {"symbol": "AAPL", "time": 1704067200, "amount": 1}
+        ]
+    }
+    print(json.dumps(result))
 
-It demonstrates:
-
-- Parsing `config.json` with Jackson.
-- Loading `stock-data.csv` into per-symbol bar lists.
-- Building ta4j `BarSeries` and emitting `trades` with `{ symbol, time, amount }`.
+if __name__ == "__main__":
+    main()
+```
 
 ---
 
 ## 10. Building the runner image locally
 
-See `apps/backend/docker/strategyContainer/README.md` for build instructions and security-oriented runtime flags. The backend expects the image tag configured in `STRATEGY_CONTAINER_IMAGE` (default `strategy-runner`).
+See `apps/backend/docker/strategyContainer/README.md` for build instructions. The backend expects the image tag configured in `STRATEGY_CONTAINER_IMAGE` (default `strategy-runner`).
 
 ---
 
@@ -392,8 +324,9 @@ See `apps/backend/docker/strategyContainer/README.md` for build instructions and
 
 | Symptom | Things to verify |
 |--------|-------------------|
-| Job `failed`, nonzero exit | Stderr/stdout in `consoleOutput`; fix compile errors or uncaught exceptions |
-| Empty chart markers | Root JSON missing `trades` array; entries missing `time`/`amount` or not numeric |
-| Markers misaligned | `time` not equal to candle UNIX seconds used by the chart for that bar |
-| Filtered result empty with `?symbol=` | Trades missing `symbol` / `ticker` / `instrument` matching the query |
-| Out of memory / timeout | Simplify logic; default wall-clock limit **300s** per compile+run (`RUN_TIMEOUT_SECONDS`) |
+| Job `failed`, nonzero exit | Check `consoleOutput` for compile errors or Python stack traces |
+| Empty chart markers | Result missing `trades` array; entries missing `time`/`amount` |
+| Markers misaligned | `time` not equal to candle UNIX seconds (must be UTC) |
+| Filtered result empty | Trades missing `symbol` field matching the query |
+| Out of memory / timeout | Limits: **1GB** RAM, **300s** runtime (`RUN_TIMEOUT_SECONDS`) |
+

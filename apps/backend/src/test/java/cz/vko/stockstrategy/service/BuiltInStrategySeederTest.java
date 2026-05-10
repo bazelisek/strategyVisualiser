@@ -43,6 +43,8 @@ class BuiltInStrategySeederTest {
                 .thenReturn(Optional.of(BuiltInStrategyCatalog.superTrend().toStrategy()));
         when(strategyDao.findByName(BuiltInStrategyCatalog.EMA_ADX_TREND_NAME))
                 .thenReturn(Optional.of(BuiltInStrategyCatalog.emaAdxTrend().toStrategy()));
+        when(strategyDao.findByName(BuiltInStrategyCatalog.HYBRID_TREND_REVERSION_NAME))
+                .thenReturn(Optional.of(BuiltInStrategyCatalog.hybridTrendReversion().toStrategy()));
         when(strategyDao.save(any(Strategy.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         builtInStrategySeeder.run(mock(ApplicationArguments.class));

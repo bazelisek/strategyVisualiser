@@ -11,8 +11,9 @@ import {
   SymbolContribution,
   StrategyPerformance,
   Trade,
+  EquityPoint,
 } from "@/util/strategyPerformance/strategyPerformance";
-import React, { ReactNode, useEffect, useMemo, useState } from "react";
+import React, { ReactNode, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import classes from "./StrategyPerformanceOverview.module.css";
 import {
@@ -27,8 +28,11 @@ import {
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import InsightsIcon from "@mui/icons-material/Insights";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import DropdownButton from "../Input/Buttons/DropdownButton";
 import TradeDetails from "./TradeDetails";
+import CustomAccordion from "../common/CustomAccordion";
+import EquityChart from "../Chart/EquityChart";
 
 export type EnrichedTrade = Trade & {
   pct: number;
@@ -52,6 +56,7 @@ interface StrategyPerformanceOverviewProps {
     symbols: string[],
   ) => Promise<Record<string, TransformedData>>;
   availableMoney: number;
+  lastRunConfig: Record<string, unknown>;
 }
 
 export type EnrichedStrategyPerformance = {
@@ -76,6 +81,7 @@ export type EnrichedStrategyPerformance = {
   contributionPct?: number;
   realizedPnl?: number;
   unrealizedPnl?: number;
+  equityCurve?: EquityPoint[];
 } | null;
 
 type PerformanceScope = "current" | "global";
@@ -111,7 +117,7 @@ function enrichPerformance(
       closedTrades.length
     : 0;
   const avgSellValue = closedTrades.length
-    ? closedTrades.reduce((sum, trade) => sum + trade.sellValue, 0) /
+    ? closedTrades.reduce((sum, trade) => sum + trade.buyValue, 0) /
       closedTrades.length
     : 0;
   const avgPnL = closedTrades.length ? pnl / closedTrades.length : 0;
@@ -138,6 +144,7 @@ function enrichPerformance(
     contributionPct: contribution?.contributionPct,
     realizedPnl: contribution?.realizedPnl,
     unrealizedPnl: contribution?.unrealizedPnl,
+    equityCurve: performance.data.equityCurve,
   };
 }
 
@@ -152,14 +159,43 @@ const StrategyPerformanceOverview: React.FC<
   universe,
   loadCandlesForSymbols,
   availableMoney,
+  lastRunConfig,
 }) => {
   const [open, setOpen] = useState(false);
-  const [scope, setScope] = useState<PerformanceScope>("current");
+  const [scope, setScope] = useState<PerformanceScope>("global");
   const [globalCandles, setGlobalCandles] = useState<Record<string, TransformedData>>(
     {},
   );
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalError, setGlobalError] = useState("");
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
+  const [chartWidth, setChartWidth] = useState<number>(1060);
+
+  useLayoutEffect(() => {
+    if (!containerEl) return;
+
+    const updateWidth = () => {
+      const w = Math.floor(containerEl.getBoundingClientRect().width);
+      if (w && w !== chartWidth) setChartWidth(w);
+    };
+    updateWidth();
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          const w = Math.floor(entry.contentRect.width);
+          setChartWidth(w);
+        }
+      }
+    });
+
+    observer.observe(containerEl);
+
+    return () => {
+      observer.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerEl]);
 
   const strategyName = useStrategyName(strategy);
   const allTradePoints = useMemo(
@@ -265,8 +301,8 @@ const StrategyPerformanceOverview: React.FC<
       .filter(
         (
           item,
-        ): item is {
-          strategyData: { time: number; amount: number; symbol?: string }[];
+        ): item is typeof item & {
+          strategyData: { symbol?: string; time: number; amount: number }[];
           transformedData: TransformedData;
           symbol: string;
         } => item !== null,
@@ -276,7 +312,10 @@ const StrategyPerformanceOverview: React.FC<
       return { error: "Loading global performance..." };
     }
 
-    return getAggregatedStrategyPerformance(inputs, availableMoney);
+    const feeRateValue = lastRunConfig?.["feeRate"] ?? lastRunConfig?.["fees"];
+    const feeRate = typeof feeRateValue === "number" ? feeRateValue : 0.0000;
+
+    return getAggregatedStrategyPerformance(inputs, availableMoney, feeRate);
   }, [
     availableMoney,
     allTradePoints,
@@ -284,6 +323,7 @@ const StrategyPerformanceOverview: React.FC<
     globalError,
     globalLoading,
     globalSymbols,
+    lastRunConfig,
   ]);
 
   const currentContribution = useMemo(() => {
@@ -343,7 +383,10 @@ const StrategyPerformanceOverview: React.FC<
             transition={{ duration: 0.35 }}
             style={{ overflow: "hidden", width: "100%" }}
           >
-            <Sheet sx={{ mt: 2, p: 2, borderRadius: "lg" }}>
+            <Sheet
+              ref={(el) => setContainerEl(el)}
+              sx={{ mt: 2, p: 2, borderRadius: "lg" }}
+            >
               <Stack direction="row" spacing={1}>
                 <Button
                   variant={scope === "current" ? "solid" : "soft"}
@@ -376,7 +419,7 @@ const StrategyPerformanceOverview: React.FC<
                   <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ mt: 2 }}>
                     <Card>
                       <Typography level="body-sm">
-                        {scope === "global" ? "Portfolio Return" : "Stock Return"}
+                        {scope === "global" ? "Portfolio Return" : "Return Contribution"}
                       </Typography>
                       <Typography fontSize="xl" fontWeight="lg">
                         {enriched.totalReturnPct.toFixed(2)}%
@@ -493,6 +536,27 @@ const StrategyPerformanceOverview: React.FC<
                   <Divider sx={{ my: 2 }} />
 
                   <TradeDetails enriched={enriched} />
+
+                  {enriched.equityCurve && enriched.equityCurve.length > 0 && (
+                    <Stack sx={{ mt: 2 }}>
+                      <CustomAccordion
+                        summary={
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <TimelineIcon />
+                            <Typography fontWeight="lg">Equity Curve</Typography>
+                          </Stack>
+                        }
+                      >
+                        <Stack sx={{ mt: 2 }}>
+                          <EquityChart
+                            width={chartWidth - 32} // Account for Sheet padding
+                            height={400}
+                            data={enriched.equityCurve}
+                          />
+                        </Stack>
+                      </CustomAccordion>
+                    </Stack>
+                  )}
 
                   <Sheet
                     variant="soft"

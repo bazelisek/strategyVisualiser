@@ -42,7 +42,7 @@ const Form: React.FC<FormProps> = ({ onClose, index }) => {
   const indicators = useIndicators();
   const modalContainerRef = useModalRef() ?? undefined;
   const [formData, setFormData] = useState({
-    symbol: { value: config.symbol.defaultValue },
+    symbol: { value: "" },
     interval: { value: config.interval.defaultValue },
     period1: { value: config.period1.defaultValue },
     period2: { value: config.period2.defaultValue },

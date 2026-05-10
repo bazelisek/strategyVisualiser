@@ -340,8 +340,8 @@ export function useChartData(
       return;
     }
 
-    if (!symbol && !hasUniverseSelection(configOverrides.universe)) {
-      setError("Select a current stock or add at least one stock to the universe.");
+    if (!hasUniverseSelection(configOverrides.universe)) {
+      setError("Add at least one stock to the universe.");
       setStage("failed");
       return;
     }
@@ -361,7 +361,7 @@ export function useChartData(
       pendingCandlesRef.current = {};
       try {
         const start = await getTradeDataForStrategy({
-          symbol,
+          symbol: "",
           period1,
           period2,
           strategy,

@@ -1,9 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export const configInitialState = {
-  symbol: {
-    defaultValue: "",
-  },
   strategy: {
     defaultValue: "",
   },
