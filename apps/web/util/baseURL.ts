@@ -22,11 +22,12 @@ export const getBaseUrl = () => {
   // Construct from hostname and port
   const protocol = process.env.NEXT_PUBLIC_API_PROTOCOL || 'http';
   const host = process.env.NEXT_PUBLIC_API_HOST || 'localhost';
-  const port = process.env.NEXT_PUBLIC_API_PORT || process.env.PORT || 3000;
+  const port = process.env.NEXT_PUBLIC_API_PORT || process.env.PORT || process.env.APP_PORT || 3000;
   
   const baseUrl = `${protocol}://${host}:${port}`;
   return BASE_PATH ? `${baseUrl}${BASE_PATH}` : baseUrl;
 };
+
 
 export const getOrigin = () => {
   const appUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
@@ -45,7 +46,11 @@ export const getOrigin = () => {
 
   const protocol = process.env.NEXT_PUBLIC_API_PROTOCOL || 'http';
   const host = process.env.NEXT_PUBLIC_API_HOST || 'localhost';
-  const port = process.env.NEXT_PUBLIC_API_PORT || process.env.PORT || 3000;
+  const port = process.env.NEXT_PUBLIC_API_PORT || process.env.PORT || process.env.APP_PORT || 3000;
   
-  return `${protocol}://${host}:${port}`;
+  const origin = `${protocol}://${host}:${port}`;
+  console.log("getOrigin detected:", origin, "from PORT:", process.env.PORT, "or APP_PORT:", process.env.APP_PORT);
+  return origin;
 };
+
+
