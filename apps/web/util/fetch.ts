@@ -1,4 +1,5 @@
 import axios from "axios";
+import { headers } from "next/headers";
 
 export async function fetchDataFromUrl(url: string) {
   console.log(`Fetching from ${url}`);
@@ -6,7 +7,10 @@ export async function fetchDataFromUrl(url: string) {
   // interval: for eample 1d
   // range: for example 1mo
   try {
-    const result = await axios.get(url, {timeout: 1200000});
+    const result = await axios.get(url, {
+      timeout: 1200000,
+      headers: await getForwardedCookieHeaders(),
+    });
     const data = result.data;
     //console.log(JSON.stringify(data));
     return { data, error: null };
@@ -14,4 +18,9 @@ export async function fetchDataFromUrl(url: string) {
     console.log(error);
     return { data: null, error: `failed to fetch from ${url}` };
   }
+}
+
+export async function getForwardedCookieHeaders() {
+  const cookie = (await headers()).get("cookie");
+  return cookie ? { cookie } : undefined;
 }

@@ -1,12 +1,10 @@
-// Build BASE_URL from environment variables or defaults
-// Priority: INTERNAL_API_URL > NEXT_PUBLIC_API_URL > compose from host/port
+// Build the frontend API base URL. Backend calls should go through Next route
+// handlers so authentication and per-user checks happen before proxying.
 export const getBaseUrl = () => {
-  // Explicit internal API URL takes priority
-  if (process.env.INTERNAL_API_URL) {
-    return process.env.INTERNAL_API_URL;
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
   }
   
-  // Public API URL for different environments
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }

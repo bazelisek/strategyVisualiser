@@ -3,6 +3,7 @@
 import { getServerSession } from "@/auth/server";
 import { getBaseUrl } from "../baseURL";
 import axios from "axios";
+import { getForwardedCookieHeaders } from "../fetch";
 
 const BASE_URL = getBaseUrl();
 
@@ -14,7 +15,9 @@ export async function deleteStrategy(id: string): Promise<{ error: string | null
     return { error: "User not found" };
   }
 
-  await axios.delete(`${BASE_URL}/api/strategies/${id}`);
+  await axios.delete(`${BASE_URL}/api/strategies/${id}`, {
+    headers: await getForwardedCookieHeaders(),
+  });
 
   return { error: null };
 }

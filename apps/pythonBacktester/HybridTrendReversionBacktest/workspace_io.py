@@ -16,7 +16,9 @@ def resolve_input_path(env_key: str, fallback: str) -> Path:
     return Path(fallback)
 
 def load_config() -> dict:
-    config_path = resolve_input_path("STRATEGY_CONFIG_FILE", "HybridTrendReversionBacktest/config.json")
+    # Default to config.json in the same directory as this file
+    default_config = Path(__file__).parent / "config.json"
+    config_path = resolve_input_path("STRATEGY_CONFIG_FILE", str(default_config))
     LOGGER.debug("Loading config from %s", config_path)
     with config_path.open("r", encoding="utf-8") as handle:
         return json.load(handle)

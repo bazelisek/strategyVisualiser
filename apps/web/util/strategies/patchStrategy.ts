@@ -4,6 +4,7 @@ import { getServerSession } from "@/auth/server";
 import { getBaseUrl } from "../baseURL";
 import axios from "axios";
 import { StrategySourceFile } from "./sourceFiles";
+import { getForwardedCookieHeaders } from "../fetch";
 
 const BASE_URL = getBaseUrl();
 
@@ -41,7 +42,9 @@ export async function patchStrategy({
     requirements
   };
 
-  await axios.patch(`${BASE_URL}/api/strategies/${id}`, data);
+  await axios.patch(`${BASE_URL}/api/strategies/${id}`, data, {
+    headers: await getForwardedCookieHeaders(),
+  });
 
   return { error: null };
 }

@@ -4,6 +4,7 @@ import { getServerSession } from "@/auth/server";
 import { getBaseUrl } from "../baseURL";
 import axios from "axios";
 import { StrategySourceFile } from "./sourceFiles";
+import { getForwardedCookieHeaders } from "../fetch";
 
 const BASE_URL = getBaseUrl();
 
@@ -39,7 +40,9 @@ export async function postStrategy({
         requirements
     }
 
-    await axios.post(BASE_URL + "/api/strategies", data)
+    await axios.post(BASE_URL + "/api/strategies", data, {
+        headers: await getForwardedCookieHeaders(),
+    })
 
     return {error: null}
 }
