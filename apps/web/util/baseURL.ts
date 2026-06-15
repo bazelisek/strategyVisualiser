@@ -3,8 +3,16 @@ import { BASE_PATH } from "./constants";
 // Build the frontend API base URL. Backend calls should go through Next route
 // handlers so authentication and per-user checks happen before proxying.
 export const getBaseUrl = () => {
+  if (process.env.BETTER_AUTH_URL) {
+    return process.env.BETTER_AUTH_URL;
+  }
+
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL;
+  }
+
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}${BASE_PATH}`;
   }
   
   if (process.env.NEXT_PUBLIC_API_URL) {
