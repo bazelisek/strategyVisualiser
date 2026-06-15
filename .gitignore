@@ -37,3 +37,6 @@ out/
 ### VS Code ###
 .vscode/
 .next/
+
+### Prod ###
+apps/web/.run/
