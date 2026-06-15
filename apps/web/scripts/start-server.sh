@@ -59,6 +59,7 @@ DB_PASSWORD="${DB_PASSWORD:-password}"
 DB_CONTAINER_NAME="${DB_CONTAINER_NAME:-strategy-visualiser-postgres}"
 DB_IMAGE="${DB_IMAGE:-docker.io/library/postgres:16}"
 DB_VOLUME="${DB_VOLUME:-strategy-visualiser-postgres-data}"
+PODMAN_CGROUP_MANAGER="${PODMAN_CGROUP_MANAGER:-cgroupfs}"
 RUN_DIR="${RUN_DIR:-$WEB_DIR/.run}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
 BACKEND_URL="${BACKEND_URL:-http://127.0.0.1:$BACKEND_PORT}"
@@ -132,20 +133,28 @@ run() {
   fi
 }
 
-container_run() {
-  if [ "$CONTAINER" = "podman" ]; then
-    run "$CONTAINER" run --cgroup-manager=cgroupfs "$@"
+container_cmd() {
+  if [ "$CONTAINER" = "podman" ] && [ -n "$PODMAN_CGROUP_MANAGER" ]; then
+    "$CONTAINER" "--cgroup-manager=$PODMAN_CGROUP_MANAGER" "$@"
   else
-    run "$CONTAINER" run "$@"
+    "$CONTAINER" "$@"
+  fi
+}
+
+run_container_cmd() {
+  if [ "$CONTAINER" = "podman" ] && [ -n "$PODMAN_CGROUP_MANAGER" ]; then
+    run "$CONTAINER" "--cgroup-manager=$PODMAN_CGROUP_MANAGER" "$@"
+  else
+    run "$CONTAINER" "$@"
   fi
 }
 
 container_exists() {
-  "$CONTAINER" container inspect "$DB_CONTAINER_NAME" >/dev/null 2>&1
+  container_cmd container inspect "$DB_CONTAINER_NAME" >/dev/null 2>&1
 }
 
 container_running() {
-  [ "$("$CONTAINER" inspect -f '{{.State.Running}}' "$DB_CONTAINER_NAME" 2>/dev/null || true)" = "true" ]
+  [ "$(container_cmd inspect -f '{{.State.Running}}' "$DB_CONTAINER_NAME" 2>/dev/null || true)" = "true" ]
 }
 
 start_database() {
@@ -156,11 +165,11 @@ start_database() {
       log "Database container '$DB_CONTAINER_NAME' is already running."
     else
       log "Starting existing database container '$DB_CONTAINER_NAME'..."
-      run "$CONTAINER" start "$DB_CONTAINER_NAME"
+      run_container_cmd start "$DB_CONTAINER_NAME"
     fi
   else
     log "Creating database container '$DB_CONTAINER_NAME'..."
-    container_run -d \
+    run_container_cmd run -d \
       --name "$DB_CONTAINER_NAME" \
       -e "POSTGRES_USER=$DB_USER" \
       -e "POSTGRES_PASSWORD=$DB_PASSWORD" \
@@ -179,7 +188,7 @@ wait_for_database() {
 
   i=0
   while [ "$i" -lt 60 ]; do
-    if "$CONTAINER" exec "$DB_CONTAINER_NAME" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
+    if container_cmd exec "$DB_CONTAINER_NAME" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
       log "Postgres is ready."
       return
     fi
@@ -191,7 +200,7 @@ wait_for_database() {
 }
 
 database_login_works() {
-  "$CONTAINER" exec -e "PGPASSWORD=$DB_PASSWORD" "$DB_CONTAINER_NAME" \
+  container_cmd exec -e "PGPASSWORD=$DB_PASSWORD" "$DB_CONTAINER_NAME" \
     psql -U "$DB_USER" -d "$DB_NAME" -tAc "SELECT 1" >/dev/null 2>&1
 }
 
@@ -210,17 +219,17 @@ configure_database() {
 
   password_sql=$(quote_sql_literal "$DB_PASSWORD")
 
-  if ! "$CONTAINER" exec "$DB_CONTAINER_NAME" psql -U postgres -d postgres -tAc "SELECT 1" >/dev/null 2>&1; then
+  if ! container_cmd exec "$DB_CONTAINER_NAME" psql -U postgres -d postgres -tAc "SELECT 1" >/dev/null 2>&1; then
     die "Could not connect as the postgres superuser to configure the database."
   fi
 
-  if ! "$CONTAINER" exec "$DB_CONTAINER_NAME" psql -U postgres -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER'" | grep 1 >/dev/null 2>&1; then
-    run "$CONTAINER" exec "$DB_CONTAINER_NAME" psql -U postgres -d postgres \
+  if ! container_cmd exec "$DB_CONTAINER_NAME" psql -U postgres -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER'" | grep 1 >/dev/null 2>&1; then
+    run_container_cmd exec "$DB_CONTAINER_NAME" psql -U postgres -d postgres \
       -c "CREATE ROLE \"$DB_USER\" LOGIN PASSWORD '$password_sql'"
   fi
 
-  if ! "$CONTAINER" exec "$DB_CONTAINER_NAME" psql -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep 1 >/dev/null 2>&1; then
-    run "$CONTAINER" exec "$DB_CONTAINER_NAME" createdb -U postgres -O "$DB_USER" "$DB_NAME"
+  if ! container_cmd exec "$DB_CONTAINER_NAME" psql -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep 1 >/dev/null 2>&1; then
+    run_container_cmd exec "$DB_CONTAINER_NAME" createdb -U postgres -O "$DB_USER" "$DB_NAME"
   fi
 
   database_login_works || die "Database was configured, but login as $DB_USER to $DB_NAME still failed."
