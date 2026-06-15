@@ -2,6 +2,7 @@
 import { UTCTimestamp } from "lightweight-charts";
 import { parseStrategyId } from "./strategies/strategyId";
 import { formatLocalDate } from "./time";
+import { BASE_PATH } from "./constants";
 
 export type candleData = {
   time: UTCTimestamp;
@@ -36,7 +37,7 @@ export async function getCandlestickChartData({
 
   try {
     const yahooRes = await fetch(
-      `/api/yahoo/${encodeURIComponent(symbol)}?interval=${encodeURIComponent(interval)}&from=${fromIso}&to=${toIso}`
+      `${BASE_PATH}/api/yahoo/${encodeURIComponent(symbol)}?interval=${encodeURIComponent(interval)}&from=${fromIso}&to=${toIso}`
     );
     const yahooPayload = (await yahooRes.json().catch(() => null)) as
       | Array<{
@@ -71,7 +72,7 @@ export async function getCandlestickChartData({
 
   try {
     const backendRes = await fetch(
-      `/api/stocks/${encodeURIComponent(symbol)}?period=D&from=${fromIso}&to=${toIso}`
+      `${BASE_PATH}/api/stocks/${encodeURIComponent(symbol)}?period=D&from=${fromIso}&to=${toIso}`
     );
     if (!backendRes.ok) {
       return {
@@ -163,7 +164,7 @@ export async function getTradeDataForStrategy({
   }
 
   try {
-    const analyzeRes = await fetch(`/api/strategies/${strategyId}/analyze`, {
+    const analyzeRes = await fetch(`${BASE_PATH}/api/strategies/${strategyId}/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -195,7 +196,7 @@ export async function getJobDataForSymbol(jobId: number, symbol?: string) {
       qs.set("symbol", symbol.trim());
     }
     const response = await fetch(
-      `/api/jobs/${jobId}${qs.size > 0 ? `?${qs.toString()}` : ""}`
+      `${BASE_PATH}/api/jobs/${jobId}${qs.size > 0 ? `?${qs.toString()}` : ""}`
     );
     if (!response.ok) {
       return { data: null, error: "Failed to fetch strategy job status." };

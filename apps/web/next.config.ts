@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
+import { BASE_PATH } from "./util/constants";
 
 const nextConfig: NextConfig = {
-  basePath: '/projects/strategy-visualiser/app',
+  basePath: BASE_PATH,
   experimental: {
     turbopackScopeHoisting: false,
   },

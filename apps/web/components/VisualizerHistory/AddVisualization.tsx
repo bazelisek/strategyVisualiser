@@ -4,6 +4,7 @@ import { VisualizerParams } from "@/util/visualizerTypes";
 import { Button } from "@mui/joy";
 import { useRouter } from "next/navigation";
 import { configInitialState } from "@/store/slices/configSlice";
+import { BASE_PATH } from "@/util/constants";
 
 const AddVisualization = ({
   params,
@@ -26,7 +27,7 @@ const AddVisualization = ({
     }
 
     try {
-      const res = await fetch("/api/history", {
+      const res = await fetch(`${BASE_PATH}/api/history`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
