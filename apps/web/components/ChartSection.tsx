@@ -40,6 +40,7 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { BASE_PATH } from "@/util/constants";
 import React, { ReactNode, useEffect, useMemo, useState } from "react";
 
 interface ChartSectionProps {
@@ -238,7 +239,7 @@ const ChartSection: React.FC<ChartSectionProps> = ({ index }) => {
     let isActive = true;
     async function loadConfig() {
       try {
-        const res = await fetch(`/api/strategies/${strategyId}`);
+        const res = await fetch(`${BASE_PATH}/api/strategies/${strategyId}`);
         if (!res.ok) {
           throw new Error("Failed to load strategy configuration.");
         }

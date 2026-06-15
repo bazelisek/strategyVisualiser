@@ -1,13 +1,14 @@
 "use client";
 
 import type { TileIndicator } from "@/util/tilesSearchParams";
+import { BASE_PATH } from "../constants";
 
 const request = async (
   method: "POST" | "PATCH" | "DELETE",
   payload: Record<string, unknown>
 ) => {
   try {
-    const res = await fetch("/api/history/indicators", {
+    const res = await fetch(`${BASE_PATH}/api/history/indicators`, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

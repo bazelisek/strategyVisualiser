@@ -1,10 +1,11 @@
 import { VisualizerHistoryEntry } from "@/util/visualizerTypes";
+import { BASE_PATH } from "@/util/constants";
 
 export async function getVisualizationParams(
   id: string
 ): Promise<VisualizerHistoryEntry | null> {
   try {
-    const res = await fetch(`/api/history/${encodeURIComponent(id)}`, {
+    const res = await fetch(`${BASE_PATH}/api/history/${encodeURIComponent(id)}`, {
       method: "GET",
     });
     if (!res.ok) {

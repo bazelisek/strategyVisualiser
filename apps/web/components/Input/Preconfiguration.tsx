@@ -7,6 +7,7 @@ import { useDispatch } from "react-redux";
 import { setConfigs } from "@/store/reduxStore";
 import type { ConfigState } from "@/store/slices/configSlice";
 import { useTiles } from "@/hooks/useTiles";
+import { BASE_PATH } from "@/util/constants";
 
 interface PreconfigurationProps {
   children?: ReactNode;
@@ -20,7 +21,7 @@ const Preconfiguration: React.FC<PreconfigurationProps> = () => {
   const persistDefaults = async (defaults: ConfigState) => {
     if (!visualizationId) return;
     try {
-      const res = await fetch("/api/history", {
+      const res = await fetch(`${BASE_PATH}/api/history`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

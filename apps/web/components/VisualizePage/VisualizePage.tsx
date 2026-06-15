@@ -23,6 +23,7 @@ import {
 } from "@/store/slices/configSlice";
 import {  Stack } from "@mui/joy";
 import ChartLoading from "../common/ChartLoading";
+import { BASE_PATH } from "@/util/constants";
 
 const normalizeDefaults = (
   defaults?: Partial<ConfigState>,
@@ -120,7 +121,7 @@ const VisualizePage = ({ id }: { id: string }) => {
     }));
 
     try {
-      const res = await fetch("/api/history", {
+      const res = await fetch(`${BASE_PATH}/api/history`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

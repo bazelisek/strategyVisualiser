@@ -1,5 +1,6 @@
 import React from "react";
 import { VisualizerHistoryEntry } from "@/util/visualizerTypes";
+import { BASE_PATH } from "@/util/constants";
 
 export function useHistory(): {
   history: VisualizerHistoryEntry[];
@@ -18,7 +19,7 @@ export function useHistory(): {
       try {
         setIsLoading(true);
         setError(null);
-        const res = await fetch("/api/history", {
+        const res = await fetch(`${BASE_PATH}/api/history`, {
           cache: "no-store",
           signal: controller.signal,
         });

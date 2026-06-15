@@ -12,6 +12,7 @@ import DeleteButton from "../Input/Buttons/DeleteButton";
 import { useHistory } from "@/hooks/useHistory";
 import ChartLoading from "../common/ChartLoading";
 import { getTileUniverse } from "@/util/tilesSearchParams";
+import { BASE_PATH } from "@/util/constants";
 
 interface VisualizerHistoryProps {
   hasSheet?: boolean;
@@ -59,7 +60,7 @@ const VisualizerHistory: React.FC<VisualizerHistoryProps> = ({
   }
   async function handleHistoryDelete(id: string) {
     try {
-      const res = await fetch(`/api/history?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`${BASE_PATH}/api/history?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
       if (!res.ok) return;
