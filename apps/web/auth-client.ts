@@ -1,8 +1,8 @@
 "use client";
 import { createAuthClient } from "better-auth/react";
-import { BASE_PATH } from "./util/constants";
+import { getBaseUrl } from "./util/baseURL";
 
 export const authClient = createAuthClient({
-    baseURL: BASE_PATH
+    baseURL: getBaseUrl()
 });
 export const { signIn, signUp, useSession } = authClient;
