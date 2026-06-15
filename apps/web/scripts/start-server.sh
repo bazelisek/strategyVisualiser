@@ -132,6 +132,14 @@ run() {
   fi
 }
 
+container_run() {
+  if [ "$CONTAINER" = "podman" ]; then
+    run "$CONTAINER" run --cgroup-manager=cgroupfs "$@"
+  else
+    run "$CONTAINER" run "$@"
+  fi
+}
+
 container_exists() {
   "$CONTAINER" container inspect "$DB_CONTAINER_NAME" >/dev/null 2>&1
 }
@@ -152,7 +160,7 @@ start_database() {
     fi
   else
     log "Creating database container '$DB_CONTAINER_NAME'..."
-    run "$CONTAINER" run -d \
+    container_run -d \
       --name "$DB_CONTAINER_NAME" \
       -e "POSTGRES_USER=$DB_USER" \
       -e "POSTGRES_PASSWORD=$DB_PASSWORD" \
