@@ -27,3 +27,25 @@ export const getBaseUrl = () => {
   const baseUrl = `${protocol}://${host}:${port}`;
   return BASE_PATH ? `${baseUrl}${BASE_PATH}` : baseUrl;
 };
+
+export const getOrigin = () => {
+  const appUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) {
+    try {
+      const url = new URL(appUrl);
+      return url.origin;
+    } catch (e) {
+      // Fallback
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
+  const protocol = process.env.NEXT_PUBLIC_API_PROTOCOL || 'http';
+  const host = process.env.NEXT_PUBLIC_API_HOST || 'localhost';
+  const port = process.env.NEXT_PUBLIC_API_PORT || process.env.PORT || 3000;
+  
+  return `${protocol}://${host}:${port}`;
+};
