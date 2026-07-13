@@ -39,3 +39,6 @@ out/
 .next/
 apps/pythonBacktester/HybridTrendReversionBacktest/__pycache__/*
 apps/pythonBacktester/cycleDetection/__pycache__/*
+
+### Prod ###
+apps/web/.run/

@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { BASE_PATH } from "./constants";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
@@ -23,7 +24,7 @@ export async function proxyBackendRequest(
   const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session?.user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL(BASE_PATH + "/login", request.url));
   }
 
   const authorization = await authorizeRequest(request, backendPath, session.user);
