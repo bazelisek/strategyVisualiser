@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { BASE_PATH } from "./util/constants";
+import { BASE_PATH } from "./util/env/constants";
 
 const nextConfig: NextConfig = {
   basePath: BASE_PATH,

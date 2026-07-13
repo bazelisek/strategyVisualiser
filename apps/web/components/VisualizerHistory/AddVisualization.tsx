@@ -4,7 +4,7 @@ import { VisualizerParams } from "@/util/visualizerTypes";
 import { Button } from "@mui/joy";
 import { useRouter } from "next/navigation";
 import { configInitialState } from "@/store/slices/configSlice";
-import { BASE_PATH } from "@/util/constants";
+import { BASE_PATH } from "@/util/env/constants";
 
 const AddVisualization = ({
   params,

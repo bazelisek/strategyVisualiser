@@ -40,7 +40,7 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { BASE_PATH } from "@/util/constants";
+import { BASE_PATH } from "@/util/env/constants";
 import React, { ReactNode, useEffect, useMemo, useState } from "react";
 
 interface ChartSectionProps {

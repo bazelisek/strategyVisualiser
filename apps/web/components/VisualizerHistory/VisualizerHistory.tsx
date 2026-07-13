@@ -12,7 +12,7 @@ import DeleteButton from "../Input/Buttons/DeleteButton";
 import { useHistory } from "@/hooks/useHistory";
 import ChartLoading from "../common/ChartLoading";
 import { getTileUniverse } from "@/util/tilesSearchParams";
-import { BASE_PATH } from "@/util/constants";
+import { BASE_PATH } from "@/util/env/constants";
 
 interface VisualizerHistoryProps {
   hasSheet?: boolean;

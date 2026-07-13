@@ -1,4 +1,4 @@
-import { BASE_PATH } from "./constants";
+import { BASE_PATH } from "./env/constants";
 
 // Build the frontend API base URL. Backend calls should go through Next route
 // handlers so authentication and per-user checks happen before proxying.

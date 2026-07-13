@@ -7,7 +7,7 @@ import { useDispatch } from "react-redux";
 import { setConfigs } from "@/store/reduxStore";
 import type { ConfigState } from "@/store/slices/configSlice";
 import { useTiles } from "@/hooks/useTiles";
-import { BASE_PATH } from "@/util/constants";
+import { BASE_PATH } from "@/util/env/constants";
 
 interface PreconfigurationProps {
   children?: ReactNode;

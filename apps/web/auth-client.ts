@@ -1,7 +1,7 @@
 "use client";
 import { createAuthClient } from "better-auth/react";
 import { getOrigin } from "./util/baseURL";
-import { BASE_PATH } from "./util/constants";
+import { BASE_PATH } from "./util/env/constants";
 
 export const authClient = createAuthClient({
     baseURL: getOrigin(),

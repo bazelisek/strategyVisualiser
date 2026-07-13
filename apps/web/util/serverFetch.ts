@@ -2,7 +2,7 @@
 import { UTCTimestamp } from "lightweight-charts";
 import { parseStrategyId } from "./strategies/strategyId";
 import { formatLocalDate } from "./time";
-import { BASE_PATH } from "./constants";
+import { BASE_PATH } from "./env/constants";
 
 export type candleData = {
   time: UTCTimestamp;

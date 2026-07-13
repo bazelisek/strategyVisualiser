@@ -23,7 +23,7 @@ import {
 } from "@/store/slices/configSlice";
 import {  Stack } from "@mui/joy";
 import ChartLoading from "../common/ChartLoading";
-import { BASE_PATH } from "@/util/constants";
+import { BASE_PATH } from "@/util/env/constants";
 
 const normalizeDefaults = (
   defaults?: Partial<ConfigState>,

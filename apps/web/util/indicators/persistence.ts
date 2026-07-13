@@ -1,7 +1,7 @@
 "use client";
 
 import type { TileIndicator } from "@/util/tilesSearchParams";
-import { BASE_PATH } from "../constants";
+import { BASE_PATH } from "../env/constants";
 
 const request = async (
   method: "POST" | "PATCH" | "DELETE",

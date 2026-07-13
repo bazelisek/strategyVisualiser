@@ -1,5 +1,5 @@
 import { VisualizerHistoryEntry } from "@/util/visualizerTypes";
-import { BASE_PATH } from "@/util/constants";
+import { BASE_PATH } from "@/util/env/constants";
 
 export async function getVisualizationParams(
   id: string

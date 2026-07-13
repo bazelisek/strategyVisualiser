@@ -1,6 +1,6 @@
 import React from "react";
 import { VisualizerHistoryEntry } from "@/util/visualizerTypes";
-import { BASE_PATH } from "@/util/constants";
+import { BASE_PATH } from "@/util/env/constants";
 
 export function useHistory(): {
   history: VisualizerHistoryEntry[];

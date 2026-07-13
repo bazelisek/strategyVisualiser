@@ -1,5 +1,5 @@
 import React, { type ReactNode } from 'react';
-import { BASE_PATH } from '@/util/constants';
+import { BASE_PATH } from '@/util/env/constants';
 
 const AppIcon: React.FC = () => {
   return (

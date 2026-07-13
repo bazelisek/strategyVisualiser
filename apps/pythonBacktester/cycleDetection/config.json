@@ -1,0 +1,33 @@
+{
+  "trendFastPeriod": 20,
+  "trendSlowPeriod": 50,
+  "adxPeriod": 14,
+  "adxThreshold": 25,
+  "rsiPeriod": 14,
+  "rsiOversold": 30,
+  "rsiOverbought": 70,
+  "bbPeriod": 20,
+  "bbStdDev": 2.0,
+  "atrPeriod": 14,
+  "atrMultiplier": 2.5,
+  "maxPositions": 5,
+  "maxAllocationPerTrade": 20,
+  "initialBalance": 10000,
+  "riskPerTrade": 20.0,
+  "universe": [
+    "BTC-USD",
+    "TRX-USD",
+    "XRP-USD",
+    "ETH-USD",
+    "DOGE-USD",
+    "SOL-USD",
+    "BNB-USD",
+    "WBT-USD"
+  ],
+  "slippage": 0.0000,
+  "fees": 0.0000,
+  "maxFillFraction": 0.8,
+  "interval": "1d",
+  "start": "2021-05-03",
+  "end": "2026-05-04"
+}
